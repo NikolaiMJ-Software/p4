@@ -1,15 +1,6 @@
 from lark import Lark
 from lark.indenter import Indenter
 
-# INDENTER
-class TreeIndenter(Indenter):
-    NL_type = "NEWLINE"
-    INDENT_type = "INDENT"
-    DEDENT_type = "DEDENT"
-    OPEN_PAREN_types = []
-    CLOSE_PAREN_types = []
-    tab_len = 4
-
 # GRAMMAR
 grammar = r"""
 start: stmt+
@@ -88,7 +79,6 @@ args: "with" expr ("," expr)*
 parser = Lark(
     grammar,
     parser="lalr",
-    postlex=TreeIndenter(),
     start="start"
 )
 

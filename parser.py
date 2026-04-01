@@ -69,21 +69,37 @@ call_expr: "call" NAME args?
 args: "with" expr ("," expr)*
 
 // IMPORTS & IGNORE
-%import common.NEWLINE
+NEWLINE: (/\r?\n[ \t]*/)
 %import common.WS_INLINE
 %declare INDENT DEDENT
 %ignore WS_INLINE
 """
 
+class TreeIndenter(Indenter):
+    NL_type = 'NEWLINE'
+    OPEN_PAREN_types = []
+    CLOSE_PAREN_types = []
+    INDENT_type = 'INDENT'
+    DEDENT_type = 'DEDENT'
+    tab_len = 8
+
 # PARSER
 parser = Lark(
     grammar,
     parser="lalr",
-    start="start"
+    start="start",
+    postlex=TreeIndenter()
 )
 
 # TEST
-code = """create X is (5*8)^(2-1)
+code = """define Fun with Var1, Var2:
+    create X is (5*8)^(2-1)
+    if Var1 less than Var2 do:
+        if Var2 do:
+            return Var2
+        if Var1 do:
+            return Var1
+    return X
 """
 
 try:

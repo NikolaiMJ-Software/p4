@@ -1,5 +1,5 @@
 from lark import Lark
-from lark.indenter import Indenter
+from lark import Transformer, v_args
 
 # GRAMMAR
 grammar = r"""
@@ -17,11 +17,11 @@ start: stmt+
 | expr_stmt
 
 // STATEMENTS
-create_stmt: "create" NAME ("is" expr)? NEWLINE
+create_stmt: "create" ID ("is" expr)? NEWLINE
 
-create_struct: "create" NAME ("from" NAME)* "with:" NEWLINE INDENT (NAME ("is" expr)? NEWLINE)* DEDENT
+create_struct: "create" ID ("from" ID)* "with:" NEWLINE INDENT (ID ("is" expr)? NEWLINE)* DEDENT
 
-assign_stmt: NAME ("from" NAME)* "is" expr NEWLINE
+assign_stmt: ID ("from" ID)* "is" expr NEWLINE
 
 if_stmt: "if" cond "do:" NEWLINE INDENT stmt+ DEDENT ("else" "if" cond "do:" NEWLINE INDENT stmt+ DEDENT)* ("else" "do:" NEWLINE INDENT stmt+ DEDENT)?
 
@@ -29,12 +29,12 @@ while_stmt: "while" cond "do:" NEWLINE INDENT stmt+ DEDENT
 
 dowhile_stmt: "do:" NEWLINE INDENT stmt* DEDENT "while" cond NEWLINE
 
-forrange_stmt: "for each" NAME "between" expr "and" expr "do:" NEWLINE INDENT stmt* DEDENT
+forrange_stmt: "for each" ID "between" expr "and" expr "do:" NEWLINE INDENT stmt* DEDENT
 
-foreach_stmt: "for each" NAME "in" NAME "do:" NEWLINE INDENT stmt* DEDENT
+foreach_stmt: "for each" ID "in" ID "do:" NEWLINE INDENT stmt* DEDENT
 
-func_def: "define" NAME params ":" NEWLINE INDENT stmt* DEDENT
-params: "with" NAME ("," NAME)*
+func_def: "define" ID params ":" NEWLINE INDENT stmt* DEDENT
+params: "with" ID ("," ID)*
 
 return_stmt: "return" expr NEWLINE
 
@@ -58,14 +58,14 @@ expr_stmt: expr NEWLINE
 ?expr2: expr3 | expr2 "+" expr3 | expr2 "-" expr3
 ?expr3: expr4 | expr3 "*" expr4 | expr3 "/" expr4
 ?expr4: expr5 | expr5 "^" expr4
-?expr5: "-" expr5 | "(" expr ")" | INTEGER | FLOAT | STRING | NAME ("from" NAME)* | call_expr
+?expr5: "-" expr5 | "(" expr ")" | INTEGER | FLOAT | STRING | ID ("from" ID)* | call_expr
 
 // TOKENS
-NAME: /[A-Z][a-zA-Z0-9_]*/
+ID: /[A-Z][a-zA-Z0-9_]*/
 FLOAT: /([1-9][0-9]*|0)\.[0-9]+/
 INTEGER: /[0-9]+/
 STRING: /"[^"]*"/
-call_expr: "call" NAME args?
+call_expr: "call" ID args?
 args: "with" expr ("," expr)*
 
 // IMPORTS & IGNORE
@@ -82,8 +82,32 @@ parser = Lark(
     start="start"
 )
 
+# AST BUILDER (NOT IMPLEMENTED YET)
+@v_args(inline=True)
+class ASTBuilder(Transformer):
+
+    # --- TOKENS ---
+    def ID(self, token):
+        return str(token)
+
+    def INTEGER(self, token):
+        return int(token)
+    
+    # --- EXPRESSIONS ---
+    def expr(self, value):
+        return value
+
+    # --- STATEMENTS ---
+    def create_stmt(self, *items):
+        print("create_stmt items:", items)
+        return items
+
+    # --- ROOT ---
+    def start(self, *statements):
+        return list(statements)
+    
 # TEST
-code = """create X is (5*8)^(2-1)
+code = """create X is 12
 """
 
 try:

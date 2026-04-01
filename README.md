@@ -25,6 +25,19 @@ git clone https://github.com/NikolaiMJ-Software/p4.git
 ```bash
 cd p4
 ```
+3. Create virtual environment:
+```bash
+python -m venv .venv
+```
+
+4. Activate venv folder:
+```bash
+# Windows:
+.venv\Scripts\activate
+
+# Mac/Linux:
+source .venv/bin/activate
+```
 
 5. Install dependencies:
 ```bash
@@ -32,8 +45,9 @@ pip install -r requirements.txt
 ```
 
 ### Running the app for the first time
-Connect your iOS device and start the program:
+Connect your OS device and start the program:
 ```bash
+python app.py
 ```
 
 ### Running tests

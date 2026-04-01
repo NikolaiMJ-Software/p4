@@ -1,0 +1,6 @@
+# Ignore the following
+.venv/
+__pycache__/
+
+# Except the following files
+!requirements.txt

@@ -15,6 +15,8 @@ start: stmt+
 | func_def
 | return_stmt
 | expr_stmt
+| input_stmt
+| output_stmt
 
 // STATEMENTS
 create_stmt: "create" ID ("is" expr)? NEWLINE
@@ -23,7 +25,7 @@ create_struct: "create" ID ("from" ID)* "with:" NEWLINE INDENT (ID ("is" expr)? 
 
 assign_stmt: ID ("from" ID)* "is" expr NEWLINE
 
-if_stmt: "if" cond "do:" NEWLINE INDENT stmt+ DEDENT ("else" "if" cond "do:" NEWLINE INDENT stmt+ DEDENT)* ("else" "do:" NEWLINE INDENT stmt+ DEDENT)?
+if_stmt: "if" cond "do:" NEWLINE INDENT stmt+ DEDENT ("else if" cond "do:" NEWLINE INDENT stmt+ DEDENT)* ("else do:" NEWLINE INDENT stmt+ DEDENT)?
 
 while_stmt: "while" cond "do:" NEWLINE INDENT stmt+ DEDENT
 
@@ -39,6 +41,10 @@ params: "with" ID ("," ID)*
 return_stmt: "return" expr NEWLINE
 
 expr_stmt: expr NEWLINE
+
+input_stmt: "input in" ID NEWLINE
+
+output_stmt: "output" expr NEWLINE
 
 // CONDITIONS
 ?cond: cond2 | cond "or" cond2

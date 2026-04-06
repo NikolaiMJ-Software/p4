@@ -20,6 +20,11 @@ def get_type(v):
 def is_numeric(t):
     return t in ["int", "float"]
 
+def result_type(t1, t2):
+    if "float" in [t1, t2]:
+        return "float"
+    return "int"
+
 def check_op(x, op, y):
     t1 = get_type(x)
     t2 = get_type(y)
@@ -34,20 +39,26 @@ def check_op(x, op, y):
     # - allowed for numeric types (int, float)
     # - allowed for strings (concatenation)
     if op == "+":
-        if t1 in ["int", "float", "string"]:
-            return f"OK -> {t1}. The result is: {x+y}"
+        if is_numeric(t1) and is_numeric(t2):
+            return f"OK -> {result_type(t1, t2)}. The result is: {x+y}"
+        elif t1 == "string":
+            return f"OK -> string. The result is: {x+y}"
         return f"TypeError: + not allowed for {t1}"
 
     # Arithmetic operators:
-    if op in ["-", "*", "/"]: #rember to add < and >
-        if t1 in ["int", "float", "bool"]:
-            return f"OK -> {t1}. The result is: {x*2 if op=='*' else x/y if op=='/' else x-y}"
+    if op in ["-", "*", "/"]:
+        if is_numeric(t1) and is_numeric(t2):
+            return f"OK -> {result_type(t1, t2)}. The result is: {x-y if op=='-' else x*y if op=='*' else x/y}"
         return f"TypeError: {op} not allowed for {t1}"
-
     # Comparison operators:
-    if op in ["<", ">", "<=", ">="]:
-        if t1 in ["int", "float"]:
-            return f"OK -> {t1}. The result is: {x<y if op=='<' else x>y if op=='>' else x<=y if op=='<=' else x>=y}"
+    if op in ["<", ">", "<=", ">=", "==", "!="]:
+        if is_numeric(t1) and is_numeric(t2):
+            return f"OK -> bool. The result is: {x<y if op=='<' else x>y if op=='>' else x<=y if op=='<=' else x>=y}"
+        return f"TypeError: {op} not allowed for {t1}"
+    # Logical operators:
+    if op in ["and", "or", "not"]:
+        if t1 == "bool" and t2 == "bool":
+            return f"OK -> bool. The result is: {x and y if op=='AND' else x or y}"
         return f"TypeError: {op} not allowed for {t1}"
 
     return "Unknown operator"
@@ -88,3 +99,7 @@ print(check_op("hello", "+", " world"))
 print(check_op(8, "*", 2))
 print(check_op(8, "*", True))
 print(check_op(False, "*", True))
+print(check_op(8, "<", 2))
+print(check_op(True, "or", False))
+print(check_op(True, "and", False))
+print(check_op(True, "not", False))

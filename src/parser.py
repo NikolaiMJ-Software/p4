@@ -6,7 +6,6 @@ from lark.indenter import Indenter
 grammar = r"""
 start: stmt+
 ?stmt: create_stmt
-| create_struct
 | assign_stmt
 | if_stmt
 | while_stmt
@@ -20,9 +19,15 @@ start: stmt+
 | output_stmt
 
 // STATEMENTS
-create_stmt: "create" ID ("is" expr)? NEWLINE
+create_stmt: "create" ID create_tail? NEWLINE | "create" ID struct_tail
 
-create_struct: "create" ID ("from" ID)* "with:" NEWLINE INDENT (ID ("is" expr)? NEWLINE)* DEDENT
+create_tail: "is" expr
+
+struct_tail: struct_inheritance? "with:" NEWLINE INDENT struct_fields DEDENT
+
+struct_inheritance: "from" ID ("from" ID)*
+
+struct_fields: (ID ("is" expr)? NEWLINE)*
 
 assign_stmt: ID ("from" ID)* "is" expr NEWLINE
 
@@ -61,7 +66,7 @@ output_stmt: "output" expr NEWLINE
 
 
 // EXPRESSIONS
-?expr: expr2 | "between " expr2 " and " expr2 | "chance " expr2 "%" | "chance " expr2 " in " expr2 | "chance " expr2
+?expr: expr2 | "between" expr2 "and" expr2 | "chance" expr2 "%" | "chance" expr2 "in" expr2 | "chance" expr2
 ?expr2: expr3 | expr2 "+" expr3 | expr2 "-" expr3
 ?expr3: expr4 | expr3 "*" expr4 | expr3 "/" expr4
 ?expr4: expr5 | expr5 "^" expr4

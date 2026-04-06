@@ -1,21 +1,27 @@
 def check(AST):
     pass
 
-x = 8
-y = "2"
-#z = x+y
-
+def to_int(s):
+    try:
+        num = int(s)
+        return num
+    except ValueError:
+        return
+def to_float(s):
+    try:
+        num = float(s)
+        return num
+    except ValueError:
+        return
 
 def get_type(v):
-    if isinstance(v, bool):
+    if v == "false" or v == "true":
         return "bool"
-    elif isinstance(v, float):
-        return "float"
-    elif isinstance(v, int):
+    elif to_int(v):
         return "int"
-    elif isinstance(v, str):
-        return "string"
-    return "unknown"
+    elif to_float(v):
+        return "float"
+    return "str"
 
 def is_numeric(t):
     return t in ["int", "float"]
@@ -23,17 +29,22 @@ def is_numeric(t):
 def check_op(x, op, y):
     t1 = get_type(x)
     t2 = get_type(y)
-
-# Rule 1: No implicit type coercion is allowed.
-    # Both operands must have the same type 
-    if t1 != t2 and not (is_numeric(t1) and is_numeric(t2)):
-        return f"TypeError: {t1} {op} {t2} not allowed"
+    print(f"\nt1: {t1} vs t2: {t2}")
+    is_t1_str = t1 == "str"
+    is_t2_str = t2 == "str"
+    
+    # Rule 1: No implicit type coercion is allowed.
+        # Both operands must have the same type 
+    if is_t1_str and is_t2_str:
+        print("str, only allowed '+'")
+    elif is_t1_str and not is_t2_str:
+        return f"TypeError: {type(t1)}{t1} {op} {type(t2)}{t2} not allowed"
 
 # Rule 2: Define which operators are valid for each type.
     # Addition:
     # - allowed for numeric types (int, float)
     # - allowed for strings (concatenation)
-    if op == "+":
+    '''if op == "+":
         if t1 in ["int", "float", "string"]:
             return f"OK -> {t1}. The result is: {x+y}"
         return f"TypeError: + not allowed for {t1}"
@@ -54,37 +65,15 @@ def check_op(x, op, y):
     #sortering af typecheckeren (bools, ints, floats that can be added to ints)
 
     #dynamic, so you should be able to change types during runtime (find out if its typechecker or just parser)
-    #how to do the shit on the line aboce
+    #how to do the shit on the line aboce'''
 
-def to_int(s):
-    try:
-        num = int(s)
-        return num
-    except ValueError:
-        return ""
-def to_float(s):
-    try:
-        num = float(s)
-        return num
-    except ValueError:
-        return ""
-def to_bool(s):
-    try:
-        num = bool(s)
-        return num
-    except ValueError:
-        return ""
-str1 = to_int("1")
-str2 = to_float("1")
-str3 = to_bool("1")
-
-print(str1, str2, str3)
 #print(z)
-print(check_op(8, "+", 2))
-print(check_op(8, "-", "2"))
-print(check_op(8, "*", 2.1))
-print(check_op(2.1, "*", 3))
+print(check_op("8", "+", "2"))
+print(check_op("8", "-", "2"))
+print(check_op("8", "*", "2.1"))
+print(check_op("2.1", "*", "3"))
 print(check_op("hello", "+", " world"))
-print(check_op(8, "*", 2))
-print(check_op(8, "*", True))
-print(check_op(False, "*", True))
+print(check_op("hello", "+", 2))
+print(check_op("8", "*", "2"))
+print(check_op("8", "*", "true"))
+print(check_op("false", "*", "true"))

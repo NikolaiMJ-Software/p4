@@ -239,6 +239,12 @@ class ASTBuilder(Transformer):
     def STRING(self, token):
         return str(token)[1:-1]  # Remove quotes
     
+    def call_expr(self, *items):
+        return ("call(" + ",".join(str(i) for i in items) + ")")
+    
+    def args(self, *items):
+        return list(items)
+    
     def NEWLINE(self, token):
         return Discard
     
@@ -251,6 +257,7 @@ class ASTBuilder(Transformer):
 # TEST
 code = """for each Item between 1 and 100 do:
     if Item greater than 10 do:
+        call Process_item with Item
         output Item
 """
 

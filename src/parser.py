@@ -144,28 +144,28 @@ class ASTBuilder(Transformer):
         return ("if(" + ",".join(str(i) for i in items) + ")")
     
     def while_stmt(self, *items):
-        return items
+        return ("while(" + ",".join(str(i) for i in items) + ")")
     
     def dowhile_stmt(self, *items):
-        return items
+        return ("do_while(" + ",".join(str(i) for i in items) + ")")
     
     def forrange_stmt(self, *items):
-        return items
+        return ("forrange(" + ",".join(str(i) for i in items) + ")")
     
     def foreach_stmt(self, *items):
-        return items
+        return ("foreach(" + ",".join(str(i) for i in items) + ")")
 
     def func_def(self, *items):
         return ("define(" + ",".join(str(i) for i in items) + ")")
     
-    def return_stmt(self, *items):
-        return items
+    def return_stmt(self, value):
+        return ("return(" + str(value) + ")")
     
-    def expr_stmt(self, *items):
-        return items
+    def expr_stmt(self, value):
+        return value
     
-    def input_stmt(self, *items):
-        return items
+    def input_stmt(self, value):
+        return ("input(" + str(value) + ")")
     
     def output_stmt(self, *items):
         return ("output(" + str(items[0]) + ")")
@@ -249,8 +249,9 @@ class ASTBuilder(Transformer):
         return Discard
     
 # TEST
-code = """if chance 50% and C do:
-    output "Hello, World!"
+code = """for each Item between 1 and 100 do:
+    if Item greater than 10 do:
+        output Item
 """
 
 try:

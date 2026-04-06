@@ -34,10 +34,11 @@ def result_type(t1, t2):
 def check_op(x, op, y):
     t1 = get_type(x)
     t2 = get_type(y)
+    print(f"\nt1: {t1} and t2: {t2}") # debug
     
     # Rule 1: No implicit type coercion is allowed.
         # Both operands must have the same type 
-    if t1 == "str" and t2 != "str" or t1 != "str" and t2 != "str":
+    if t1 == "str" and t2 != "str" or t1 != "str" and t2 == "str":
         return f"TypeError: {t1} '{op}' {t2} not allowed"
 
 # Rule 2: Define which operators are valid for each type.
@@ -47,7 +48,7 @@ def check_op(x, op, y):
     if op == "+":
         if is_numeric(t1) and is_numeric(t2):
             return f"OK -> {result_type(t1, t2)}"
-        elif t1 == "string":
+        if t1 == "str":
             return "OK -> '+' string"
         return f"TypeError: '+' not allowed for {t1}"
 
@@ -73,7 +74,7 @@ def check_op(x, op, y):
     #dynamic, so you should be able to change types during runtime (find out if its typechecker or just parser)
     #how to do the shit on the line aboce
 
-#print(z)
+# Diff. tests
 print(check_op("8", "+", "2"))
 print(check_op("8", "-", "2"))
 print(check_op("8", "*", "2.1"))
@@ -81,6 +82,7 @@ print(check_op("2.1", "*", "3"))
 print(check_op("hello", "+", " world"))
 print(check_op("hello", "+", "2"))
 print(check_op("false", "+", "Hello"))
+print(check_op("9", "+", "Hello"))
 print(check_op("8", "*", "2"))
 print(check_op("8", "*", "true"))
 print(check_op("false", "*", "true"))

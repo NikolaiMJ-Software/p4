@@ -7,7 +7,6 @@ from lark import Discard
 grammar = r"""
 start: stmt+
 ?stmt: create_stmt
-    | create_struct
     | assign_stmt
     | if_stmt
     | while_stmt
@@ -56,18 +55,18 @@ output_stmt: "output" expr NEWLINE
 
 // CONDITIONS
 ?cond: cond2
-    | cond "or" cond2
+    | cond "or" cond2 -> or_
 ?cond2: cond3
-    | cond2 "and" cond3
+    | cond2 "and" cond3 -> and_
 ?cond3: cond4
-    | "not" cond4
+    | "not" cond4 -> not_
 ?cond4: expr
-    | expr "equal" expr
-    | expr "not equal" expr
-    | expr "greater than" expr
-    | expr "less than" expr
-    | expr "greater than or equal" expr
-    | expr "less than or equal" expr
+    | expr "equal" expr -> equal_
+    | expr "not equal" expr -> not_equal
+    | expr "greater than" expr -> greater_
+    | expr "less than" expr -> less_
+    | expr "greater than or equal" expr -> greater_equal_
+    | expr "less than or equal" expr -> less_equal_
 
 
 // EXPRESSIONS
@@ -137,10 +136,6 @@ class ASTBuilder(Transformer):
             return ("create(" + str(items[0]) + "," + str(items[1]) + ")")
         else:
             raise Exception("Invalid create statement")
-        
-    def create_struct(self, *items):
-        #leaving this for later, it's a bit more complex
-        return items
     
     def assign_stmt(self, *items):
         return ("assign(" + ",".join(str(i) for i in items) + ")")
@@ -173,7 +168,35 @@ class ASTBuilder(Transformer):
         return items
     
     def output_stmt(self, *items):
-        return items
+        return ("output(" + str(items[0]) + ")")
+    
+    # CONDITIONS
+    def or_(self, left, right):
+        return ("or(" + str(left) + "," + str(right) + ")")
+    
+    def and_(self, left, right):
+        return ("and(" + str(left) + "," + str(right) + ")")
+    
+    def not_(self, value):
+        return ("not(" + str(value) + ")")
+    
+    def equal_(self, left, right):
+        return ("equal(" + str(left) + "," + str(right) + ")")
+    
+    def not_equal_(self, left, right):
+        return ("not_equal(" + str(left) + "," + str(right) + ")")
+
+    def greater_(self, left, right):
+        return ("greater(" + str(left) + "," + str(right) + ")")
+    
+    def less_(self, left, right):
+        return ("less(" + str(left) + "," + str(right) + ")")
+    
+    def greater_equal_(self, left, right):
+        return ("greater_equal(" + str(left) + "," + str(right) + ")")
+    
+    def less_equal_(self, left, right):
+        return ("less_equal(" + str(left) + "," + str(right) + ")")
 
     # EXPRESSIONS
     def between(self, left, right):
@@ -203,16 +226,18 @@ class ASTBuilder(Transformer):
     def neg(self, value):
         return ("neg(" + str(value) + ")")
 
-    # CONDITIONS
-    def cond(self, value):
-        return value
-
     # TOKENS
     def ID(self, token):
         return str(token)
 
     def INTEGER(self, token):
         return int(token)
+    
+    def FLOAT(self, token):
+        return float(token)
+    
+    def STRING(self, token):
+        return str(token)[1:-1]  # Remove quotes
     
     def NEWLINE(self, token):
         return Discard
@@ -224,7 +249,8 @@ class ASTBuilder(Transformer):
         return Discard
     
 # TEST
-code = """create X is 1+between 2 and 3
+code = """if chance 50% and C do:
+    output "Hello, World!"
 """
 
 try:

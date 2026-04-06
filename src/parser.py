@@ -122,19 +122,9 @@ class ASTBuilder(Transformer):
     def start(self, *statements):
         return list(statements)
     
-# TEST
-code = """define Fun with Var1, Var2:
-    create X is (5*8)^(2-1)
-    if Var1 less than Var2 do:
-        if Var2 do:
-            return Var2
-        if Var1 do:
-            return Var1
-    return X
-"""
-
-try:
-    tree = parser.parse(code)
-    print(tree.pretty())
-except Exception as e:
-    print("Parse error:", e)
+def create_AST(code):
+    try:
+        tree = parser.parse(code)
+        return tree.pretty()
+    except Exception as e:
+        print("Parse error:", e)

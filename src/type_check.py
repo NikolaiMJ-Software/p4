@@ -2,21 +2,55 @@ def check(AST):
     pass
 
 x = 8
-y = 2
-z = x+y
-def is_numeric_value(v):
-    if isinstance(v, bool):
-        return True
-    if isinstance(v, (int, float)):
-        return True
-    if isinstance(v, str):
-        try:
-            int(v)    # should we perhaps do float(v)?
-            return True
-        except ValueError:
-            return False
-    return False
+y = "2"
+#z = x+y
 
+
+def get_type(v):
+    if isinstance(v, bool):
+        return "bool"
+    elif isinstance(v, float):
+        return "float"
+    elif isinstance(v, int):
+        return "int"
+    elif isinstance(v, str):
+        return "string"
+    return "unknown"
+
+def is_numeric(t):
+    return t in ["int", "float"]
+
+def check_op(x, op, y):
+    t1 = get_type(x)
+    t2 = get_type(y)
+
+# Rule 1: No implicit type coercion is allowed.
+    # Both operands must have the same type 
+    if t1 != t2 and not (is_numeric(t1) and is_numeric(t2)):
+        return f"TypeError: {t1} {op} {t2} not allowed"
+
+# Rule 2: Define which operators are valid for each type.
+    # Addition:
+    # - allowed for numeric types (int, float)
+    # - allowed for strings (concatenation)
+    if op == "+":
+        if t1 in ["int", "float", "string"]:
+            return f"OK -> {t1}. The result is: {x+y}"
+        return f"TypeError: + not allowed for {t1}"
+
+    # Arithmetic operators:
+    if op in ["-", "*", "/"]: #rember to add < and >
+        if t1 in ["int", "float", "bool"]:
+            return f"OK -> {t1}. The result is: {x*2 if op=='*' else x/y if op=='/' else x-y}"
+        return f"TypeError: {op} not allowed for {t1}"
+
+    # Comparison operators:
+    if op in ["<", ">", "<=", ">="]:
+        if t1 in ["int", "float"]:
+            return f"OK -> {t1}. The result is: {x<y if op=='<' else x>y if op=='>' else x<=y if op=='<=' else x>=y}"
+        return f"TypeError: {op} not allowed for {t1}"
+
+    return "Unknown operator"
     #sortering af typecheckeren (bools, ints, floats that can be added to ints)
 
     #dynamic, so you should be able to change types during runtime (find out if its typechecker or just parser)
@@ -45,3 +79,12 @@ str2 = to_float("1")
 str3 = to_bool("1")
 
 print(str1, str2, str3)
+#print(z)
+print(check_op(8, "+", 2))
+print(check_op(8, "-", "2"))
+print(check_op(8, "*", 2.1))
+print(check_op(2.1, "*", 3))
+print(check_op("hello", "+", " world"))
+print(check_op(8, "*", 2))
+print(check_op(8, "*", True))
+print(check_op(False, "*", True))

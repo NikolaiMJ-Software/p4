@@ -28,7 +28,8 @@ struct_tail: struct_inheritance? "with:" NEWLINE INDENT struct_fields DEDENT
 
 struct_inheritance: "from" ID ("from" ID)*
 
-struct_fields: (ID ("is" expr)? NEWLINE)*
+struct_fields: struct_field*
+struct_field: ID ("is" expr)? NEWLINE
 
 assign_stmt: ID ("from" ID)* "is" expr NEWLINE
 
@@ -131,11 +132,62 @@ class ASTBuilder(Transformer):
     # STATEMENTS
     def create_stmt(self, *items):
         if len(items) == 1:
-            return ("create(" + str(items[0]) + ")")
-        elif len(items) == 2:
-            return ("create(" + str(items[0]) + "," + str(items[1]) + ")")
-        else:
-            raise Exception("Invalid create statement")
+            return {
+                "type": "create",
+                "name": items[0],
+                "value": None,
+            }
+        if len(items) == 2 and isinstance(items[1], dict) and items[1].get("type") == "struct_tail":
+            return {
+                "type": "create_struct",
+                "name": items[0],
+                "bases": items[1]["bases"],
+                "fields": items[1]["fields"],
+            }
+        if len(items) == 2:
+            return {
+                "type": "create",
+                "name": items[0],
+                "value": items[1],
+            }
+        raise Exception("Invalid create statement")
+
+    def create_tail(self, value):
+        return value
+    
+    def struct_tail(self, *items):
+        bases = []
+        fields = []
+        for item in items:
+            if isinstance(item, dict) and item.get("type") == "struct_inheritance":
+                bases = item["bases"]
+            elif isinstance(item, list):
+                fields = item
+        return {
+            "type": "struct_tail",
+            "bases": bases,
+            "fields": fields,
+        }
+    
+    def struct_inheritance(self, *items):
+        return {
+            "type": "struct_inheritance",
+            "bases": list(items),
+        }
+    
+    def struct_fields(self, *items):
+        return list(items)
+
+    def struct_field(self, *items):
+        if len(items) == 1:
+            return {
+                "name": items[0],
+                "value": None,
+            }
+        return {
+            "name": items[0],
+            "value": items[1],
+        }
     
     def assign_stmt(self, *items):
         return ("assign(" + ",".join(str(i) for i in items) + ")")

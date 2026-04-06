@@ -1,3 +1,6 @@
+def check(AST):
+    pass
+
 x = 8
 y = "2"
 z = x+y

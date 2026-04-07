@@ -297,6 +297,9 @@ class ASTBuilder(Transformer):
     def args(self, *items):
         return list(items)
     
+    def params(self, *items):
+        return list(items)
+    
     def NEWLINE(self, token):
         return Discard
     
@@ -307,10 +310,11 @@ class ASTBuilder(Transformer):
         return Discard
     
 # CLASSES FOR AST
-class Define: ## NOT FULLY IMPLEMENTED YET
-    def __init__(self, items):
-        self.name = items[0]
-        
+class Define:
+    def __init__(self, values):
+        self.name = values[0]
+        self.params = values[1]
+        self.body = list(values[2:])
     def __repr__(self):
         return f"Define({self.name},{self.params},{self.body})"
 class Return:
@@ -335,10 +339,11 @@ class Output:
         return f"Output({self.value})"
 
 # TEST
-code = """for each Item between 1 and 100 do:
-    if Item greater than 10 do:
-        call Process_item with Item
-        output Item
+code = """define Factorial with A,B,C:
+    D
+    A is 1
+    B is 1
+    call Factorial with A, B, D
 """
 
 try:

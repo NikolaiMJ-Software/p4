@@ -5,7 +5,7 @@ from lark import Discard
 
 # GRAMMAR
 grammar = r"""
-start: stmt+
+start: stmt*
 ?stmt: create_stmt
     | assign_stmt
     | if_stmt
@@ -208,19 +208,19 @@ class ASTBuilder(Transformer):
         return ("foreach(" + ",".join(str(i) for i in items) + ")")
 
     def func_def(self, *items):
-        return ("define(" + ",".join(str(i) for i in items) + ")")
+        return Define(items)
     
     def return_stmt(self, value):
-        return ("return(" + str(value) + ")")
+        return Return(value)
     
     def expr_stmt(self, value):
-        return value
+        return Expression(value)
     
     def input_stmt(self, value):
-        return ("input(" + str(value) + ")")
+        return Input(value)
     
-    def output_stmt(self, *items):
-        return ("output(" + str(items[0]) + ")")
+    def output_stmt(self, value):
+        return Output(value)
     
     # CONDITIONS
     def or_(self, left, right):
@@ -276,7 +276,7 @@ class ASTBuilder(Transformer):
         return ("pow(" + str(left) + "," + str(right) + ")")
     
     def neg(self, value):
-        return ("neg(" + str(value) + ")")
+        return ("neg(" + value + ")")
 
     # TOKENS
     def ID(self, token):
@@ -306,6 +306,34 @@ class ASTBuilder(Transformer):
     def DEDENT(self, token):
         return Discard
     
+# CLASSES FOR AST
+class Define: ## NOT FULLY IMPLEMENTED YET
+    def __init__(self, items):
+        self.name = items[0]
+        
+    def __repr__(self):
+        return f"Define({self.name},{self.params},{self.body})"
+class Return:
+    def __init__(self, value):
+        self.value = value
+    def __repr__(self):
+        return f"Return({self.value})"
+class Expression:
+    def __init__(self, value):
+        self.value = value
+    def __repr__(self):
+        return f"Expr({self.value})"
+class Input:
+    def __init__(self, value):
+        self.name = value
+    def __repr__(self):
+        return f"Input({self.name})"
+class Output:
+    def __init__(self, value):
+        self.value = value
+    def __repr__(self):
+        return f"Output({self.value})"
+
 # TEST
 code = """for each Item between 1 and 100 do:
     if Item greater than 10 do:

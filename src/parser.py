@@ -136,16 +136,16 @@ class ASTBuilder(Transformer):
     def create_tail(self, value):
         return value
     def struct_tail(self, *items):
-        bases = []
+        base = None
         fields = []
         for item in items:
             if isinstance(item, StructInheritance):
-                bases = item.bases
+                base = item.base
             elif isinstance(item, list):
                 fields = item
-        return StructTail(bases, fields)
+        return StructTail(base, fields)
     def struct_inheritance(self, *items):
-        return StructInheritance(list(items))
+        return StructInheritance(items[0])
     def struct_fields(self, *items):
         return list(items)
     def struct_field(self, *items):
@@ -299,34 +299,34 @@ class Create:
     def __init__(self, values):
         self.name = values[0]
         self.value = None
-        self.bases = []
+        self.base = None
         self.fields = []
 
         if len(values) > 1:
             tail = values[1]
             if isinstance(tail, StructTail):
-                self.bases = tail.bases
+                self.base = tail.base
                 self.fields = tail.fields
             else:
                 self.value = tail
 
     def __repr__(self):
-        if self.bases or self.fields:
-            return f"Create({self.name},{self.bases},{self.fields})"
+        if self.base is not None or self.fields:
+            return f"Create({self.name},{self.base},{self.fields})"
         return f"Create({self.name},{self.value})"
 
 class StructTail:
-    def __init__(self, bases, fields):
-        self.bases = bases
+    def __init__(self, base, fields):
+        self.base = base
         self.fields = fields
     def __repr__(self):
-        return f"StructTail({self.bases},{self.fields})"
+        return f"StructTail({self.base},{self.fields})"
 
 class StructInheritance:
-    def __init__(self, bases):
-        self.bases = bases
+    def __init__(self, base):
+        self.base = base
     def __repr__(self):
-        return f"StructInheritance({self.bases})"
+        return f"StructInheritance({self.base})"
 
 class StructField:
     def __init__(self, name, value=None):
@@ -467,9 +467,3 @@ def create_ast(code):
     tree = parser.parse(code)
     ast = ASTBuilder().transform(tree)
     return ast
-
-try:
-    ast = create_ast(code)
-    print("AST:", ast)
-except Exception as e:
-    print("Parse error:", e)

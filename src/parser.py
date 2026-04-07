@@ -463,10 +463,13 @@ if X or Y do:
     output "yes"
 """
 
-try:
+def create_ast(code):
     tree = parser.parse(code)
     ast = ASTBuilder().transform(tree)
-    print("Tree:", tree.pretty())
+    return ast
+
+try:
+    ast = create_ast(code)
     print("AST:", ast)
 except Exception as e:
     print("Parse error:", e)

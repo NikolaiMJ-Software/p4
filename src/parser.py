@@ -467,9 +467,3 @@ def create_ast(code):
     tree = parser.parse(code)
     ast = ASTBuilder().transform(tree)
     return ast
-
-try:
-    ast = create_ast(code)
-    print("AST:", ast)
-except Exception as e:
-    print("Parse error:", e)

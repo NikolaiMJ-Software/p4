@@ -12,5 +12,6 @@ code = """define Fun with Var1, Var2:
 """
 
 if __name__ == '__main__':
-    AST = parser.create_AST(code)
-    type_check.check(AST)
+    AST = parser.create_ast(code)
+    print(AST)
+    #type_check.check(AST)

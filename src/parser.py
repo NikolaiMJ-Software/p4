@@ -243,60 +243,43 @@ class ASTBuilder(Transformer):
 
     # EXPRESSIONS
     def between(self, left, right):
-        return ("between(" + str(left) + "," + str(right) + ")")
-    
+        return Between(left, right)
     def chance_percent(self, value):
-        return ("chance(" + str(value) + "," + "100)")
-    
+        return Chance(value, 100)
     def chance(self, left, right):
-        return ("chance(" + str(left) + "," + str(right) + ")")
-    
+        return Chance(left, right)
     def add(self, left, right):
-        return ("add(" + str(left) + "," + str(right) + ")")
-    
+        return Add(left, right)
     def sub(self, left, right):
-        return ("sub(" + str(left) + "," + str(right) + ")")
-    
+        return Add(left, Neg(right))
     def mul(self, left, right):
-        return ("mul(" + str(left) + "," + str(right) + ")")
-    
+        return Mul(left, right)
     def div(self, left, right):
-        return ("div(" + str(left) + "," + str(right) + ")")
-    
+        return Div(left, right)
     def pow(self, left, right):
-        return ("pow(" + str(left) + "," + str(right) + ")")
-    
+        return Pow(left, right)
     def neg(self, value):
-        return ("neg(" + value + ")")
+        return Neg(value)
 
     # TOKENS
     def ID(self, token):
         return str(token)
-
     def INTEGER(self, token):
         return int(token)
-    
     def FLOAT(self, token):
         return float(token)
-    
     def STRING(self, token):
         return str(token)[1:-1]  # Remove quotes
-    
     def call_expr(self, *items):
-        return ("call(" + ",".join(str(i) for i in items) + ")")
-    
+        return Call(items)
     def args(self, *items):
         return list(items)
-    
     def params(self, *items):
         return list(items)
-    
     def NEWLINE(self, token):
         return Discard
-    
     def INDENT(self, token):
         return Discard
-    
     def DEDENT(self, token):
         return Discard
     
@@ -337,8 +320,8 @@ class Foreach:
 class Define:
     def __init__(self, values):
         self.name = values[0]
-        self.params = values[1]
-        self.body = list(values[2:])
+        self.params = values[1] if isinstance(values[1], list) else []
+        self.body = list(values[2:]) if isinstance(values[1], list) else list(values[1:])
     def __repr__(self):
         return f"Define({self.name},{self.params},{self.body})"
 class Return:
@@ -361,13 +344,57 @@ class Output:
         self.value = value
     def __repr__(self):
         return f"Output({self.value})"
-
+class Between:
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+    def __repr__(self):
+        return f"Between({self.left},{self.right})"
+class Chance:
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+    def __repr__(self):
+        return f"Chance({self.left},{self.right})"
+class Add:
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+    def __repr__(self):
+        return f"Add({self.left},{self.right})"
+class Mul:
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+    def __repr__(self):
+        return f"Mul({self.left},{self.right})"
+class Div:
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+    def __repr__(self):
+        return f"Div({self.left},{self.right})"
+class Pow:
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+    def __repr__(self):
+        return f"Pow({self.left},{self.right})"
+class Neg:
+    def __init__(self, value):
+        self.value = value
+    def __repr__(self):
+        return f"Neg({self.value})"
+class Call:
+    def __init__(self, values):
+        self.name = values[0]
+        self.args = list(values[1:])
+    def __repr__(self):
+        return f"Call({self.name},{self.args})"
 # TEST
-code = """define Factorial with A,B,C:
-    D
-    A is 1
-    B is 1
-    call Factorial with A, B, D
+code = """define Factorial with N:
+    if (2+2)^8 do:
+        return 1
 """
 
 try:

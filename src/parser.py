@@ -460,7 +460,7 @@ class Call:
 code = """X is True
 Y is False
 if X or Y do:
-    1+1
+    output "yes"
 """
 
 try:

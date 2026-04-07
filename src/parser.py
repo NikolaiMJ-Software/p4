@@ -20,18 +20,19 @@ start: stmt*
     | output_stmt
 
 // STATEMENTS
-create_stmt: "create" ID create_tail? NEWLINE | "create" ID struct_tail
+create_stmt: "create" ID create_tail? NEWLINE
+| "create" ID struct_tail
 
 create_tail: "is" expr
 
 struct_tail: struct_inheritance? "with:" NEWLINE INDENT struct_fields DEDENT
 
-struct_inheritance: "from" ID ("from" ID)*
+struct_inheritance: "from" ID
 
 struct_fields: struct_field*
 struct_field: ID ("is" expr)? NEWLINE
 
-assign_stmt: ID ("from" ID)* "is" expr NEWLINE
+assign_stmt: ID ("from" ID)? "is" expr NEWLINE
 
 if_stmt: "if" cond "do:" NEWLINE INDENT stmt+ DEDENT ("else if" cond "do:" NEWLINE INDENT stmt+ DEDENT)* ("else do:" NEWLINE INDENT stmt+ DEDENT)?
 
@@ -87,7 +88,7 @@ output_stmt: "output" expr NEWLINE
     | INTEGER
     | FLOAT
     | STRING
-    | ID ("from" ID)*
+    | ID ("from" ID)?
     | call_expr
 
 // TOKENS
@@ -457,10 +458,9 @@ class Call:
     def __repr__(self):
         return f"Call({self.name},{self.args})"
 # TEST
-code = """X is True
-Y is False
-if X or Y do:
-    output "yes"
+code = """create Character from Entity with:
+    Health is 100
+    Strength is 10
 """
 
 def create_ast(code):

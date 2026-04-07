@@ -131,26 +131,7 @@ class ASTBuilder(Transformer):
     
     # STATEMENTS
     def create_stmt(self, *items):
-        if len(items) == 1:
-            return {
-                "type": "create",
-                "name": items[0],
-                "value": None,
-            }
-        if len(items) == 2 and isinstance(items[1], dict) and items[1].get("type") == "struct_tail":
-            return {
-                "type": "create_struct",
-                "name": items[0],
-                "bases": items[1]["bases"],
-                "fields": items[1]["fields"],
-            }
-        if len(items) == 2:
-            return {
-                "type": "create",
-                "name": items[0],
-                "value": items[1],
-            }
-        raise Exception("Invalid create statement")
+        return Create(items)
 
     def create_tail(self, value):
         return value
@@ -159,66 +140,44 @@ class ASTBuilder(Transformer):
         bases = []
         fields = []
         for item in items:
-            if isinstance(item, dict) and item.get("type") == "struct_inheritance":
-                bases = item["bases"]
+            if isinstance(item, StructInheritance):
+                bases = item.bases
             elif isinstance(item, list):
                 fields = item
-        return {
-            "type": "struct_tail",
-            "bases": bases,
-            "fields": fields,
-        }
+        return StructTail(bases, fields)
     
     def struct_inheritance(self, *items):
-        return {
-            "type": "struct_inheritance",
-            "bases": list(items),
-        }
+        return StructInheritance(list(items))
     
     def struct_fields(self, *items):
         return list(items)
 
     def struct_field(self, *items):
         if len(items) == 1:
-            return {
-                "name": items[0],
-                "value": None,
-            }
-        return {
-            "name": items[0],
-            "value": items[1],
-        }
+            return StructField(items[0])
+        return StructField(items[0], items[1])
     
     def assign_stmt(self, *values):
         return Assign(values) # previously: ("assign(" + ",".join(str(i) for i in items) + ")")
     
     def if_stmt(self, *items):
-        return ("if(" + ",".join(str(i) for i in items) + ")")
-    
+        return If(items)
     def while_stmt(self, *items):
-        return ("while(" + ",".join(str(i) for i in items) + ")")
-    
+        return While(items)
     def dowhile_stmt(self, *items):
-        return ("do_while(" + ",".join(str(i) for i in items) + ")")
-    
+        return Dowhile(items)
     def forrange_stmt(self, *items):
-        return ("forrange(" + ",".join(str(i) for i in items) + ")")
-    
+        return Forrange(items)
     def foreach_stmt(self, *items):
-        return ("foreach(" + ",".join(str(i) for i in items) + ")")
-
+        return Foreach(items)
     def func_def(self, *items):
         return Define(items)
-    
     def return_stmt(self, value):
         return Return(value)
-    
     def expr_stmt(self, value):
         return Expression(value)
-    
     def input_stmt(self, value):
         return Input(value)
-    
     def output_stmt(self, value):
         return Output(value)
     
@@ -252,57 +211,43 @@ class ASTBuilder(Transformer):
 
     # EXPRESSIONS
     def between(self, left, right):
-        return ("between(" + str(left) + "," + str(right) + ")")
-    
+        return Between(left, right)
     def chance_percent(self, value):
-        return ("chance(" + str(value) + "," + "100)")
-    
+        return Chance(value, 100)
     def chance(self, left, right):
-        return ("chance(" + str(left) + "," + str(right) + ")")
-    
+        return Chance(left, right)
     def add(self, left, right):
-        return ("add(" + str(left) + "," + str(right) + ")")
-    
+        return Add(left, right)
     def sub(self, left, right):
-        return ("sub(" + str(left) + "," + str(right) + ")")
-    
+        return Add(left, Neg(right))
     def mul(self, left, right):
-        return ("mul(" + str(left) + "," + str(right) + ")")
-    
+        return Mul(left, right)
     def div(self, left, right):
-        return ("div(" + str(left) + "," + str(right) + ")")
-    
+        return Div(left, right)
     def pow(self, left, right):
-        return ("pow(" + str(left) + "," + str(right) + ")")
-    
+        return Pow(left, right)
     def neg(self, value):
-        return ("neg(" + value + ")")
+        return Neg(value)
 
     # TOKENS
     def ID(self, token):
         return str(token)
-
     def INTEGER(self, token):
         return int(token)
-    
     def FLOAT(self, token):
         return float(token)
-    
     def STRING(self, token):
         return str(token)[1:-1]  # Remove quotes
-    
     def call_expr(self, *items):
-        return ("call(" + ",".join(str(i) for i in items) + ")")
-    
+        return Call(items)
     def args(self, *items):
         return list(items)
-    
+    def params(self, *items):
+        return list(items)
     def NEWLINE(self, token):
         return Discard
-    
     def INDENT(self, token):
         return Discard
-    
     def DEDENT(self, token):
         return Discard
     
@@ -365,8 +310,91 @@ class LessEqualBoolOp:
 class Define: ## NOT FULLY IMPLEMENTED YET
     def __init__(self, values):
         self.name = values[0]
+# STATEMENTS
+class Create:
+    def __init__(self, values):
+        self.name = values[0]
+        self.value = None
+        self.bases = []
+        self.fields = []
+
+        if len(values) > 1:
+            tail = values[1]
+            if isinstance(tail, StructTail):
+                self.bases = tail.bases
+                self.fields = tail.fields
+            else:
+                self.value = tail
+
+    def __repr__(self):
+        if self.bases or self.fields:
+            return f"Create({self.name},{self.bases},{self.fields})"
+        return f"Create({self.name},{self.value})"
+
+class StructTail:
+    def __init__(self, bases, fields):
+        self.bases = bases
+        self.fields = fields
+    def __repr__(self):
+        return f"StructTail({self.bases},{self.fields})"
+
+class StructInheritance:
+    def __init__(self, bases):
+        self.bases = bases
+    def __repr__(self):
+        return f"StructInheritance({self.bases})"
+
+class StructField:
+    def __init__(self, name, value=None):
+        self.name = name
+        self.value = value
+    def __repr__(self):
+        return f"StructField({self.name},{self.value})"
+
+class Define:
+    def __init__(self, values):
+        self.name = values[0]
+        if isinstance(values[1], list):
+            self.params = values[1]
+            self.body = list(values[2:])
+        else:
+            self.params = []
+            self.body = list(values[1:])
     def __repr__(self):
         return f"Define({self.name},{self.params},{self.body})"
+class If:
+    def __init__(self, values):
+        self.cond = values[0]
+        self.body = list(values[1:])
+    def __repr__(self):
+        return f"If({self.cond},{self.body})"
+class While:
+    def __init__(self, values):
+        self.cond = values[0]
+        self.body = list(values[1:])
+    def __repr__(self):
+        return f"While({self.cond},{self.body})"
+class Dowhile:
+    def __init__(self, values):
+        self.body = list(values[:-1])
+        self.cond = values[-1]
+    def __repr__(self):
+        return f"Dowhile({self.body},{self.cond})"
+class Forrange:
+    def __init__(self, values):
+        self.name = values[0]
+        self.start = values[1]
+        self.end = values[2]
+        self.body = list(values[3:])
+    def __repr__(self):
+        return f"Forrange({self.name},{self.start},{self.end},{self.body})"
+class Foreach:
+    def __init__(self, values):
+        self.name = values[0]
+        self.collection = values[1]
+        self.body = list(values[2:])
+    def __repr__(self):
+        return f"Foreach({self.name},{self.collection},{self.body})"
 class Return:
     def __init__(self, value):
         self.value = value
@@ -398,6 +426,53 @@ class Assign:
         # self.value = value
     def __repr__(self):
         return f"Assign({self.name} is {self.value})"
+class Between:
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+    def __repr__(self):
+        return f"Between({self.left},{self.right})"
+class Chance:
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+    def __repr__(self):
+        return f"Chance({self.left},{self.right})"
+class Add:
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+    def __repr__(self):
+        return f"Add({self.left},{self.right})"
+class Mul:
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+    def __repr__(self):
+        return f"Mul({self.left},{self.right})"
+class Div:
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+    def __repr__(self):
+        return f"Div({self.left},{self.right})"
+class Pow:
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+    def __repr__(self):
+        return f"Pow({self.left},{self.right})"
+class Neg:
+    def __init__(self, value):
+        self.value = value
+    def __repr__(self):
+        return f"Neg({self.value})"
+class Call:
+    def __init__(self, values):
+        self.name = values[0]
+        self.args = list(values[1:])
+    def __repr__(self):
+        return f"Call({self.name},{self.args})"
 # TEST
 code = """X is True
 Y is False

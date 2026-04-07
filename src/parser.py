@@ -296,12 +296,14 @@ class StructField:
 class Define:
     def __init__(self, values):
         self.name = values[0]
-        if len(values) > 1 and isinstance(values[1], list):
+        if isinstance(values[1], list):
             self.params = values[1]
             self.body = list(values[2:])
         else:
             self.params = []
             self.body = list(values[1:])
+    def __repr__(self):
+        return f"Define({self.name},{self.params},{self.body})"
 class If:
     def __init__(self, values):
         self.cond = values[0]

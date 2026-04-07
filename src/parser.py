@@ -182,7 +182,7 @@ class ASTBuilder(Transformer):
         return Output(value)
     
     # BOOLEAN OPERATORS
-    def or_bool_op(self, values):
+    def or_bool_op(self, *values):
         return OrBoolOp(values) # ("or(" + str(left) + "," + str(right) + ")")
     
     def and_bool_op(self, values):
@@ -259,54 +259,54 @@ class OrBoolOp:
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
-        return f"Or({this.cond} or {this.cond2})"
+        return f"Or({self.cond} or {self.cond2})"
 class AndBoolOp:
     def __init(self, values):
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
-        return f"And({this.cond} and {this.cond2})"
+        return f"And({self.cond} and {self.cond2})"
 class NotBoolOp:
     def __init(self, value):
         self.cond = value
     def __repr__(self):
-        return f"Not({this.cond})"
+        return f"Not({self.cond})"
 class EqualBoolOp:
     def __init(self, values):
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
-        return f"Equal({this.cond} equals {this.cond2})"
+        return f"Equal({self.cond} equals {self.cond2})"
 class NotEqualBoolOp:
     def __init(self, values):
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
-        return f"NotEqual({this.cond} not equals {this.cond2})"
+        return f"NotEqual({self.cond} not equals {self.cond2})"
 class GreaterBoolOp:
     def __init(self, values):
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
-        return f"Greater({this.cond} greater than {this.cond2})"
+        return f"Greater({self.cond} greater than {self.cond2})"
 class LessBoolOp:
     def __init(self, values):
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
-        return f"Less({this.cond} less than {this.cond2})"
+        return f"Less({self.cond} less than {self.cond2})"
 class GreaterEqualBoolOp:
     def __init(self, values):
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
-        return f"GreaterEqual({this.cond} greater than or equals {this.cond2})"
+        return f"GreaterEqual({self.cond} greater than or equals {self.cond2})"
 class LessEqualBoolOp:
     def __init(self, values):
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
-        return f"LessEqual({this.cond} less than or equals {this.cond2})"
+        return f"LessEqual({self.cond} less than or equals {self.cond2})"
 class Define: ## NOT FULLY IMPLEMENTED YET
     def __init__(self, values):
         self.name = values[0]
@@ -476,7 +476,8 @@ class Call:
 # TEST
 code = """X is True
 Y is False
-X or Y
+if X or Y do:
+    output "yes"
 """
 
 try:

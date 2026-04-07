@@ -193,32 +193,23 @@ class ASTBuilder(Transformer):
         return ("assign(" + ",".join(str(i) for i in items) + ")")
     
     def if_stmt(self, *items):
-        return ("if(" + ",".join(str(i) for i in items) + ")")
-    
+        return If(items)
     def while_stmt(self, *items):
-        return ("while(" + ",".join(str(i) for i in items) + ")")
-    
+        return While(items)
     def dowhile_stmt(self, *items):
-        return ("do_while(" + ",".join(str(i) for i in items) + ")")
-    
+        return Dowhile(items)
     def forrange_stmt(self, *items):
-        return ("forrange(" + ",".join(str(i) for i in items) + ")")
-    
+        return Forrange(items)
     def foreach_stmt(self, *items):
-        return ("foreach(" + ",".join(str(i) for i in items) + ")")
-
+        return Foreach(items)
     def func_def(self, *items):
         return Define(items)
-    
     def return_stmt(self, value):
         return Return(value)
-    
     def expr_stmt(self, value):
         return Expression(value)
-    
     def input_stmt(self, value):
         return Input(value)
-    
     def output_stmt(self, value):
         return Output(value)
     
@@ -310,6 +301,39 @@ class ASTBuilder(Transformer):
         return Discard
     
 # CLASSES FOR AST
+class If:
+    def __init__(self, values):
+        self.cond = values[0]
+        self.body = list(values[1:])
+    def __repr__(self):
+        return f"If({self.cond},{self.body})"
+class While:
+    def __init__(self, values):
+        self.cond = values[0]
+        self.body = list(values[1:])
+    def __repr__(self):
+        return f"While({self.cond},{self.body})"
+class Dowhile:
+    def __init__(self, values):
+        self.body = list(values[:-1])
+        self.cond = values[-1]
+    def __repr__(self):
+        return f"Dowhile({self.body},{self.cond})"
+class Forrange:
+    def __init__(self, values):
+        self.name = values[0]
+        self.start = values[1]
+        self.end = values[2]
+        self.body = list(values[3:])
+    def __repr__(self):
+        return f"Forrange({self.name},{self.start},{self.end},{self.body})"
+class Foreach:
+    def __init__(self, values):
+        self.name = values[0]
+        self.collection = values[1]
+        self.body = list(values[2:])
+    def __repr__(self):
+        return f"Foreach({self.name},{self.collection},{self.body})"
 class Define:
     def __init__(self, values):
         self.name = values[0]

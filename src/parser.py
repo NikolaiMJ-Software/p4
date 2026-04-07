@@ -335,13 +335,6 @@ class Foreach:
         self.body = list(values[2:])
     def __repr__(self):
         return f"Foreach({self.name},{self.collection},{self.body})"
-class Define:
-    def __init__(self, values):
-        self.name = values[0]
-        self.params = values[1] if isinstance(values[1], list) else []
-        self.body = list(values[2:]) if isinstance(values[1], list) else list(values[1:])
-    def __repr__(self):
-        return f"Define({self.name},{self.params},{self.body})"
 class Return:
     def __init__(self, value):
         self.value = value

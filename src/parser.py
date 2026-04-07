@@ -54,20 +54,20 @@ input_stmt: "input in" ID NEWLINE
 
 output_stmt: "output" expr NEWLINE
 
-// CONDITIONS
+// CONDITIONS -> change to boolean operators
 ?cond: cond2
-    | cond "or" cond2 -> or_
+    | cond "or" cond2 -> or_bool_op
 ?cond2: cond3
-    | cond2 "and" cond3 -> and_
+    | cond2 "and" cond3 -> and_bool_op
 ?cond3: cond4
-    | "not" cond4 -> not_
+    | "not" cond4 -> not_bool_op
 ?cond4: expr
-    | expr "equal" expr -> equal_
-    | expr "not equal" expr -> not_equal
-    | expr "greater than" expr -> greater_
-    | expr "less than" expr -> less_
-    | expr "greater than or equal" expr -> greater_equal_
-    | expr "less than or equal" expr -> less_equal_
+    | expr "equal" expr -> equal_bool_op
+    | expr "not equal" expr -> not_equal_bool_op
+    | expr "greater than" expr -> greater_bool_op
+    | expr "less than" expr -> less_bool_op
+    | expr "greater than or equal" expr -> greater_equal_bool_op
+    | expr "less than or equal" expr -> less_equal_bool_op
 
 
 // EXPRESSIONS
@@ -189,8 +189,8 @@ class ASTBuilder(Transformer):
             "value": items[1],
         }
     
-    def assign_stmt(self, *items):
-        return ("assign(" + ",".join(str(i) for i in items) + ")")
+    def assign_stmt(self, *values):
+        return Assign(values) # previously: ("assign(" + ",".join(str(i) for i in items) + ")")
     
     def if_stmt(self, *items):
         return ("if(" + ",".join(str(i) for i in items) + ")")
@@ -222,33 +222,33 @@ class ASTBuilder(Transformer):
     def output_stmt(self, value):
         return Output(value)
     
-    # CONDITIONS
-    def or_(self, left, right):
-        return ("or(" + str(left) + "," + str(right) + ")")
+    # BOOLEAN OPERATORS
+    def or_bool_op(self, values):
+        return OrBoolOp(values) # ("or(" + str(left) + "," + str(right) + ")")
     
-    def and_(self, left, right):
-        return ("and(" + str(left) + "," + str(right) + ")")
+    def and_bool_op(self, values):
+        return AndBoolOp(values) # ("and(" + str(left) + "," + str(right) + ")")
     
-    def not_(self, value):
-        return ("not(" + str(value) + ")")
+    def not_bool_op(self, value):
+        return NotBoolOp(value) # ("not(" + str(value) + ")")
     
-    def equal_(self, left, right):
-        return ("equal(" + str(left) + "," + str(right) + ")")
+    def equal_bool_op(self, values):
+        return EqualBoolOp(values) # ("equal(" + str(left) + "," + str(right) + ")")
     
-    def not_equal_(self, left, right):
-        return ("not_equal(" + str(left) + "," + str(right) + ")")
+    def not_equal_bool_op(self, values):
+        return NotEqualBoolOp(values) # ("not_equal(" + str(left) + "," + str(right) + ")")
 
-    def greater_(self, left, right):
-        return ("greater(" + str(left) + "," + str(right) + ")")
+    def greater_bool_op(self, values):
+        return GreaterBoolOp(values) # ("greater(" + str(left) + "," + str(right) + ")")
     
-    def less_(self, left, right):
-        return ("less(" + str(left) + "," + str(right) + ")")
+    def less_bool_op(self, values):
+        return LessBoolOp(values) # ("less(" + str(left) + "," + str(right) + ")")
     
-    def greater_equal_(self, left, right):
-        return ("greater_equal(" + str(left) + "," + str(right) + ")")
+    def greater_equal_bool_op(self, values):
+        return GreaterEqualBoolOp(values) # ("greater_equal(" + str(left) + "," + str(right) + ")")
     
-    def less_equal_(self, left, right):
-        return ("less_equal(" + str(left) + "," + str(right) + ")")
+    def less_equal_bool_op(self, values):
+        return LessEqualBoolOp(values) # Less("less_equal(" + str(left) + "," + str(right) + ")")
 
     # EXPRESSIONS
     def between(self, left, right):
@@ -297,9 +297,6 @@ class ASTBuilder(Transformer):
     def args(self, *items):
         return list(items)
     
-    def params(self, *items):
-        return list(items)
-    
     def NEWLINE(self, token):
         return Discard
     
@@ -310,11 +307,64 @@ class ASTBuilder(Transformer):
         return Discard
     
 # CLASSES FOR AST
-class Define:
+
+## BoolOp classes
+class OrBoolOp:
+    def __init(self, values):
+        self.cond = values[0]
+        self.cond2 = values[1]
+    def __repr__(self):
+        return f"Or({this.cond} or {this.cond2})"
+class AndBoolOp:
+    def __init(self, values):
+        self.cond = values[0]
+        self.cond2 = values[1]
+    def __repr__(self):
+        return f"And({this.cond} and {this.cond2})"
+class NotBoolOp:
+    def __init(self, value):
+        self.cond = value
+    def __repr__(self):
+        return f"Not({this.cond})"
+class EqualBoolOp:
+    def __init(self, values):
+        self.cond = values[0]
+        self.cond2 = values[1]
+    def __repr__(self):
+        return f"Equal({this.cond} equals {this.cond2})"
+class NotEqualBoolOp:
+    def __init(self, values):
+        self.cond = values[0]
+        self.cond2 = values[1]
+    def __repr__(self):
+        return f"NotEqual({this.cond} not equals {this.cond2})"
+class GreaterBoolOp:
+    def __init(self, values):
+        self.cond = values[0]
+        self.cond2 = values[1]
+    def __repr__(self):
+        return f"Greater({this.cond} greater than {this.cond2})"
+class LessBoolOp:
+    def __init(self, values):
+        self.cond = values[0]
+        self.cond2 = values[1]
+    def __repr__(self):
+        return f"Less({this.cond} less than {this.cond2})"
+class GreaterEqualBoolOp:
+    def __init(self, values):
+        self.cond = values[0]
+        self.cond2 = values[1]
+    def __repr__(self):
+        return f"GreaterEqual({this.cond} greater than or equals {this.cond2})"
+class LessEqualBoolOp:
+    def __init(self, values):
+        self.cond = values[0]
+        self.cond2 = values[1]
+    def __repr__(self):
+        return f"LessEqual({this.cond} less than or equals {this.cond2})"
+class Define: ## NOT FULLY IMPLEMENTED YET
     def __init__(self, values):
         self.name = values[0]
-        self.params = values[1]
-        self.body = list(values[2:])
     def __repr__(self):
         return f"Define({self.name},{self.params},{self.body})"
 class Return:
@@ -337,13 +387,21 @@ class Output:
         self.value = value
     def __repr__(self):
         return f"Output({self.value})"
-
+class Assign:
+    def __init__(self, values):
+        # x is 5
+        # TODO: maybe add multiple assigns in one line
+        self.name = values[0]
+        self.value = values[1]
+        
+        # self.name = name
+        # self.value = value
+    def __repr__(self):
+        return f"Assign({self.name} is {self.value})"
 # TEST
-code = """define Factorial with A,B,C:
-    D
-    A is 1
-    B is 1
-    call Factorial with A, B, D
+code = """X is True
+Y is False
+X or Y
 """
 
 try:

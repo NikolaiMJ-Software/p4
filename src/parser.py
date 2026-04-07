@@ -121,7 +121,7 @@ parser = Lark(
     postlex=TreeIndenter()
 )
 
-# AST BUILDER (NOT FULLY IMPLEMENTED YET)
+# AST BUILDER
 @v_args(inline=True)
 class ASTBuilder(Transformer):
     
@@ -132,10 +132,8 @@ class ASTBuilder(Transformer):
     # STATEMENTS
     def create_stmt(self, *items):
         return Create(items)
-
     def create_tail(self, value):
         return value
-    
     def struct_tail(self, *items):
         bases = []
         fields = []
@@ -145,21 +143,16 @@ class ASTBuilder(Transformer):
             elif isinstance(item, list):
                 fields = item
         return StructTail(bases, fields)
-    
     def struct_inheritance(self, *items):
         return StructInheritance(list(items))
-    
     def struct_fields(self, *items):
         return list(items)
-
     def struct_field(self, *items):
         if len(items) == 1:
             return StructField(items[0])
         return StructField(items[0], items[1])
-    
     def assign_stmt(self, *values):
-        return Assign(values) # previously: ("assign(" + ",".join(str(i) for i in items) + ")")
-    
+        return Assign(values)
     def if_stmt(self, *items):
         return If(items)
     def while_stmt(self, *items):
@@ -182,32 +175,24 @@ class ASTBuilder(Transformer):
         return Output(value)
     
     # BOOLEAN OPERATORS
-    def or_bool_op(self, values):
-        return OrBoolOp(values) # ("or(" + str(left) + "," + str(right) + ")")
-    
-    def and_bool_op(self, values):
-        return AndBoolOp(values) # ("and(" + str(left) + "," + str(right) + ")")
-    
+    def or_bool_op(self, *values):
+        return OrBoolOp(values) 
+    def and_bool_op(self, *values):
+        return AndBoolOp(values) 
     def not_bool_op(self, value):
-        return NotBoolOp(value) # ("not(" + str(value) + ")")
-    
-    def equal_bool_op(self, values):
-        return EqualBoolOp(values) # ("equal(" + str(left) + "," + str(right) + ")")
-    
-    def not_equal_bool_op(self, values):
-        return NotEqualBoolOp(values) # ("not_equal(" + str(left) + "," + str(right) + ")")
-
-    def greater_bool_op(self, values):
-        return GreaterBoolOp(values) # ("greater(" + str(left) + "," + str(right) + ")")
-    
-    def less_bool_op(self, values):
-        return LessBoolOp(values) # ("less(" + str(left) + "," + str(right) + ")")
-    
-    def greater_equal_bool_op(self, values):
-        return GreaterEqualBoolOp(values) # ("greater_equal(" + str(left) + "," + str(right) + ")")
-    
-    def less_equal_bool_op(self, values):
-        return LessEqualBoolOp(values) # Less("less_equal(" + str(left) + "," + str(right) + ")")
+        return NotBoolOp(value) 
+    def equal_bool_op(self, *values):
+        return EqualBoolOp(values)
+    def not_equal_bool_op(self, *values):
+        return NotEqualBoolOp(values)
+    def greater_bool_op(self, *values):
+        return GreaterBoolOp(values)
+    def less_bool_op(self, *values):
+        return LessBoolOp(values)
+    def greater_equal_bool_op(self, *values):
+        return GreaterEqualBoolOp(values)
+    def less_equal_bool_op(self, *values):
+        return LessEqualBoolOp(values)
 
     # EXPRESSIONS
     def between(self, left, right):
@@ -255,61 +240,59 @@ class ASTBuilder(Transformer):
 
 ## BoolOp classes
 class OrBoolOp:
-    def __init(self, values):
+    def __init__(self, values):
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
-        return f"Or({this.cond} or {this.cond2})"
+        return f"Or({self.cond} or {self.cond2})"
 class AndBoolOp:
-    def __init(self, values):
+    def __init__(self, values):
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
-        return f"And({this.cond} and {this.cond2})"
+        return f"And({self.cond} and {self.cond2})"
 class NotBoolOp:
-    def __init(self, value):
+    def __init__(self, value):
         self.cond = value
     def __repr__(self):
-        return f"Not({this.cond})"
+        return f"Not({self.cond})"
 class EqualBoolOp:
-    def __init(self, values):
-        self.cond = values[0]
-        self.cond2 = values[1]
-    def __repr__(self):
-        return f"Equal({this.cond} equals {this.cond2})"
-class NotEqualBoolOp:
-    def __init(self, values):
-        self.cond = values[0]
-        self.cond2 = values[1]
-    def __repr__(self):
-        return f"NotEqual({this.cond} not equals {this.cond2})"
-class GreaterBoolOp:
-    def __init(self, values):
-        self.cond = values[0]
-        self.cond2 = values[1]
-    def __repr__(self):
-        return f"Greater({this.cond} greater than {this.cond2})"
-class LessBoolOp:
-    def __init(self, values):
-        self.cond = values[0]
-        self.cond2 = values[1]
-    def __repr__(self):
-        return f"Less({this.cond} less than {this.cond2})"
-class GreaterEqualBoolOp:
-    def __init(self, values):
-        self.cond = values[0]
-        self.cond2 = values[1]
-    def __repr__(self):
-        return f"GreaterEqual({this.cond} greater than or equals {this.cond2})"
-class LessEqualBoolOp:
-    def __init(self, values):
-        self.cond = values[0]
-        self.cond2 = values[1]
-    def __repr__(self):
-        return f"LessEqual({this.cond} less than or equals {this.cond2})"
-class Define: ## NOT FULLY IMPLEMENTED YET
     def __init__(self, values):
-        self.name = values[0]
+        self.cond = values[0]
+        self.cond2 = values[1]
+    def __repr__(self):
+        return f"Equal({self.cond} equals {self.cond2})"
+class NotEqualBoolOp:
+    def __init__(self, values):
+        self.cond = values[0]
+        self.cond2 = values[1]
+    def __repr__(self):
+        return f"NotEqual({self.cond} not equals {self.cond2})"
+class GreaterBoolOp:
+    def __init__(self, values):
+        self.cond = values[0]
+        self.cond2 = values[1]
+    def __repr__(self):
+        return f"Greater({self.cond} greater than {self.cond2})"
+class LessBoolOp:
+    def __init__(self, values):
+        self.cond = values[0]
+        self.cond2 = values[1]
+    def __repr__(self):
+        return f"Less({self.cond} less than {self.cond2})"
+class GreaterEqualBoolOp:
+    def __init__(self, values):
+        self.cond = values[0]
+        self.cond2 = values[1]
+    def __repr__(self):
+        return f"GreaterEqual({self.cond} greater than or equals {self.cond2})"
+class LessEqualBoolOp:
+    def __init__(self, values):
+        self.cond = values[0]
+        self.cond2 = values[1]
+    def __repr__(self):
+        return f"LessEqual({self.cond} less than or equals {self.cond2})"
+
 # STATEMENTS
 class Create:
     def __init__(self, values):
@@ -476,7 +459,8 @@ class Call:
 # TEST
 code = """X is True
 Y is False
-X or Y
+if X or Y do:
+    1+1
 """
 
 try:

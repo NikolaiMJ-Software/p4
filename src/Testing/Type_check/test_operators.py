@@ -1,11 +1,11 @@
 import pytest
 from src.type_check import get_type, is_numeric, check_op
 
-
-# ------------------------
-# type detection tests
-# ------------------------
-
+'''
+------------------------
+type detection tests
+------------------------
+'''
 # basic type checks
 @pytest.mark.parametrize("value, expected", [
     ("true", bool),
@@ -32,11 +32,11 @@ def test_get_type(value, expected):
 def test_get_type_edge_cases(value, expected):
     assert get_type(value) is expected
 
-
-# ------------------------
-# helper tests
-# ------------------------
-
+'''
+------------------------
+helper tests
+------------------------
+'''
 # numeric type check
 @pytest.mark.parametrize("value, expected", [
     (int, True),
@@ -47,11 +47,11 @@ def test_get_type_edge_cases(value, expected):
 def test_is_numeric(value, expected):
     assert is_numeric(value) is expected
 
-
-# ------------------------
-# operator tests - valid
-# ------------------------
-
+'''
+------------------------
+operator tests - valid
+------------------------
+'''
 # valid numeric operations
 @pytest.mark.parametrize("x, op, y, expected", [
     ("8", "+", "2", "OK -> int + int"),
@@ -89,11 +89,11 @@ def test_check_op_valid_comparisons(x, op, y, expected):
 def test_check_op_valid_other(x, op, y, expected):
     assert check_op(x, op, y) == expected
 
-
-# ------------------------
-# operator tests - invalid
-# ------------------------
-
+'''
+------------------------
+operator tests - invalid
+------------------------
+'''
 # mixed string with non-string
 @pytest.mark.parametrize("x, op, y, expected", [
     ("hello", "+", "2", "TypeError: unsupported operand type(s) for +: 'str' and 'int'"),

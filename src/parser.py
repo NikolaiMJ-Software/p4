@@ -131,26 +131,7 @@ class ASTBuilder(Transformer):
     
     # STATEMENTS
     def create_stmt(self, *items):
-        if len(items) == 1:
-            return {
-                "type": "create",
-                "name": items[0],
-                "value": None,
-            }
-        if len(items) == 2 and isinstance(items[1], dict) and items[1].get("type") == "struct_tail":
-            return {
-                "type": "create_struct",
-                "name": items[0],
-                "bases": items[1]["bases"],
-                "fields": items[1]["fields"],
-            }
-        if len(items) == 2:
-            return {
-                "type": "create",
-                "name": items[0],
-                "value": items[1],
-            }
-        raise Exception("Invalid create statement")
+        return Create(items)
 
     def create_tail(self, value):
         return value
@@ -159,35 +140,22 @@ class ASTBuilder(Transformer):
         bases = []
         fields = []
         for item in items:
-            if isinstance(item, dict) and item.get("type") == "struct_inheritance":
-                bases = item["bases"]
+            if isinstance(item, StructInheritance):
+                bases = item.bases
             elif isinstance(item, list):
                 fields = item
-        return {
-            "type": "struct_tail",
-            "bases": bases,
-            "fields": fields,
-        }
+        return StructTail(bases, fields)
     
     def struct_inheritance(self, *items):
-        return {
-            "type": "struct_inheritance",
-            "bases": list(items),
-        }
+        return StructInheritance(list(items))
     
     def struct_fields(self, *items):
         return list(items)
 
     def struct_field(self, *items):
         if len(items) == 1:
-            return {
-                "name": items[0],
-                "value": None,
-            }
-        return {
-            "name": items[0],
-            "value": items[1],
-        }
+            return StructField(items[0])
+        return StructField(items[0], items[1])
     
     def assign_stmt(self, *items):
         return ("assign(" + ",".join(str(i) for i in items) + ")")
@@ -310,11 +278,56 @@ class ASTBuilder(Transformer):
         return Discard
     
 # CLASSES FOR AST
+# STATEMENTS
+class Create:
+    def __init__(self, values):
+        self.name = values[0]
+        self.value = None
+        self.bases = []
+        self.fields = []
+
+        if len(values) > 1:
+            tail = values[1]
+            if isinstance(tail, StructTail):
+                self.bases = tail.bases
+                self.fields = tail.fields
+            else:
+                self.value = tail
+
+    def __repr__(self):
+        if self.bases or self.fields:
+            return f"Create({self.name},{self.bases},{self.fields})"
+        return f"Create({self.name},{self.value})"
+
+class StructTail:
+    def __init__(self, bases, fields):
+        self.bases = bases
+        self.fields = fields
+    def __repr__(self):
+        return f"StructTail({self.bases},{self.fields})"
+
+class StructInheritance:
+    def __init__(self, bases):
+        self.bases = bases
+    def __repr__(self):
+        return f"StructInheritance({self.bases})"
+
+class StructField:
+    def __init__(self, name, value=None):
+        self.name = name
+        self.value = value
+    def __repr__(self):
+        return f"StructField({self.name},{self.value})"
+
 class Define:
     def __init__(self, values):
         self.name = values[0]
-        self.params = values[1]
-        self.body = list(values[2:])
+        if len(values) > 1 and isinstance(values[1], list):
+            self.params = values[1]
+            self.body = list(values[2:])
+        else:
+            self.params = []
+            self.body = list(values[1:])
     def __repr__(self):
         return f"Define({self.name},{self.params},{self.body})"
 class Return:

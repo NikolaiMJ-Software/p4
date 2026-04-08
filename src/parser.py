@@ -22,8 +22,12 @@ start: stmt*
 // STATEMENTS
 create_stmt: "create" ID create_tail? NEWLINE
 | "create" ID struct_tail
+| "create" ID list_tail NEWLINE
 
 create_tail: "is" expr
+list_tail: "listing" list_items?
+list_items: ("," list_item)* list_item
+list_item: INTEGER | FLOAT | STRING | ID
 
 struct_tail: struct_inheritance? "with:" NEWLINE INDENT struct_fields DEDENT
 

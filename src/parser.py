@@ -204,7 +204,7 @@ class ASTBuilder(Transformer):
     def add(self, left, right):
         return Add(left, right)
     def sub(self, left, right):
-        return Add(left, Neg(right))
+        return Sub(left, right)
     def mul(self, left, right):
         return Mul(left, right)
     def div(self, left, right):
@@ -212,7 +212,7 @@ class ASTBuilder(Transformer):
     def pow(self, left, right):
         return Pow(left, right)
     def neg(self, value):
-        return Neg(value)
+        return Sub(0, value)
 
     # TOKENS
     def ID(self, token):
@@ -408,6 +408,12 @@ class Add:
         self.right = right
     def __repr__(self):
         return f"Add({self.left},{self.right})"
+class Sub:
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+    def __repr__(self):
+        return f"Sub({self.left},{self.right})"
 class Mul:
     def __init__(self, left, right):
         self.left = left
@@ -426,11 +432,6 @@ class Pow:
         self.right = right
     def __repr__(self):
         return f"Pow({self.left},{self.right})"
-class Neg:
-    def __init__(self, value):
-        self.value = value
-    def __repr__(self):
-        return f"Neg({self.value})"
 class Between:
     def __init__(self, left, right):
         self.left = left

@@ -249,6 +249,8 @@ class Create:
             if isinstance(tail, StructTail):
                 self.base = tail.base
                 self.fields = tail.fields
+            elif getattr(tail, ListTail):
+                self.value = tail.value
             else:
                 self.value = tail
 

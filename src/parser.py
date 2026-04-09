@@ -171,8 +171,6 @@ class ASTBuilder(Transformer):
     # list specifics
     def list_items(self, *values):
         return list(values) # no ListItems class needed
-    # def list_item(self, value):
-    #     return ListItem(value)
 
     # general statements
     def assign_stmt(self, *values):
@@ -197,7 +195,7 @@ class ASTBuilder(Transformer):
         return Input(value)
     def output_stmt(self, value):
         return Output(value)
-    
+
     # BOOLEAN OPERATORS
     def or_bool_op(self, *values):
         return OrBoolOp(values) 
@@ -268,13 +266,13 @@ class OrBoolOp:
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
-        return f"Or({self.cond} or {self.cond2})"
+        return f"Or({self.cond},{self.cond2})"
 class AndBoolOp:
     def __init__(self, values):
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
-        return f"And({self.cond} and {self.cond2})"
+        return f"And({self.cond},{self.cond2})"
 class NotBoolOp:
     def __init__(self, value):
         self.cond = value
@@ -285,37 +283,37 @@ class EqualBoolOp:
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
-        return f"Equal({self.cond} equals {self.cond2})"
+        return f"Equal({self.cond},{self.cond2})"
 class NotEqualBoolOp:
     def __init__(self, values):
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
-        return f"NotEqual({self.cond} not equals {self.cond2})"
+        return f"NotEqual({self.cond},{self.cond2})"
 class GreaterBoolOp:
     def __init__(self, values):
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
-        return f"Greater({self.cond} greater than {self.cond2})"
+        return f"Greater({self.cond},{self.cond2})"
 class LessBoolOp:
     def __init__(self, values):
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
-        return f"Less({self.cond} less than {self.cond2})"
+        return f"Less({self.cond},{self.cond2})"
 class GreaterEqualBoolOp:
     def __init__(self, values):
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
-        return f"GreaterEqual({self.cond} greater than or equals {self.cond2})"
+        return f"GreaterEqual({self.cond},{self.cond2})"
 class LessEqualBoolOp:
     def __init__(self, values):
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
-        return f"LessEqual({self.cond} less than or equals {self.cond2})"
+        return f"LessEqual({self.cond},{self.cond2})"
 
 # STATEMENTS
 
@@ -324,7 +322,7 @@ class Create_v: # variable creation
     def __init__(self, values):
         self.name = values[0]
         self.value = None
-        if len.values > 1:
+        if len(values) > 1:
             self.values = values[1]
     def __repr__(self):
         return f"Create_v({self.name},{self.value})"
@@ -342,7 +340,7 @@ class Create_l: # list creation
         self.name = values[0] # first (values[0]) is always name
         self.listing = list(values[1:]) # 1: means from 1 and onwards
     def __repr__(self):
-        return f"Create_l({self.name} listing {self.listing})"
+        return f"Create_l({self.name},{self.listing})"
 
 class StructTail:
     def __init__(self, base, fields):
@@ -366,12 +364,12 @@ class StructField:
 
 class ListTail:
     def __init__(self, value):
-        if len.value != 0:
+        if len(value) != 0:
             self.value = value
         else:
             self.value = None
     def __repr__(self):
-        return f"ListTail(listing {self.value})"
+        return f"ListTail({self.value})"
 
 # UNNEEDED BECAUSE OF list(values) (directly listing the values)
 # class ListItems:
@@ -520,3 +518,6 @@ def create_ast(code):
     tree = parser.parse(code)
     ast = ASTBuilder().transform(tree)
     return ast
+
+ast = create_ast(code)
+print(ast)

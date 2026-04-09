@@ -20,13 +20,13 @@ start: stmt*
     | output_stmt
 
 // STATEMENTS
-create_stmt: "create" ID create_tail? NEWLINE
-| "create" ID struct_tail
-| "create" ID list_tail NEWLINE
+create_stmt: "create" ID create_tail? NEWLINE -> create_v
+| "create" ID struct_tail -> create_s
+| "create" ID list_tail NEWLINE -> create_l
 
 create_tail: "is" expr
 list_tail: "listing" list_items?
-list_items: ("," list_item)* list_item
+list_items: (list_item ",")* list_item
 list_item: INTEGER | FLOAT | STRING | ID
 
 struct_tail: struct_inheritance? "with:" NEWLINE INDENT struct_fields DEDENT
@@ -38,11 +38,11 @@ struct_field: ID ("is" expr)? NEWLINE
 
 assign_stmt: ID ("from" ID)? "is" expr NEWLINE
 
-if_stmt: "if" expr "do:" NEWLINE INDENT stmt+ DEDENT ("else if" expr "do:" NEWLINE INDENT stmt+ DEDENT)* ("else do:" NEWLINE INDENT stmt+ DEDENT)?
+if_stmt: "if" cond "do:" NEWLINE INDENT stmt+ DEDENT ("else if" cond "do:" NEWLINE INDENT stmt+ DEDENT)* ("else do:" NEWLINE INDENT stmt+ DEDENT)?
 
-while_stmt: "while" expr "do:" NEWLINE INDENT stmt+ DEDENT
+while_stmt: "while" cond "do:" NEWLINE INDENT stmt+ DEDENT
 
-dowhile_stmt: "do:" NEWLINE INDENT stmt* DEDENT "while" expr NEWLINE
+dowhile_stmt: "do:" NEWLINE INDENT stmt* DEDENT "while" cond NEWLINE
 
 forrange_stmt: "for each" ID "between" expr "and" expr "do:" NEWLINE INDENT stmt* DEDENT
 
@@ -59,29 +59,32 @@ input_stmt: "input in" ID NEWLINE
 
 output_stmt: "output" expr NEWLINE
 
+// CONDITIONS -> change to boolean operators
+?cond: cond2
+    | cond "or" cond2 -> or_bool_op
+?cond2: cond3
+    | cond2 "and" cond3 -> and_bool_op
+?cond3: cond4
+    | "not" cond4 -> not_bool_op
+?cond4: expr
+    | expr "equal" expr -> equal_bool_op
+    | expr "not equal" expr -> not_equal_bool_op
+    | expr "greater than" expr -> greater_bool_op
+    | expr "less than" expr -> less_bool_op
+    | expr "greater than or equal" expr -> greater_equal_bool_op
+    | expr "less than or equal" expr -> less_equal_bool_op
+
+
 // EXPRESSIONS
 ?expr: expr2
-    | expr "or" expr2 -> or_expr
+    | expr "+" expr2 -> add
+    | expr "-" expr2 -> sub
 ?expr2: expr3
-    | expr2 "and" expr3 -> and_expr
+    | expr2 "*" expr3 -> mul
+    | expr2 "/" expr3 -> div
 ?expr3: expr4
-    | "not" expr4 -> not_expr
-?expr4: expr5
-    | expr5 "equal" expr5 -> equal_expr
-    | expr5 "not equal" expr5 -> not_equal_expr
-    | expr5 "greater than" expr5 -> greater_expr
-    | expr5 "less than" expr5 -> less_expr
-    | expr5 "greater than or equal" expr5 -> greater_equal_expr
-    | expr5 "less than or equal" expr5 -> less_equal_expr
-?expr5: expr6
-    | expr5 "+" expr6 -> add
-    | expr5 "-" expr6 -> sub
-?expr6: expr7
-    | expr6 "*" expr7 -> mul
-    | expr6 "/" expr7 -> div
-?expr7: expr8
-    | expr8 "^" expr7 -> pow
-?expr8: "-" expr8 -> neg
+    | expr4 "^" expr3 -> pow
+?expr4: "-" expr4 -> neg
     | "between" expr "and" expr -> between
     | "chance" expr "%" -> chance_percent
     | "chance" expr "in" expr -> chance
@@ -132,8 +135,15 @@ class ASTBuilder(Transformer):
         return list(statements)
     
     # STATEMENTS
-    def create_stmt(self, *items):
-        return Create(items)
+    # creates
+    def create_v(self, *items):
+        return Create_v(items)
+    def create_s(self, *items):
+        return Create_s(items)
+    def create_l(self, *items):
+        return Create_l(items)
+
+    # tails
     def create_tail(self, value):
         return value
     def struct_tail(self, *items):
@@ -145,6 +155,10 @@ class ASTBuilder(Transformer):
             elif isinstance(item, list):
                 fields = item
         return StructTail(base, fields)
+    def list_tail(self, value):
+        return ListTail(value)
+
+    # struct specifics
     def struct_inheritance(self, *items):
         return StructInheritance(items[0])
     def struct_fields(self, *items):
@@ -153,6 +167,14 @@ class ASTBuilder(Transformer):
         if len(items) == 1:
             return StructField(items[0])
         return StructField(items[0], items[1])
+
+    # list specifics
+    def list_items(self, *values):
+        return list(values) # no ListItems class needed
+    # def list_item(self, value):
+    #     return ListItem(value)
+
+    # general statements
     def assign_stmt(self, *values):
         return Assign(values)
     def if_stmt(self, *items):
@@ -176,25 +198,27 @@ class ASTBuilder(Transformer):
     def output_stmt(self, value):
         return Output(value)
     
+    # BOOLEAN OPERATORS
+    def or_bool_op(self, *values):
+        return OrBoolOp(values) 
+    def and_bool_op(self, *values):
+        return AndBoolOp(values) 
+    def not_bool_op(self, value):
+        return NotBoolOp(value) 
+    def equal_bool_op(self, *values):
+        return EqualBoolOp(values)
+    def not_equal_bool_op(self, *values):
+        return NotEqualBoolOp(values)
+    def greater_bool_op(self, *values):
+        return GreaterBoolOp(values)
+    def less_bool_op(self, *values):
+        return LessBoolOp(values)
+    def greater_equal_bool_op(self, *values):
+        return GreaterEqualBoolOp(values)
+    def less_equal_bool_op(self, *values):
+        return LessEqualBoolOp(values)
+
     # EXPRESSIONS
-    def or_expr(self, *values):
-        return OrExpr(values) 
-    def and_expr(self, *values):
-        return AndExpr(values) 
-    def not_expr(self, value):
-        return NotExpr(value) 
-    def equal_expr(self, *values):
-        return EqualExpr(values)
-    def not_equal_expr(self, *values):
-        return NotEqualExpr(values)
-    def greater_expr(self, *values):
-        return GreaterExpr(values)
-    def less_expr(self, *values):
-        return LessExpr(values)
-    def greater_equal_expr(self, *values):
-        return GreaterEqualExpr(values)
-    def less_equal_expr(self, *values):
-        return LessEqualExpr(values)
     def between(self, left, right):
         return Between(left, right)
     def chance_percent(self, value):
@@ -204,7 +228,7 @@ class ASTBuilder(Transformer):
     def add(self, left, right):
         return Add(left, right)
     def sub(self, left, right):
-        return Sub(left, right)
+        return Add(left, Neg(right))
     def mul(self, left, right):
         return Mul(left, right)
     def div(self, left, right):
@@ -212,7 +236,7 @@ class ASTBuilder(Transformer):
     def pow(self, left, right):
         return Pow(left, right)
     def neg(self, value):
-        return Sub(0, value)
+        return Neg(value)
 
     # TOKENS
     def ID(self, token):
@@ -237,27 +261,88 @@ class ASTBuilder(Transformer):
         return Discard
     
 # CLASSES FOR AST
-class Create:
+
+## BoolOp classes
+class OrBoolOp:
+    def __init__(self, values):
+        self.cond = values[0]
+        self.cond2 = values[1]
+    def __repr__(self):
+        return f"Or({self.cond} or {self.cond2})"
+class AndBoolOp:
+    def __init__(self, values):
+        self.cond = values[0]
+        self.cond2 = values[1]
+    def __repr__(self):
+        return f"And({self.cond} and {self.cond2})"
+class NotBoolOp:
+    def __init__(self, value):
+        self.cond = value
+    def __repr__(self):
+        return f"Not({self.cond})"
+class EqualBoolOp:
+    def __init__(self, values):
+        self.cond = values[0]
+        self.cond2 = values[1]
+    def __repr__(self):
+        return f"Equal({self.cond} equals {self.cond2})"
+class NotEqualBoolOp:
+    def __init__(self, values):
+        self.cond = values[0]
+        self.cond2 = values[1]
+    def __repr__(self):
+        return f"NotEqual({self.cond} not equals {self.cond2})"
+class GreaterBoolOp:
+    def __init__(self, values):
+        self.cond = values[0]
+        self.cond2 = values[1]
+    def __repr__(self):
+        return f"Greater({self.cond} greater than {self.cond2})"
+class LessBoolOp:
+    def __init__(self, values):
+        self.cond = values[0]
+        self.cond2 = values[1]
+    def __repr__(self):
+        return f"Less({self.cond} less than {self.cond2})"
+class GreaterEqualBoolOp:
+    def __init__(self, values):
+        self.cond = values[0]
+        self.cond2 = values[1]
+    def __repr__(self):
+        return f"GreaterEqual({self.cond} greater than or equals {self.cond2})"
+class LessEqualBoolOp:
+    def __init__(self, values):
+        self.cond = values[0]
+        self.cond2 = values[1]
+    def __repr__(self):
+        return f"LessEqual({self.cond} less than or equals {self.cond2})"
+
+# STATEMENTS
+
+# creates
+class Create_v: # variable creation
     def __init__(self, values):
         self.name = values[0]
         self.value = None
-        self.base = None
-        self.fields = []
-
-        if len(values) > 1:
-            tail = values[1]
-            if isinstance(tail, StructTail):
-                self.base = tail.base
-                self.fields = tail.fields
-            elif getattr(tail, ListTail):
-                self.value = tail.value
-            else:
-                self.value = tail
-
+        if len.values > 1:
+            self.values = values[1]
     def __repr__(self):
-        if self.base is not None or self.fields:
-            return f"Create({self.name},{self.base},{self.fields})"
-        return f"Create({self.name},{self.value})"
+        return f"Create_v({self.name},{self.value})"
+        
+class Create_s: # struct creation
+    def __init__(self, values):
+        self.name = values[0]
+        self.base = values[1].base # base = inheritance, values[1] = StructTail (class)
+        self.fields = values[1].fields # empty array of fields as standard (ready to be filled) (also from StructTail)
+    def __repr__(self):
+        return f"Create_s({self.name},{self.base},{self.fields})"
+
+class Create_l: # list creation
+    def __init__(self, values): # receives name + list (values)
+        self.name = values[0] # first (values[0]) is always name
+        self.listing = list(values[1:]) # 1: means from 1 and onwards
+    def __repr__(self):
+        return f"Create_l({self.name} listing {self.listing})"
 
 class StructTail:
     def __init__(self, base, fields):
@@ -273,11 +358,36 @@ class StructInheritance:
         return f"StructInheritance({self.base})"
 
 class StructField:
-    def __init__(self, name, value=None):
+    def __init__(self, name, value):
         self.name = name
         self.value = value
     def __repr__(self):
-        return f"StructField({self.name},{self.value})"
+        return f"StructField({self.name})"
+
+class ListTail:
+    def __init__(self, value):
+        if len.value != 0:
+            self.value = value
+        else:
+            self.value = None
+    def __repr__(self):
+        return f"ListTail(listing {self.value})"
+
+# UNNEEDED BECAUSE OF list(values) (directly listing the values)
+# class ListItems:
+#     def __init__(self, values):
+#         n = 1
+
+#         values[n]
+#         values[0]
+#     def __repr__(self):
+#         return f"ListItems({})"
+
+# class ListItem:
+#     def __init__(self, value):
+#         self.value = value
+#     def __repr__(self):
+#         return f"ListItem({self.value})"
 
 class Define:
     def __init__(self, values):
@@ -345,75 +455,33 @@ class Output:
         return f"Output({self.value})"
 class Assign:
     def __init__(self, values):
+        # x is 5
+        # TODO: maybe add multiple assigns in one line
         self.name = values[0]
         self.value = values[1]
+        
+        # self.name = name
+        # self.value = value
     def __repr__(self):
         return f"Assign({self.name} is {self.value})"
-class OrExpr:
-    def __init__(self, values):
-        self.expr = values[0]
-        self.expr2 = values[1]
+class Between:
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
     def __repr__(self):
-        return f"Or({self.expr},{self.expr2})"
-class AndExpr:
-    def __init__(self, values):
-        self.expr = values[0]
-        self.expr2 = values[1]
+        return f"Between({self.left},{self.right})"
+class Chance:
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
     def __repr__(self):
-        return f"And({self.expr},{self.expr2})"
-class NotExpr:
-    def __init__(self, value):
-        self.expr = value
-    def __repr__(self):
-        return f"Not({self.expr})"
-class EqualExpr:
-    def __init__(self, values):
-        self.expr = values[0]
-        self.expr2 = values[1]
-    def __repr__(self):
-        return f"Equal({self.expr},{self.expr2})"
-class NotEqualExpr:
-    def __init__(self, values):
-        self.expr = values[0]
-        self.expr2 = values[1]
-    def __repr__(self):
-        return f"NotEqual({self.expr},{self.expr2})"
-class GreaterExpr:
-    def __init__(self, values):
-        self.expr = values[0]
-        self.expr2 = values[1]
-    def __repr__(self):
-        return f"Greater({self.expr},{self.expr2})"
-class LessExpr:
-    def __init__(self, values):
-        self.expr = values[0]
-        self.expr2 = values[1]
-    def __repr__(self):
-        return f"Less({self.expr},{self.expr2})"
-class GreaterEqualExpr:
-    def __init__(self, values):
-        self.expr = values[0]
-        self.expr2 = values[1]
-    def __repr__(self):
-        return f"GreaterEqual({self.expr},{self.expr2})"
-class LessEqualExpr:
-    def __init__(self, values):
-        self.expr = values[0]
-        self.expr2 = values[1]
-    def __repr__(self):
-        return f"LessEqual({self.expr},{self.expr2})"
+        return f"Chance({self.left},{self.right})"
 class Add:
     def __init__(self, left, right):
         self.left = left
         self.right = right
     def __repr__(self):
         return f"Add({self.left},{self.right})"
-class Sub:
-    def __init__(self, left, right):
-        self.left = left
-        self.right = right
-    def __repr__(self):
-        return f"Sub({self.left},{self.right})"
 class Mul:
     def __init__(self, left, right):
         self.left = left
@@ -432,35 +500,23 @@ class Pow:
         self.right = right
     def __repr__(self):
         return f"Pow({self.left},{self.right})"
-class Between:
-    def __init__(self, left, right):
-        self.left = left
-        self.right = right
+class Neg:
+    def __init__(self, value):
+        self.value = value
     def __repr__(self):
-        return f"Between({self.left},{self.right})"
-class Chance:
-    def __init__(self, left, right):
-        self.left = left
-        self.right = right
-    def __repr__(self):
-        return f"Chance({self.left},{self.right})"
+        return f"Neg({self.value})"
 class Call:
     def __init__(self, values):
         self.name = values[0]
         self.args = list(values[1:])
     def __repr__(self):
         return f"Call({self.name},{self.args})"
-    
 # TEST
-code = """create Character from Entity with:
-    Health is 100
-    Strength is 10
+code = """create TestID
+create TestList listing 10, 8.5, "abc", TestID
 """
 
 def create_ast(code):
     tree = parser.parse(code)
     ast = ASTBuilder().transform(tree)
     return ast
-
-ast = create_ast(code)
-print(ast)

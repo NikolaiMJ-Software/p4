@@ -18,3 +18,15 @@ if __name__ == '__main__':
     AST = parser.create_ast(code)
     for stmt in AST:
         type_check.check(stmt)
+    
+    # TO DO:
+    '''
+    code = load_source() -> read a txt file
+
+    tree = parser.parse(code)
+    ast = ASTBuilder().transform(tree)
+
+    TypeCheckerVisitor().visit(ast)
+
+    InterpreterVisitor().visit(ast)
+    '''

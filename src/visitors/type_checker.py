@@ -4,6 +4,17 @@ class TypeCheckerVisitor(Visitor):
     def __init__(self):
         self.symbols = {}
         
+    def is_numeric(self, t):
+        return t in ["int", "float"]
+
+    def numeric_result_type(self, left_type, right_type):
+        if not self.is_numeric(left_type) or not self.is_numeric(right_type):
+            raise TypeError(f"Expected numeric types, got {left_type} and {right_type}")
+
+        if "float" in (left_type, right_type):
+            return "float"
+        return "int"
+
     def visit_int_literal(self, node):
         return "int"
     
@@ -32,44 +43,43 @@ class TypeCheckerVisitor(Visitor):
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
 
-        if left_type != "int" or right_type != "int":
-            raise TypeError("Cannot add non-integers")
+        #if left_type != "int" or right_type != "int":
+            #raise TypeError("Cannot add non-integers")
 
-        return "int"
+        return self.numeric_result_type(left_type, right_type)
     
     def visit_min(self, node):
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
 
-        if left_type != "int" or right_type != "int":
-            raise TypeError("Cannot add non-integers")
+        #if left_type != "int" or right_type != "int":
+            #raise TypeError("Cannot add non-integers")
 
-        return "int"
+        return self.numeric_result_type(left_type, right_type)
     
     def visit_mul(self, node):
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
 
-        if left_type != "int" or right_type != "int":
-            raise TypeError("Cannot add non-integers")
+        #if left_type != "int" or right_type != "int":
+            #raise TypeError("Cannot add non-integers")
 
-        return "int"
+        return self.numeric_result_type(left_type, right_type)
     
     def visit_div(self, node):
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
 
-        if left_type != "int" or right_type != "int":
-            raise TypeError("Cannot add non-integers")
+        if not self.is_numeric(left_type) or not self.is_numeric(right_type):
+            raise TypeError(f"Expected numeric types, got {left_type} and {right_type}")
 
-        return "int" #float
+        return "float"
     
     def visit_pow(self, node):
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
         
-        if left_type != "int" or right_type != "int":
-            raise TypeError("Cannot add non-integers")
+        #if left_type != "int" or right_type != "int":
+            #raise TypeError("Cannot add non-integers")
 
-        return "int"
-    
+        return self.numeric_result_type(left_type, right_type)    

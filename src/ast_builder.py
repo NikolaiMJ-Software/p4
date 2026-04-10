@@ -130,56 +130,63 @@ class ASTBuilder(Transformer):
         return Discard
     
 # CLASSES FOR AST
+import re
+class ASTNode:
+    def accept(self, visitor):
+        snake_case_string = re.sub(r"(?<!^)(?=[A-Z])", "_", type(self).__name__).lower()
+        method_name = f"visit_{snake_case_string}"
+        visitor_method = getattr(visitor, method_name)
+        return visitor_method(self)
 
 ## BoolOp classes
-class OrExpr:
+class OrExpr(ASTNode):
     def __init__(self, values):
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
         return f"Or({self.cond},{self.cond2})"
-class AndExpr:
+class AndExpr(ASTNode):
     def __init__(self, values):
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
         return f"And({self.cond},{self.cond2})"
-class NotExpr:
+class NotExpr(ASTNode):
     def __init__(self, value):
         self.cond = value
     def __repr__(self):
         return f"Not({self.cond})"
-class EqualExpr:
+class EqualExpr(ASTNode):
     def __init__(self, values):
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
         return f"Equal({self.cond},{self.cond2})"
-class NotEqualExpr:
+class NotEqualExpr(ASTNode):
     def __init__(self, values):
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
         return f"NotEqual({self.cond},{self.cond2})"
-class GreaterExpr:
+class GreaterExpr(ASTNode):
     def __init__(self, values):
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
         return f"Greater({self.cond},{self.cond2})"
-class LessExpr:
+class LessExpr(ASTNode):
     def __init__(self, values):
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
         return f"Less({self.cond},{self.cond2})"
-class GreaterEqualExpr:
+class GreaterEqualExpr(ASTNode):
     def __init__(self, values):
         self.cond = values[0]
         self.cond2 = values[1]
     def __repr__(self):
         return f"GreaterEqual({self.cond},{self.cond2})"
-class LessEqualExpr:
+class LessEqualExpr(ASTNode):
     def __init__(self, values):
         self.cond = values[0]
         self.cond2 = values[1]
@@ -301,25 +308,25 @@ class Chance:
         self.right = right
     def __repr__(self):
         return f"Chance({self.left},{self.right})"
-class Add:
+class Add(ASTNode):
     def __init__(self, left, right):
         self.left = left
         self.right = right
     def __repr__(self):
         return f"Add({self.left},{self.right})"
-class Mul:
+class Mul(ASTNode):
     def __init__(self, left, right):
         self.left = left
         self.right = right
     def __repr__(self):
         return f"Mul({self.left},{self.right})"
-class Div:
+class Div(ASTNode):
     def __init__(self, left, right):
         self.left = left
         self.right = right
     def __repr__(self):
         return f"Div({self.left},{self.right})"
-class Pow:
+class Pow(ASTNode):
     def __init__(self, left, right):
         self.left = left
         self.right = right

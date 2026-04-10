@@ -21,15 +21,19 @@ def check_op(val1, op, val2):
     invalid_plus = op == "+" and not (is_numeric(t1) and is_numeric(t2) or t1 == str)
     
     # Arithmetic and comparison operators requre a number
-    invalid_arith = op in ["-", "*", "^", "/", "<", ">", "<=", ">=", "==", "!="] and not is_numeric(t1)
+    invalid_arith = op in ["-", "*", "/", "<", ">", "<=", ">=", "==", "!=", "^"] and not (is_numeric(t1) and is_numeric(t2))
     
     # Logical operators requre two bool types
     invalid_logic = op in ["and", "or", "not"] and t1 != bool
     
     # 'to' in for loops requres ints
     invalid_for_loop = op == "to" and ((t1 == int) != (t2 == int)) 
-    
-    if invalid_str or invalid_plus or invalid_arith or invalid_logic or invalid_for_loop:
+    # 'between' requires two numerics
+    invalid_between = op == "between" and not (is_numeric(t1) and is_numeric(t2))   
+    # 'chance' requires two numerics
+    invalid_chance = op == "chance" and not (is_numeric(t1) and is_numeric(t2))    
+
+    if invalid_str or invalid_plus or invalid_arith or invalid_logic or invalid_for_loop or invalid_between or invalid_chance:
         return f"TypeError: unsupported operand type(s) for {op}: '{t1.__name__}' and '{t2.__name__}'"
     
     print(f"OK -> {t1.__name__} {op} {t2.__name__}")

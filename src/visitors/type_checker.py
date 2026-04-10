@@ -16,16 +16,6 @@ class TypeCheckerVisitor(Visitor):
     def visit_bool_literal(self, node):
         return "bool"
 
-    def visit_add(self, node):
-        left_type = self.visit(node.left)
-        right_type = self.visit(node.right)
-
-        if left_type != "int" or right_type != "int":
-            raise TypeError("Cannot add non-integers")
-
-        return "int"
-    
-        
     def visit_expression(self, node):
         return self.visit(node.value)
     
@@ -37,3 +27,49 @@ class TypeCheckerVisitor(Visitor):
         value_type = self.visit(node.value)
         self.symbols[node.name] = value_type
         return value_type
+    
+    def visit_add(self, node):
+        left_type = self.visit(node.left)
+        right_type = self.visit(node.right)
+
+        if left_type != "int" or right_type != "int":
+            raise TypeError("Cannot add non-integers")
+
+        return "int"
+    
+    def visit_min(self, node):
+        left_type = self.visit(node.left)
+        right_type = self.visit(node.right)
+
+        if left_type != "int" or right_type != "int":
+            raise TypeError("Cannot add non-integers")
+
+        return "int"
+    
+    def visit_mul(self, node):
+        left_type = self.visit(node.left)
+        right_type = self.visit(node.right)
+
+        if left_type != "int" or right_type != "int":
+            raise TypeError("Cannot add non-integers")
+
+        return "int"
+    
+    def visit_div(self, node):
+        left_type = self.visit(node.left)
+        right_type = self.visit(node.right)
+
+        if left_type != "int" or right_type != "int":
+            raise TypeError("Cannot add non-integers")
+
+        return "int" #float
+    
+    def visit_pow(self, node):
+        left_type = self.visit(node.left)
+        right_type = self.visit(node.right)
+        
+        if left_type != "int" or right_type != "int":
+            raise TypeError("Cannot add non-integers")
+
+        return "int"
+    

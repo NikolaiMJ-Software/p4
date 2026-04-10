@@ -1,7 +1,13 @@
-from src import parser, ast_builder, type_check
+from src.ast import builder
+from src.parser import parser
+from src.visitors import type_checker
 
 # TEST
-code = """define Fun with Var1, Var2:
+code = """create X is 1 + 1
+"""
+
+''' --------- Second test --------
+define Fun with Var1, Var2:
     create X is (5*8)^(2+1)
     create Y is 2+1
     create Z is "hej"
@@ -12,7 +18,8 @@ code = """define Fun with Var1, Var2:
         if Var1 do:
             return Var1
     return X
-"""
+'''
+
 
 def print_ast(node, indent = 0):
     print("  " * indent, node)
@@ -23,9 +30,12 @@ def print_ast(node, indent = 0):
 
 if __name__ == '__main__':
     tree = parser.parse(code)
-    ast = ast_builder.ASTBuilder().transform(tree)
+    ast = builder.ASTBuilder().transform(tree)
     for stmt in ast:
         print_ast(stmt)
+    
+    checker = type_checker.TypeCheckerVisitor()
+    checker.visit(ast[0])
     
     # TO DO:
     '''

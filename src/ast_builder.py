@@ -1,6 +1,37 @@
 from lark import Transformer, v_args
 from lark import Discard
 
+
+# CLASSES FOR AST
+import re
+class ASTNode:
+    def accept(self, visitor):
+        snake_case_string = re.sub(r"(?<!^)(?=[A-Z])", "_", type(self).__name__).lower()
+        method_name = f"visit_{snake_case_string}"
+        visitor_method = getattr(visitor, method_name)
+        return visitor_method(self)
+# classes for litterals
+class IntLiteral(ASTNode):
+    def __init__(self, value):
+        self.value = value
+    def __repr__(self):
+        return f"Int({self.value})"
+class FloatLiteral(ASTNode):
+    def __init__(self, value):
+        self.value = value
+    def __repr__(self):
+        return f"Float({self.value})"
+class StringLiteral(ASTNode):
+    def __init__(self, value):
+        self.value = value
+    def __repr__(self):
+        return f"String({self.value})"
+class BoolLiteral(ASTNode):
+    def __init__(self, value):
+        self.value = value
+    def __repr__(self):
+        return f"Bool({self.value})"
+
 # AST BUILDER
 @v_args(inline=True)
 class ASTBuilder(Transformer):
@@ -104,16 +135,16 @@ class ASTBuilder(Transformer):
     def ID(self, token):
         return str(token)
     def INTEGER(self, token):
-        return int(token)
+        return IntLiteral(int(token))
+
     def FLOAT(self, token):
-        return float(token)
+        return FloatLiteral(float(token))
+
     def STRING(self, token):
-        return str(token)[1:-1]  # Remove quotes
+        return StringLiteral(str(token)[1:-1])
+
     def BOOL(self, token):
-        if token in ("true", "1"):
-            return True
-        else:
-            return False
+        return BoolLiteral(token in ("true", "1"))
     def call_expr(self, *items):
         return Call(items)
     def args(self, *items):
@@ -129,14 +160,6 @@ class ASTBuilder(Transformer):
     def DEDENT(self, token):
         return Discard
     
-# CLASSES FOR AST
-import re
-class ASTNode:
-    def accept(self, visitor):
-        snake_case_string = re.sub(r"(?<!^)(?=[A-Z])", "_", type(self).__name__).lower()
-        method_name = f"visit_{snake_case_string}"
-        visitor_method = getattr(visitor, method_name)
-        return visitor_method(self)
 
 ## BoolOp classes
 class OrExpr(ASTNode):

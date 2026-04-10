@@ -9,6 +9,12 @@ class TypeCheckerVisitor(Visitor):
     
     def visit_string_literal(self, node):
         return "str"
+    
+    def visit_float_literal(self, node):
+        return "float"
+    
+    def visit_bool_literal(self, node):
+        return "bool"
 
     def visit_add(self, node):
         left_type = self.visit(node.left)

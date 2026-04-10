@@ -1,4 +1,4 @@
-from src import parser, type_check
+from src import parser, ast_builder, type_check
 
 # TEST
 code = """define Fun with Var1, Var2:
@@ -14,10 +14,18 @@ code = """define Fun with Var1, Var2:
     return X
 """
 
+def print_ast(node, indent = 0):
+    print("  " * indent, node)
+    body = getattr(node, "body", None)
+    if body:
+        for child in body:
+            print_ast(child, indent + 1)
+
 if __name__ == '__main__':
-    AST = parser.create_ast(code)
-    for stmt in AST:
-        type_check.check(stmt)
+    tree = parser.parse(code)
+    ast = ast_builder.ASTBuilder().transform(tree)
+    for stmt in ast:
+        print_ast(stmt)
     
     # TO DO:
     '''

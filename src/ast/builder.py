@@ -121,8 +121,8 @@ class ASTBuilder(Transformer):
         return StringLiteral(str(token)[1:-1])
     def BOOL(self, token):
         return BoolLiteral(token in ("true", "1"))
-    def call_expr(self, *items):
-        return Call(items)
+    def call_expr(self, name, args=None):
+        return Call(name, args)
     def args(self, *items):
         return list(items)
     def params(self, *items):

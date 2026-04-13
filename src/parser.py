@@ -16,6 +16,7 @@ start: stmt*
     | expr_stmt
     | input_stmt
     | output_stmt
+    | NEWLINE
 
 // STATEMENTS
 create_stmt: "create" ID var_tail NEWLINE -> create_v
@@ -25,7 +26,10 @@ create_stmt: "create" ID var_tail NEWLINE -> create_v
 var_tail: ("is" expr)?
 
 struct_tail: inheritance "with:" NEWLINE INDENT struct_fields DEDENT
-struct_fields: struct_field*
+
+struct_inheritance: "from" ID
+
+struct_fields: (struct_field | NEWLINE)*
 struct_field: ID ("is" expr)? NEWLINE
 
 list_tail: "listing:" list_items? NEWLINE
@@ -59,6 +63,7 @@ output_stmt: "output" expr NEWLINE
 // EXPRESSIONS
 ?expr: expr2
     | expr "or" expr2 -> or_expr
+    | "either" expr2 "or" expr2 -> either_expr
 ?expr2: expr3
     | expr2 "and" expr3 -> and_expr
 ?expr3: expr4
@@ -79,7 +84,7 @@ output_stmt: "output" expr NEWLINE
 ?expr7: expr8
     | expr8 "^" expr7 -> pow
 ?expr8: "-" expr8 -> neg
-    | "between" expr "and" expr -> between
+    | "between" expr5 "and" expr5 -> between
     | "chance" expr "%" -> chance_percent
     | "chance" expr "in" expr -> chance
     | "(" expr ")"
@@ -109,6 +114,12 @@ NEWLINE: (/\r?\n[ \t]*/)
 %import common.WS_INLINE
 %declare INDENT DEDENT
 %ignore WS_INLINE
+
+// Comments
+COMMENT: /\#[^\n]*/
+BLOCK_COMMENT: /\/\#[\s\S]*?\#\//
+%ignore COMMENT
+%ignore BLOCK_COMMENT
 """
 
 class TreeIndenter(Indenter):

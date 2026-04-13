@@ -110,10 +110,12 @@ class Expression(ASTNode):
     def __repr__(self):
         return f"Expr({self.value})"
 class Input(ASTNode):
+class Input(ASTNode):
     def __init__(self, value):
         self.name = value
     def __repr__(self):
         return f"Input({self.name})"
+class Output(ASTNode):
 class Output(ASTNode):
     def __init__(self, value):
         self.value = value
@@ -205,7 +207,7 @@ class Pow(ASTNode):
         self.right = right
     def __repr__(self):
         return f"Pow({self.left},{self.right})"
-class Neg:
+class Neg(ASTNode):
     def __init__(self, value):
         self.value = value
     def __repr__(self):

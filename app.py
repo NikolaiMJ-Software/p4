@@ -3,15 +3,13 @@ from src.parser import parser
 from src.visitors import type_checker
 
 # TEST
-code = """create X is (5*8)^(2+1)
-create Y is 2+1
-create Z is "hej"
-Y is Y + Z
-if Var1 less than Var2 do:
-    if Var2 do:
-        return Var2
-    if Var1 do:
-        return Var1
+code = """define Fun1 with Var1, Var2, Var3:
+    create Y is Var1 * Var3
+    create X is Y + Var2
+    create Var2
+    return Y
+call Fun1 with 1.2, 2, 2.2
+call Fun with 1, 2
 """
 
 
@@ -27,9 +25,11 @@ if __name__ == '__main__':
     ast = builder.ASTBuilder().transform(tree)
     for stmt in ast:
         print_ast(stmt)
+    print("---------AST--------\n")
     
     checker = type_checker.TypeCheckerVisitor()
-    checker.visit(ast[0])
+    for node in ast:
+        checker.visit(node)
     
     # TO DO:
     '''

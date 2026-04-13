@@ -76,6 +76,8 @@ class ASTBuilder(Transformer):
         return OrExpr(values) 
     def and_expr(self, *values):
         return AndExpr(values) 
+    def either_expr(self, *values):
+        return XorExpr(values)
     def not_expr(self, value):
         return NotExpr(value) 
     def equal_expr(self, *values):

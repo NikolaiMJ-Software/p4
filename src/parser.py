@@ -16,6 +16,7 @@ start: stmt*
     | expr_stmt
     | input_stmt
     | output_stmt
+    | NEWLINE
 
 // STATEMENTS
 create_stmt: "create" ID create_tail? NEWLINE -> create_v
@@ -31,7 +32,7 @@ struct_tail: struct_inheritance? "with:" NEWLINE INDENT struct_fields DEDENT
 
 struct_inheritance: "from" ID
 
-struct_fields: struct_field*
+struct_fields: (struct_field | NEWLINE)*
 struct_field: ID ("is" expr)? NEWLINE
 
 assign_stmt: ID ("from" ID)? "is" expr NEWLINE
@@ -60,6 +61,7 @@ output_stmt: "output" expr NEWLINE
 // EXPRESSIONS
 ?expr: expr2
     | expr "or" expr2 -> or_expr
+    | "either" expr2 "or" expr2 -> either_expr
 ?expr2: expr3
     | expr2 "and" expr3 -> and_expr
 ?expr3: expr4
@@ -105,6 +107,12 @@ NEWLINE: (/\r?\n[ \t]*/)
 %import common.WS_INLINE
 %declare INDENT DEDENT
 %ignore WS_INLINE
+
+// Comments
+COMMENT: /\#[^\n]*/
+BLOCK_COMMENT: /\/\#[\s\S]*?\#\//
+%ignore COMMENT
+%ignore BLOCK_COMMENT
 """
 
 class TreeIndenter(Indenter):

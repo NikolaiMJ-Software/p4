@@ -45,6 +45,8 @@ class ASTBuilder(Transformer):
         return Assign(values)
     def if_stmt(self, *items):
         return If(items)
+    def else_stmt(self, *items):
+        return list(items)
     def while_stmt(self, *items):
         return While(items)
     def dowhile_stmt(self, *items):

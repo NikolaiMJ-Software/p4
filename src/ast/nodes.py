@@ -127,11 +127,12 @@ class Define(ASTNode):
     def __repr__(self):
         return f"Define({self.name},{self.params},{self.body})"
 class If(ASTNode):
-    def __init__(self, values):
+    def __init__(self, values, else_body=None):
         self.cond = values[0]
         self.body = list(values[1:])
+        self.else_body = else_body
     def __repr__(self):
-        return f"If({self.cond},{self.body})"
+        return f"If({self.cond},{self.body},{self.else_body})"
 class While(ASTNode):
     def __init__(self, values):
         self.cond = values[0]

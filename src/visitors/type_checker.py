@@ -208,3 +208,21 @@ class TypeCheckerVisitor(Visitor):
             raise TypeError(f"Cannot compare {left_type} <= {right_type}")
 
         return "bool"
+
+    def visit_if(self, node):
+        cond_type = self.visit(node.cond)
+
+        if cond_type is None:
+            return None
+        if cond_type != "bool":
+            raise TypeError(f"if condition must be bool, got {cond_type}")
+
+        for stmt in node.body:
+            self.visit(stmt)
+
+        if node.else_body is not None:
+            for stmt in node.else_body:
+                self.visit(stmt)
+        return None
+
+    

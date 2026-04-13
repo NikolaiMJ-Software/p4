@@ -67,7 +67,7 @@ class TypeCheckerVisitor(Visitor):
     def visit_define(self, node):
         # Check if fthe function are already defined
         if node.name in self.f_table:
-            raise TypeError("Function already exist")
+            raise TypeError(f"Function: '{node.name}' already exist")
 
         # Save data as 'params' and 'body' in functions
         self.f_table[node.name] = {

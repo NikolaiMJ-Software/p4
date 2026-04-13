@@ -93,7 +93,7 @@ class Create_v(ASTNode):
     def __repr__(self):
         return f"Create_v({self.name},{self.value})"
         
-class Create_s: # struct creation
+class Create_s(ASTNode): # struct creation
     def __init__(self, values):
         self.name = values[0]
         self.base = None
@@ -107,7 +107,7 @@ class Create_s: # struct creation
     def __repr__(self):
         return f"Create_s({self.name},{self.base},{self.fields})"
 
-class Create_l: # list creation
+class Create_l(ASTNode): # list creation
     def __init__(self, values): # receives name + list (values)
         self.name = values[0] # first (values[0]) is always name
         self.listing = values[1] # 1: means from 1 and onwards
@@ -121,25 +121,25 @@ class Define(ASTNode):
         self.body = body or []
     def __repr__(self):
         return f"Define({self.name},{self.params},{self.body})"
-class If:
+class If(ASTNode):
     def __init__(self, values):
         self.cond = values[0]
         self.body = list(values[1:])
     def __repr__(self):
         return f"If({self.cond},{self.body})"
-class While:
+class While(ASTNode):
     def __init__(self, values):
         self.cond = values[0]
         self.body = list(values[1:])
     def __repr__(self):
         return f"While({self.cond},{self.body})"
-class Dowhile:
+class Dowhile(ASTNode):
     def __init__(self, values):
         self.body = list(values[:-1])
         self.cond = values[-1]
     def __repr__(self):
         return f"Dowhile({self.body},{self.cond})"
-class Forrange:
+class Forrange(ASTNode):
     def __init__(self, values):
         self.name = values[0]
         self.start = values[1]
@@ -147,14 +147,14 @@ class Forrange:
         self.body = list(values[3:])
     def __repr__(self):
         return f"Forrange({self.name},{self.start},{self.end},{self.body})"
-class Foreach:
+class Foreach(ASTNode):
     def __init__(self, values):
         self.name = values[0]
         self.collection = values[1]
         self.body = list(values[2:])
     def __repr__(self):
         return f"Foreach({self.name},{self.collection},{self.body})"
-class Return:
+class Return(ASTNode):
     def __init__(self, value):
         self.value = value
     def __repr__(self):
@@ -164,29 +164,29 @@ class Expression(ASTNode):
         self.value = value
     def __repr__(self):
         return f"Expr({self.value})"
-class Input:
+class Input(ASTNode):
     def __init__(self, value):
         self.name = value
     def __repr__(self):
         return f"Input({self.name})"
-class Output:
+class Output(ASTNode):
     def __init__(self, value):
         self.value = value
     def __repr__(self):
         return f"Output({self.value})"
-class Assign:
+class Assign(ASTNode):
     def __init__(self, values):
         self.name = values[0]
         self.value = values[1]
     def __repr__(self):
         return f"Assign({self.name} is {self.value})"
-class Between:
+class Between(ASTNode):
     def __init__(self, left, right):
         self.left = left
         self.right = right
     def __repr__(self):
         return f"Between({self.left},{self.right})"
-class Chance:
+class Chance(ASTNode):
     def __init__(self, left, right):
         self.left = left
         self.right = right
@@ -216,14 +216,14 @@ class Pow(ASTNode):
         self.right = right
     def __repr__(self):
         return f"Pow({self.left},{self.right})"
-class Neg:
+class Neg(ASTNode):
     def __init__(self, value):
         self.value = value
     def __repr__(self):
         return f"Neg({self.value})"
-class Call:
+class Call(ASTNode):
     def __init__(self, values):
         self.name = values[0]
-        self.args = list(values[1:])
+        self.args = list(values[1])
     def __repr__(self):
         return f"Call({self.name},{self.args})"

@@ -54,7 +54,14 @@ class ASTBuilder(Transformer):
     def foreach_stmt(self, *items):
         return Foreach(items)
     def func_def(self, *items):
-        return Define(items)
+        name = items[0]
+        if isinstance(items[1], list):
+            params = items[1]
+            body = list(items[2:])
+        else:
+            params = []
+            body = list(items[1:])
+        return Define(name, params, body)
     def return_stmt(self, value):
         return Return(value)
     def expr_stmt(self, value):

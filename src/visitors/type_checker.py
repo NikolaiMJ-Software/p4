@@ -70,7 +70,9 @@ class TypeCheckerVisitor(Visitor):
         return None
     
     def visit_call(self, node):
-        # Get the function from the functions table
+        # Check if the function are already definend, then get its data
+        if node.name not in self.f_table:
+            raise TypeError(f"The function: '{node.name}' don't exist")
         func = self.f_table[node.name]
         
         # Update the local variable types

@@ -3,10 +3,7 @@ from src.parser import parser
 from src.visitors import type_checker
 
 # TEST
-code = """define Fun with Var1, Var2:
-    create X is Var1 + Var2
-    return X
-define Fun1 with Var1, Var2, Var3:
+code = """define Fun1 with Var1, Var2, Var3:
     create Y is Var1 * Var3
     create X is Y + Var2
     create Var2

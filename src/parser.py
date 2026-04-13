@@ -61,6 +61,7 @@ output_stmt: "output" expr NEWLINE
 // EXPRESSIONS
 ?expr: expr2
     | expr "or" expr2 -> or_expr
+    | "either" expr2 "or" expr2 -> either_expr
 ?expr2: expr3
     | expr2 "and" expr3 -> and_expr
 ?expr3: expr4

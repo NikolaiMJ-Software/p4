@@ -41,6 +41,12 @@ class AndExpr(ASTNode):
         self.cond2 = values[1]
     def __repr__(self):
         return f"And({self.cond},{self.cond2})"
+class XorExpr(ASTNode):
+    def __init__(self, values):
+        self.cond = values[0]
+        self.cond2 = values[1]
+    def __repr__(self):
+        return f"Xor({self.cond},{self.cond2})"
 class NotExpr(ASTNode):
     def __init__(self, value):
         self.cond = value
@@ -82,7 +88,6 @@ class LessEqualExpr(ASTNode):
         self.cond2 = values[1]
     def __repr__(self):
         return f"LessEqual({self.cond},{self.cond2})"
-
 # STATEMENTS
 
 # creates

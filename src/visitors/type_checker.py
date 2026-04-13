@@ -262,3 +262,4 @@ class TypeCheckerVisitor(Visitor):
 
         if not self.is_numeric(left_type) or not self.is_numeric(right_type):
             raise TypeError(f"chance requires numeric types, got {left_type} and {right_type}")
+        return "bool"

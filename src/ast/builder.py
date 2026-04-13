@@ -88,7 +88,7 @@ class ASTBuilder(Transformer):
     def between(self, left, right):
         return Between(left, right)
     def chance_percent(self, value):
-        return Chance(value, 100)
+        return Chance(value, IntLiteral(100))
     def chance(self, left, right):
         return Chance(left, right)
     def add(self, left, right):

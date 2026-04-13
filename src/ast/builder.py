@@ -107,6 +107,8 @@ class ASTBuilder(Transformer):
         return Chance(left, right)
     def var(self, name, base=None):
         return Var(name, base)
+    def call_expr(self, name, args=None):
+        return Call(name, args)
 
     # TOKENS
     def ID(self, token):

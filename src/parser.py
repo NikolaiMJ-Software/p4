@@ -101,8 +101,8 @@ FLOAT: /([1-9][0-9]*|0)\.[0-9]+/
 INTEGER: /[0-9]+/
 STRING: /"[^"]*"/
 BOOL: "true"|"false"|"1"|"0"
-call_expr: "call" ID args?
-args: "with" expr ("," expr)*
+call_expr: "call" ID args -> call_expr
+args: ("with" expr ("," expr)*)?
 inheritance: ("from" ID)?
 more_stmt: stmt+
 mul_stmt: stmt*

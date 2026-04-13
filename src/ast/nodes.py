@@ -229,7 +229,7 @@ class Var:
     def __repr__(self):
         return f"Var({self.name},{self.base})"
 class Call:
-    def __init__(self, name, args):
+    def __init__(self, name, args=None):
         self.name = name
         self.args = args
     def __repr__(self):

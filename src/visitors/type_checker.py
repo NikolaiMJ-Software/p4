@@ -45,6 +45,9 @@ class TypeCheckerVisitor(Visitor):
         return self.visit(node.value)
     
     def visit_create_v(self, node):
+        if node.name in self.v_table:
+            raise TypeError(f"The variable: '{node.name}' already exist")
+        
         if node.value is None:
             self.v_table[node.name] = None
             return None

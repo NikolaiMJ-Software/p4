@@ -53,6 +53,14 @@ class TypeCheckerVisitor(Visitor):
         self.v_table[node.name] = value_type
         return value_type
     
+    def visit_assign(self, node):
+        if node.name not in self.v_table:
+            raise TypeError(f"The variable: '{node.name}' don't exist")
+        
+        value_type = self.visit(node.value)
+        self.v_table[node.name] = value_type
+        return value_type
+    
     def visit_return(self, node):
         return self.visit(node.value)
     

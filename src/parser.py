@@ -57,8 +57,7 @@ expr_stmt: expr NEWLINE
 
 input_stmt: "input in" ID NEWLINE
 
-output_stmt: "output" output_part+ NEWLINE
-output_part: STRING | expr
+output_stmt: "output" expr+ NEWLINE
 
 element_stmt: "element" ID "in" ID NEWLINE
 

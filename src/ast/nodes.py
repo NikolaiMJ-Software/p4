@@ -105,32 +105,24 @@ class LessEqualExpr(ASTNode):
         return f"LessEqual({self.cond},{self.cond2})"
 # STATEMENTS
 
-# creates
+# STATEMENTS
 class Create_v(ASTNode):
-    def __init__(self, values):
-        self.name = values[0]
-        self.value = values[1] if len(values) > 1 else None
+    def __init__(self, name, value=None):
+        self.name = name
+        self.value = value
     def __repr__(self):
-        return f"Create_v({self.name},{self.value})"
-        
-class Create_s(ASTNode): # struct creation
-    def __init__(self, values):
-        self.name = values[0]
-        self.base = None
-        self.fields = []
-        if isinstance(values[1][0], list):
-            self.base = None
-            self.fields = values[1]
-        else:
-            self.base = values[1][0]
-            self.fields = values[1][1]
+        return f"Create_v({self.name},{self.value})" 
+class Create_s(ASTNode):
+    def __init__(self, name, struct_tail):
+        self.name = name
+        self.base = struct_tail[0]
+        self.fields = struct_tail[1]
     def __repr__(self):
         return f"Create_s({self.name},{self.base},{self.fields})"
-
-class Create_l(ASTNode): # list creation
-    def __init__(self, values): # receives name + list (values)
-        self.name = values[0] # first (values[0]) is always name
-        self.listing = values[1] # 1: means from 1 and onwards
+class Create_l(ASTNode):
+    def __init__(self, name, listing):
+        self.name = name
+        self.listing = listing
     def __repr__(self):
         return f"Create_l({self.name},{self.listing})"
     
@@ -138,10 +130,10 @@ class Define(ASTNode):
     def __init__(self, name, params=None, body=None, line=None, column=None):
         super().__init__(line, column)
         self.name = name
-        self.params = params or []
-        self.body = body or []
+        self.base = base
+        self.value = value
     def __repr__(self):
-        return f"Define({self.name},{self.params},{self.body})"
+        return f"Assign({self.name},{self.base},{self.value})"
 class If(ASTNode):
     def __init__(self, cond, body, else_body=None, line=None, column=None):
         super().__init__(line, column)
@@ -181,6 +173,13 @@ class Foreach(ASTNode):
         self.body = list(values[2:])
     def __repr__(self):
         return f"Foreach({self.name},{self.collection},{self.body})"
+class Define(ASTNode):
+    def __init__(self, name, params, body):
+        self.name = name
+        self.params = params
+        self.body = body
+    def __repr__(self):
+        return f"Define({self.name},{self.params},{self.body})"
 class Return(ASTNode):
     def __init__(self, value, line=None, column=None):
         super().__init__(line, column)
@@ -224,7 +223,54 @@ class Chance(ASTNode):
         self.left = left
         self.right = right
     def __repr__(self):
-        return f"Chance({self.left},{self.right})"
+        return f"And({self.left},{self.right})"
+class XorExpr(ASTNode):
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+    def __repr__(self):
+        return f"Xor({self.left},{self.right})"
+class NotExpr(ASTNode):
+    def __init__(self, cond):
+        self.cond = cond
+    def __repr__(self):
+        return f"Not({self.cond})"
+class EqualExpr(ASTNode):
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+    def __repr__(self):
+        return f"Equal({self.left},{self.right})"
+class NotEqualExpr(ASTNode):
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+    def __repr__(self):
+        return f"NotEqual({self.left},{self.right})"
+class GreaterExpr(ASTNode):
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+    def __repr__(self):
+        return f"Greater({self.left},{self.right})"
+class LessExpr(ASTNode):
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+    def __repr__(self):
+        return f"Less({self.left},{self.right})"
+class GreaterEqualExpr(ASTNode):
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+    def __repr__(self):
+        return f"GreaterEqual({self.left},{self.right})"
+class LessEqualExpr(ASTNode):
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+    def __repr__(self):
+        return f"LessEqual({self.left},{self.right})"  
 class Add(ASTNode):
     def __init__(self, left, right, line=None, column=None):
         super().__init__(line, column)

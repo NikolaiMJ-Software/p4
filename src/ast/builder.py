@@ -29,16 +29,14 @@ class ASTBuilder(Transformer):
         return value
 
     # struct specifics
-    def struct_inheritance(self, item):
-        return item
     def struct_fields(self, *items):
         return list(items)
-    def struct_field(self, *items):
-        return Create_v(items)
+    def struct_field(self, name, value=None):
+        return Create_v(name, value)
 
     # list specifics
     def list_items(self, *values):
-        return list(values) # no ListItems class needed
+        return list(values)
 
     # general statements
     def assign_stmt(self, meta, *values):
@@ -125,13 +123,10 @@ class ASTBuilder(Transformer):
         return str(token)
     def INTEGER(self, token):
         return IntLiteral(int(token))
-
     def FLOAT(self, token):
         return FloatLiteral(float(token))
-
     def STRING(self, token):
         return StringLiteral(str(token)[1:-1])
-
     def BOOL(self, token):
         return BoolLiteral(token in ("true", "1"))
     def call_expr(self, meta, *items):
@@ -142,6 +137,16 @@ class ASTBuilder(Transformer):
         return list(items)
     def list_item(self, meta, value):
         return value
+    def inheritance(self, base=None):
+        return base
+    def more_stmt(self, *items):
+        return list(items)
+    def mul_stmt(self, *items):
+        return list(items)
+    def pos_stmt(self, item):
+        return item
+    def expr_list(self, *items):
+        return list(items)
     def NEWLINE(self, token):
         return Discard
     def INDENT(self, token):

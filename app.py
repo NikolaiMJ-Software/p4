@@ -30,9 +30,9 @@ if __name__ == '__main__':
         print_ast(stmt)
     print("---------AST--------\n")
     
-    checker = type_checker.TypeCheckerVisitor()
-    for node in ast:
-        checker.visit(node)
+    #checker = type_checker.TypeCheckerVisitor()
+    #for node in ast:
+        #checker.visit(node)
     
     # TO DO:
     '''

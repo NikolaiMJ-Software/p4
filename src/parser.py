@@ -59,8 +59,8 @@ expr_stmt: expr NEWLINE
 
 input_stmt: "input in" ID NEWLINE
 
-output_stmt: "output" output_part+ NEWLINE
-output_part: STRING | expr
+output_stmt: "output" expr_list NEWLINE
+expr_list: expr ("," expr)*
 
 element_stmt: "element" ID "in" ID NEWLINE
 
@@ -100,7 +100,7 @@ element_stmt: "element" ID "in" ID NEWLINE
     | call_expr
 
 // TOKENS
-ID: /[A-Z][a-zA-Z0-9_]*(\s+[a-zA-Z0-9_]+)*/
+ID: /[A-Z][a-zA-Z0-9_]*/
 FLOAT: /([1-9][0-9]*|0)\.[0-9]+/
 INTEGER: /[0-9]+/
 STRING: /"[^"]*"/

@@ -279,3 +279,15 @@ class TypeCheckerVisitor(Visitor):
             for stmt in node.else_body:
                 self.visit(stmt)
         return None
+    
+    def visit_input(self, node):
+        # Make sure the value are define before writing to it
+        if node.name in self.v_table:
+            return self.visit(node.name)
+        raise TypeError(f"The variable: '{node.name}' don't exist")
+    
+    def visit_output(self, node):
+        # Make sure the value are define before writing to it
+        if node.name in self.v_table:
+            return self.visit(node.name)
+        raise TypeError(f"The variable: '{node.name}' don't exist")

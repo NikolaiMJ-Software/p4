@@ -177,9 +177,9 @@ class Input(ASTNode):
         return f"Input({self.name})"
 class Output(ASTNode):
     def __init__(self, value):
-        self.value = value
+        self.name = value
     def __repr__(self):
-        return f"Output({self.value})"
+        return f"Output({self.name})"
 class Assign(ASTNode):
     def __init__(self, values):
         self.name = values[0]

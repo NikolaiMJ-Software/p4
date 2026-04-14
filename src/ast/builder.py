@@ -20,6 +20,10 @@ class ASTBuilder(Transformer):
     def create_l(self, meta, *items):
         return Create_l(items)
 
+    # var
+    def var(self, meta, name, tail=None):
+        return name if tail is None else tail
+
     # tails
     def create_tail(self, meta, value):
         return value
@@ -27,13 +31,16 @@ class ASTBuilder(Transformer):
         return items
     def list_tail(self, meta, value):
         return value
+    def var_tail(self, meta, value=None):
+        return value
 
     # struct specifics
     def struct_fields(self, meta,*items):
         return list(items)
     def struct_field(self, meta, name, value=None):
-        return Create_v(name, value)
-
+        if value is None:
+            return Create_v((name,))
+        return Create_v((name, value))
     # list specifics
     def list_items(self, meta, *values):
         return list(values)
@@ -130,7 +137,7 @@ class ASTBuilder(Transformer):
     def BOOL(self, token):
         return BoolLiteral(token in ("true", "1"))
     def call_expr(self, meta, *items):
-        return Call(items)
+        return Call(items, meta.line, meta.column)
     def args(self, meta, *items):
         return list(items)
     def params(self, meta, *items):

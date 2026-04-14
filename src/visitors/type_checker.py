@@ -112,7 +112,7 @@ class TypeCheckerVisitor(Visitor):
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
 
-        if left_type == "str" or right_type == "str":
+        if left_type == "str" and right_type == "str":
             return "str"
         #if left_type != "int" or right_type != "int":
             #raise TypeError("Cannot add non-integers")
@@ -155,6 +155,7 @@ class TypeCheckerVisitor(Visitor):
 
         return self.numeric_result_type(left_type, right_type)
 
+    # comparison operators
     def visit_equal_expr(self, node):
         left_type = self.visit(node.cond)
         right_type = self.visit(node.cond2)
@@ -207,4 +208,58 @@ class TypeCheckerVisitor(Visitor):
         if not self.comparable_ordered(left_type, right_type):
             raise TypeError(f"Cannot compare {left_type} <= {right_type}")
 
+        return "bool"
+
+    #boolean operators
+
+    def visit_and_expr(self,node):
+        left_type = self.visit(node.cond)
+        right_type = self.visit(node.cond2)
+
+        if left_type != "bool" or right_type != "bool":
+            raise TypeError(f"AND requires bool, got {left_type} and {right_type}")
+
+        return "bool"
+
+    def visit_or_expr(self, node):
+        left_type = self.visit(node.cond)
+        right_type = self.visit(node.cond2)
+
+        if left_type != "bool" or right_type != "bool":
+            raise TypeError(f"OR requires bool, got {left_type} and {right_type}")
+
+        return "bool"
+
+    def visit_not_expr(self, node):
+        value_type = self.visit(node.cond)
+
+        if value_type != "bool":
+            raise TypeError(f"NOT requires bool, got {value_type}")
+
+        return "bool"
+
+    def visit_xor_expr(self, node):
+        left_type = self.visit(node.cond)
+        right_type = self.visit(node.cond2)
+
+        if left_type != "bool" or right_type != "bool":
+            raise TypeError(f"XOR requires bool, got {left_type} and {right_type}")
+
+        return "bool"
+
+    def visit_between(self, node):
+        left_type = self.visit(node.left)
+        right_type = self.visit(node.right)
+
+        if not self.is_numeric(left_type) or not self.is_numeric(right_type):
+            raise TypeError(f"between requires numeric types, got {left_type} and {right_type}")
+
+        return "bool"
+
+    def visit_chance(self, node):
+        left_type = self.visit(node.left)
+        right_type = self.visit(node.right)
+
+        if not self.is_numeric(left_type) or not self.is_numeric(right_type):
+            raise TypeError(f"chance requires numeric types, got {left_type} and {right_type}")
         return "bool"

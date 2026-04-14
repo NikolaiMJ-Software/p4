@@ -86,7 +86,7 @@ element_stmt: "element" ID "in" ID NEWLINE
 ?expr7: expr8
     | expr8 "^" expr7 -> pow
 ?expr8: "-" expr8 -> neg
-    | "between" expr "and" expr -> between
+    | "between" expr5 "and" expr5 -> between
     | "chance" expr "%" -> chance_percent
     | "chance" expr "in" expr -> chance
     | "(" expr ")"

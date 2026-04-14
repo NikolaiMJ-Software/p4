@@ -43,16 +43,17 @@ class ASTBuilder(Transformer):
     # general statements
     def assign_stmt(self, meta, *values):
         return Assign(values, meta.line, meta.column)
-    def if_stmt(self, cond, *items):
+    def if_stmt(self, meta, cond, *items):
         else_body = None
         if items and isinstance(items[-1], list):
             else_body = items[-1]
             body = list(items[:-1])
         else:
             body = list(items)
-        return If(cond, body, else_body, meta.column, meta.line)
-    def else_stmt(self, *items):
-        return list(items, meta.line, meta.column)
+        return If(cond, body, else_body, meta.line, meta.column)
+
+    def else_stmt(self, meta, *items):
+        return list(items)
     def while_stmt(self, meta, *items):
         return While(items, meta.line, meta.column)
     def dowhile_stmt(self, meta, *items):

@@ -6,10 +6,8 @@ from src.visitors import type_checker
 code = """define Fun1 with Var1, Var2, Var3:
     create Y is Var1 * Var3
     create X is Y + Var2
-    create Var2
-    return Y
+    return X
 call Fun1 with 1.2, 2, 2.2
-call Fun with 1, 2
 """
 
 

@@ -65,7 +65,9 @@ class TypeCheckerVisitor(Visitor):
         return value_type
     
     def visit_return(self, node):
-        return self.visit(node.value)
+        if node.value in self.v_table:
+            return self.visit(node.value)
+        raise TypeError(f"The variable: '{node.value}' don't exist")
     
     def visit_define(self, node):
         # Check if fthe function are already defined

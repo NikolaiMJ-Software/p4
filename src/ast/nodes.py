@@ -210,25 +210,25 @@ class Neg(ASTNode):
         self.value = value
     def __repr__(self):
         return f"Neg({self.value})"
-class Between:
+class Between(ASTNode):
     def __init__(self, left, right):
         self.left = left
         self.right = right
     def __repr__(self):
         return f"Between({self.left},{self.right})"
-class Chance:
+class Chance(ASTNode):
     def __init__(self, left, right):
         self.left = left
         self.right = right
     def __repr__(self):
         return f"Chance({self.left},{self.right})"
-class Var:
+class Var(ASTNode):
     def __init__(self, name, base=None):
         self.name = name
         self.base = base
     def __repr__(self):
         return f"Var({self.name},{self.base})"
-class Call:
+class Call(ASTNode):
     def __init__(self, name, args=None):
         self.name = name
         self.args = args

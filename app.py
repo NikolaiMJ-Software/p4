@@ -1,15 +1,9 @@
 from src.ast import builder
 from src.parser import parser
-from src.visitors import type_checker
+from src.visitors import type_checker, interpreter
 
 # TEST
-code = """define Fun1 with Var1, Var2, Var3:
-    create Y is Var1 * Var3
-    create X is Y + Var2
-    create Var2
-    return Y
-call Fun1 with 1.2, 2, 2.2
-call Fun with 1, 2
+code = """output (1+2)*3
 """
 
 
@@ -23,13 +17,16 @@ def print_ast(node, indent = 0):
 if __name__ == '__main__':
     tree = parser.parse(code)
     ast = builder.ASTBuilder().transform(tree)
-    for stmt in ast:
-        print_ast(stmt)
-    print("---------AST--------\n")
+    
+    #for stmt in ast:
+        #print_ast(stmt)
+    #print("---------AST--------\n")
     
     #checker = type_checker.TypeCheckerVisitor()
     #for node in ast:
         #checker.visit(node)
+    for node in ast:
+        interpreter.InterpreterVisitor().visit(node)
     
     # TO DO:
     '''

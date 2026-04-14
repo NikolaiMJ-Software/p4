@@ -43,8 +43,14 @@ class ASTBuilder(Transformer):
     # general statements
     def assign_stmt(self, *values):
         return Assign(values)
-    def if_stmt(self, *items):
-        return If(items)
+    def if_stmt(self, cond, *items):
+        else_body = None
+        if items and isinstance(items[-1], list):
+            else_body = items[-1]
+            body = list(items[:-1])
+        else:
+            body = list(items)
+        return If(cond, body, else_body)
     def else_stmt(self, *items):
         return list(items)
     def while_stmt(self, *items):

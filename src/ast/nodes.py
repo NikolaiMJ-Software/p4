@@ -135,9 +135,15 @@ class Create_l(ASTNode): # list creation
         return f"Create_l({self.name},{self.listing})"
     
 class Define(ASTNode):
-    def __init__(self, name, params=None, body=None, line=None, column=None):
+    def __init__(self, items, line=None, column=None):
         super().__init__(line, column)
-        self.name = name
+        self.name = items[0]
+        if isinstance(items[1], list):
+            params = items[1]
+            body = items[2]
+        else:
+            params = []
+            body = list(items[1:])
         self.params = params or []
         self.body = body or []
     def __repr__(self):

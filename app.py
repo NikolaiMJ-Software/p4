@@ -8,11 +8,6 @@ code = """define Fun1 with Var1, Var2, Var3:
     create X is Y + Var2
     return X
 call Fun1 with 1.2, 2, 2.2
-create A is true
-if A do:
-    create B is 5
-else do:
-    create C is 10
 """
 
 

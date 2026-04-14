@@ -16,6 +16,7 @@ start: stmt*
     | expr_stmt
     | input_stmt
     | output_stmt
+    | element_stmt
     | NEWLINE
 
 // STATEMENTS
@@ -56,7 +57,10 @@ expr_stmt: expr NEWLINE
 
 input_stmt: "input in" ID NEWLINE
 
-output_stmt: "output" expr NEWLINE
+output_stmt: "output" output_part+ NEWLINE
+output_part: STRING | expr
+
+element_stmt: "element" ID "in" ID NEWLINE
 
 // EXPRESSIONS
 ?expr: expr2
@@ -71,8 +75,8 @@ output_stmt: "output" expr NEWLINE
     | expr5 "not equal" expr5 -> not_equal_expr
     | expr5 "greater than" expr5 -> greater_expr
     | expr5 "less than" expr5 -> less_expr
-    | expr5 "greater than or equal" expr5 -> greater_equal_expr
-    | expr5 "less than or equal" expr5 -> less_equal_expr
+    | expr5 "greater than or equal to" expr5 -> greater_equal_expr
+    | expr5 "less than or equal to" expr5 -> less_equal_expr
 ?expr5: expr6
     | expr5 "+" expr6 -> add
     | expr5 "-" expr6 -> sub
@@ -94,7 +98,7 @@ output_stmt: "output" expr NEWLINE
     | call_expr
 
 // TOKENS
-ID: /[A-Z][a-zA-Z0-9_]*/
+ID: /[A-Z][a-zA-Z0-9_]*(\s+[a-zA-Z0-9_]+)*/
 FLOAT: /([1-9][0-9]*|0)\.[0-9]+/
 INTEGER: /[0-9]+/
 STRING: /"[^"]*"/
@@ -110,7 +114,7 @@ NEWLINE: (/\r?\n[ \t]*/)
 
 // Comments
 COMMENT: /\#[^\n]*/
-BLOCK_COMMENT: /\/\#[\s\S]*?\#\//
+BLOCK_COMMENT: /\#\/[\s\S]*?\/\#/
 %ignore COMMENT
 %ignore BLOCK_COMMENT
 """

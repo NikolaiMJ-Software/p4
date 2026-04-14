@@ -13,15 +13,15 @@ class ASTBuilder(Transformer):
     
     # STATEMENTS
     # creates
-    def create_v(self, *items):
-        return Create_v(items)
-    def create_s(self, *items):
-        return Create_s(items)
-    def create_l(self, *items):
-        return Create_l(items)
+    def create_v(self, name, value=None):
+        return Create_v(name, value)
+    def create_s(self, name, struct_tail):
+        return Create_s(name, struct_tail)
+    def create_l(self, name, listing):
+        return Create_l(name, listing)
 
     # tails
-    def create_tail(self, value):
+    def var_tail(self, value=None):
         return value
     def struct_tail(self, *items):
         return items
@@ -29,38 +29,33 @@ class ASTBuilder(Transformer):
         return value
 
     # struct specifics
-    def struct_inheritance(self, item):
-        return item
     def struct_fields(self, *items):
         return list(items)
-    def struct_field(self, *items):
-        return Create_v(items)
+    def struct_field(self, name, value=None):
+        return Create_v(name, value)
 
     # list specifics
     def list_items(self, *values):
-        return list(values) # no ListItems class needed
+        return list(values)
 
     # general statements
-    def assign_stmt(self, *values):
-        return Assign(values)
-    def if_stmt(self, *items):
-        return If(items)
-    def while_stmt(self, *items):
-        return While(items)
-    def dowhile_stmt(self, *items):
-        return Dowhile(items)
-    def forrange_stmt(self, *items):
-        return Forrange(items)
-    def foreach_stmt(self, *items):
-        return Foreach(items)
-    def func_def(self, *items):
-        name = items[0]
-        if isinstance(items[1], list):
-            params = items[1]
-            body = list(items[2:])
-        else:
-            params = []
-            body = list(items[1:])
+    def assign_stmt(self, name, base=None, value=None):
+        return Assign(name, base, value)
+    def if_stmt(self, cond, body, elifs=None, elses=None):
+        return If(cond, body, elifs, elses)
+    def elif_stmt(self, *items):
+        return [items[i:i+2] for i in range(0, len(items), 2)]
+    def else_stmt(self, item=None):
+        return item
+    def while_stmt(self, cond, body):
+        return While(cond, body)
+    def dowhile_stmt(self, body, cond):
+        return Dowhile(body, cond)
+    def forrange_stmt(self, name, start, end, body=None):
+        return Forrange(name, start, end, body)
+    def foreach_stmt(self, name, collection, body=None):
+        return Foreach(name, collection, body)
+    def func_def(self, name, params=None, body=None):
         return Define(name, params, body)
     def return_stmt(self, value):
         return Return(value)
@@ -72,32 +67,26 @@ class ASTBuilder(Transformer):
         return Output(value)
 
     # EXPRESSIONS
-    def or_expr(self, *values):
-        return OrExpr(values) 
-    def and_expr(self, *values):
-        return AndExpr(values) 
-    def either_expr(self, *values):
-        return XorExpr(values)
-    def not_expr(self, value):
-        return NotExpr(value) 
-    def equal_expr(self, *values):
-        return EqualExpr(values)
-    def not_equal_expr(self, *values):
-        return NotEqualExpr(values)
-    def greater_expr(self, *values):
-        return GreaterExpr(values)
-    def less_expr(self, *values):
-        return LessExpr(values)
-    def greater_equal_expr(self, *values):
-        return GreaterEqualExpr(values)
-    def less_equal_expr(self, *values):
-        return LessEqualExpr(values)
-    def between(self, left, right):
-        return Between(left, right)
-    def chance_percent(self, value):
-        return Chance(value, IntLiteral(100))
-    def chance(self, left, right):
-        return Chance(left, right)
+    def or_expr(self, left, right):
+        return OrExpr(left, right) 
+    def and_expr(self, left, right):
+        return AndExpr(left, right) 
+    def either_expr(self, left, right):
+        return XorExpr(left, right)
+    def not_expr(self, cond):
+        return NotExpr(cond) 
+    def equal_expr(self, left, right):
+        return EqualExpr(left, right)
+    def not_equal_expr(self, left, right):
+        return NotEqualExpr(left, right)
+    def greater_expr(self, left, right):
+        return GreaterExpr(left, right)
+    def less_expr(self, left, right):
+        return LessExpr(left, right)
+    def greater_equal_expr(self, left, right):
+        return GreaterEqualExpr(left, right)
+    def less_equal_expr(self, left, right):
+        return LessEqualExpr(left, right)
     def add(self, left, right):
         return Add(left, right)
     def sub(self, left, right):
@@ -110,29 +99,44 @@ class ASTBuilder(Transformer):
         return Pow(left, right)
     def neg(self, value):
         return Neg(value)
+    def between(self, left, right):
+        return Between(left, right)
+    def chance_percent(self, value):
+        return Chance(value, IntLiteral(100))
+    def chance(self, left, right):
+        return Chance(left, right)
+    def var(self, name, base=None):
+        return Var(name, base)
+    def call_expr(self, name, args=None):
+        return Call(name, args)
 
     # TOKENS
     def ID(self, token):
         return str(token)
     def INTEGER(self, token):
         return IntLiteral(int(token))
-
     def FLOAT(self, token):
         return FloatLiteral(float(token))
-
     def STRING(self, token):
         return StringLiteral(str(token)[1:-1])
-
     def BOOL(self, token):
         return BoolLiteral(token in ("true", "1"))
-    def call_expr(self, *items):
-        return Call(items)
+    def call_expr(self, name, args=None):
+        return Call(name, args)
     def args(self, *items):
         return list(items)
     def params(self, *items):
         return list(items)
     def list_item(self, value):
         return value
+    def inheritance(self, base=None):
+        return base
+    def more_stmt(self, *items):
+        return list(items)
+    def mul_stmt(self, *items):
+        return list(items)
+    def pos_stmt(self, item):
+        return item
     def NEWLINE(self, token):
         return Discard
     def INDENT(self, token):

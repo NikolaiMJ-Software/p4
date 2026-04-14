@@ -128,7 +128,8 @@ parser = Lark(
     grammar,
     parser="lalr",
     start="start",
-    postlex=TreeIndenter()
+    postlex=TreeIndenter(),
+    propagate_positions=True
 )
 
 code = """create X with:

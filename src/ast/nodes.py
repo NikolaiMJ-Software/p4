@@ -31,20 +31,20 @@ class BoolLiteral(ASTNode):
 
 
 # STATEMENTS
-class Create_v(ASTNode):
+class CreateVariable(ASTNode):
     def __init__(self, name, value=None):
         self.name = name
         self.value = value
     def __repr__(self):
         return f"Create_v({self.name},{self.value})" 
-class Create_s(ASTNode):
+class CreateStruct(ASTNode):
     def __init__(self, name, struct_tail):
         self.name = name
         self.base = struct_tail[0]
         self.fields = struct_tail[1]
     def __repr__(self):
         return f"Create_s({self.name},{self.base},{self.fields})"
-class Create_l(ASTNode):
+class CreateList(ASTNode):
     def __init__(self, name, listing):
         self.name = name
         self.listing = listing

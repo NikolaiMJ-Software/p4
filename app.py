@@ -3,7 +3,11 @@ from src.parser import parser
 from src.visitors import type_checker, interpreter
 
 # TEST
-code = """output (1+2)*3
+code = """create X with:
+    Y is 5
+create Z from X with:
+    W is 10
+output Z,X
 """
 
 
@@ -25,8 +29,10 @@ if __name__ == '__main__':
     #checker = type_checker.TypeCheckerVisitor()
     #for node in ast:
         #checker.visit(node)
+    
+    interpreter = interpreter.InterpreterVisitor()
     for node in ast:
-        interpreter.InterpreterVisitor().visit(node)
+        interpreter.visit(node)
     
     # TO DO:
     '''

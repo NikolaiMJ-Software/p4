@@ -14,11 +14,11 @@ class ASTBuilder(Transformer):
     # STATEMENTS
     # creates
     def create_v(self, name, value=None):
-        return Create_v(name, value)
+        return CreateVariable(name, value)
     def create_s(self, name, struct_tail):
-        return Create_s(name, struct_tail)
+        return CreateStruct(name, struct_tail)
     def create_l(self, name, listing):
-        return Create_l(name, listing)
+        return CreateList(name, listing)
 
     # tails
     def var_tail(self, value=None):
@@ -32,7 +32,7 @@ class ASTBuilder(Transformer):
     def struct_fields(self, *items):
         return list(items)
     def struct_field(self, name, value=None):
-        return Create_v(name, value)
+        return CreateVariable(name, value)
 
     # list specifics
     def list_items(self, *values):

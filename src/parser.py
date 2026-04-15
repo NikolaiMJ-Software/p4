@@ -59,7 +59,8 @@ expr_stmt: expr NEWLINE
 
 input_stmt: "input in" ID NEWLINE
 
-output_stmt: "output" expr+ NEWLINE
+output_stmt: "output" expr_list NEWLINE
+expr_list: expr ("," expr)*
 
 element_stmt: "element" ID "in" ID NEWLINE
 

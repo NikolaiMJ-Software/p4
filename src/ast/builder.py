@@ -137,6 +137,8 @@ class ASTBuilder(Transformer):
         return list(items)
     def pos_stmt(self, item):
         return item
+    def expr_list(self, *items):
+        return list(items)
     def NEWLINE(self, token):
         return Discard
     def INDENT(self, token):

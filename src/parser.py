@@ -139,8 +139,7 @@ parser = Lark(
     grammar,
     parser="lalr",
     start="start",
-    postlex=TreeIndenter(),
-    propagate_positions=True
+    postlex=TreeIndenter()
 )
 
 def parse(code):

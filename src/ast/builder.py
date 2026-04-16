@@ -25,7 +25,7 @@ class ASTBuilder(Transformer):
         return value
     def struct_tail(self, *items):
         return items
-    def list_tail(self, value):
+    def list_tail(self, value=None):
         return value
 
     # struct specifics

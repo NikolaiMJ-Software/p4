@@ -15,7 +15,11 @@ class TypeCheckerVisitor(Visitor):
         if "float" in (left_type, right_type):
             return "float"
         return "int"
-
+    def visit_var(self, node):
+        if node.name not in self.v_table:
+            raise TypeError(f"The variable: '{node.name}' don't exist")
+        return self.v_table[node.name]
+        
     def comparable_ordered(self, left_type, right_type):
         # for <, >, <=, >=
         return self.is_numeric(left_type) and self.is_numeric(right_type)
@@ -44,7 +48,7 @@ class TypeCheckerVisitor(Visitor):
     def visit_expression(self, node):
         return self.visit(node.value)
     
-    def visit_create_v(self, node):
+    def visit_create_variable(self, node):
         if node.name in self.v_table:
             raise TypeError(f"The variable: '{node.name}' already exist")
         
@@ -65,9 +69,7 @@ class TypeCheckerVisitor(Visitor):
         return value_type
     
     def visit_return(self, node):
-        if node.value in self.v_table:
-            return self.visit(node.value)
-        raise TypeError(f"The variable: '{node.value}' don't exist")
+        return self.visit(node.value)
     
     def visit_define(self, node):
         # Check if fthe function are already defined
@@ -266,11 +268,71 @@ class TypeCheckerVisitor(Visitor):
         for stmt in node.body:
             self.visit(stmt)
 
-        if node.else_body is not None:
-            for stmt in node.else_body:
+        if node.elses:
+            for stmt in node.elses:
                 self.visit(stmt)
+
+        if node.elifs:
+            for cond, body in node.elifs:
+                cond_type = self.visit(cond)
+                if cond_type != "bool":
+                    raise TypeError(f"elif condition must be bool, got {cond_type}")
+                for stmt in body:
+                    self.visit(stmt)
         return None
-    
+
+    def visit_while(self, node):
+        cond_type = self.visit(node.cond)
+
+        if cond_type != "bool":
+            raise TypeError(f"while condition must be bool, got {cond_type}")
+        old = self.v_table.copy()
+
+        for stmt in node.body:
+            self.visit(stmt)
+
+        self.v_table = old
+
+        return None
+
+    def visit_dowhile(self, node):
+        # visit body
+        old = self.v_table.copy()
+        for stmt in node.body:
+            self.visit(stmt)
+
+        self.v_table = old
+
+        # check condition
+        cond_type = self.visit(node.cond)
+        if cond_type != "bool":
+            raise TypeError(f"dowhile condition must be bool, got {cond_type}")
+
+        return None
+
+    def visit_create_list(self, node):
+        if node.name in self.v_table:
+            raise TypeError(f"The variable: '{node.name}' already exist")
+
+        if node.listing is None:
+            self.v_table[node.name] = "list"
+            return "list"
+
+        element_types = []
+
+        for item in node.listing:
+            t = self.visit(item)
+            element_types.append(t)
+
+        # enforce same type
+        if len(set(element_types)) > 1:
+            raise TypeError(f"List '{node.name}' has mixed types: {element_types}")
+
+        list_type = f"list[{element_types[0]}]" if element_types else "list"
+
+        self.v_table[node.name] = list_type
+        return list_type
+
     def visit_input(self, node):
         # Make sure the value are define before writing to it
         if node.name in self.v_table:

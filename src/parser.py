@@ -46,7 +46,7 @@ while_stmt: "while" expr "do:" NEWLINE INDENT more_stmt DEDENT
 
 dowhile_stmt: "do:" NEWLINE INDENT mul_stmt DEDENT "while" expr NEWLINE
 
-forrange_stmt: "for each" ID "between" expr "and" expr "do:" NEWLINE INDENT mul_stmt DEDENT
+forrange_stmt: "for each" ID "between" expr "to" expr "do:" NEWLINE INDENT mul_stmt DEDENT
 
 foreach_stmt: "for each" ID "in" ID "do:" NEWLINE INDENT mul_stmt DEDENT
 

@@ -114,16 +114,20 @@ def test_assign_index_value():
     tree_expr1 = parse("index 1+1 of X is 5\n")
     tree_expr2 = parse("index I of X is 5\n")
     tree_assign_index_ID = parse("index 1 of Y is 5\n")
+    tree_assign_index_index_ID = parse("index 1 of index 3 of Y is 5\n")
 
-    assert tree_int.children[0].data == "assign_index_stmt"
-    assert tree_expr1.children[0].data == "assign_index_stmt"
-    assert tree_expr2.children[0].data == "assign_index_stmt"
-    assert tree_assign_index_ID.children[0].data == "assign_index_stmt"
+    assert tree_int.children[0].data == "assign_index"
+    assert tree_expr1.children[0].data == "assign_index"
+    assert tree_expr2.children[0].data == "assign_index"
+    assert tree_assign_index_ID.children[0].data == "assign_index"
+    assert tree_assign_index_index_ID.children[0].data == "assign_index"
 
 def test_assign_ID_index_value():
     tree_assign_ID_index = parse("X is index 1 of Y\n")
+    tree_assign_ID_index_of_index = parse("X is index 1 of index 3 of Y\n")
 
     assert tree_assign_ID_index.children[0].data == "assign_i"
+    assert tree_assign_ID_index_of_index.children[0].data == "assign_i"
 
 ################
 # Control Flow #
@@ -254,8 +258,12 @@ def test_output():
 
 def test_output_index():
     tree = parse("output index 2 of X\n")
+    tree_index = parse("output index 2 of index 7 of index 10 of index I of X\n")
     
     assert tree.children[0].data == "output_stmt"
+    assert tree_index.children[0].data == "output_stmt"
+    
+
 
 ###############
 # Expressions #

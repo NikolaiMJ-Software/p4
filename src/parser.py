@@ -39,12 +39,15 @@ list_tail: "listing:" list_items? NEWLINE
 list_items: list_item ("," list_item)*
 
 assign_stmt: ID inheritance "is" expr NEWLINE -> assign_v
-| ID inheritance "is" list_tail -> assign_l
-| ID inheritance "is" index_access NEWLINE -> assign_i
+           | ID inheritance "is" list_tail -> assign_l
+           | ID inheritance "is" index_access NEWLINE -> assign_i
 
-assign_index_stmt: index_access "is" list_item NEWLINE 
+assign_index_stmt: index_access "is" list_item NEWLINE -> assign_index
 
-index_access: "index" expr "of" ID inheritance
+index_access: "index" expr "of" reference
+
+reference: ID inheritance
+         | index_access
 
 if_stmt: "if" expr "do:" NEWLINE INDENT more_stmt DEDENT elif_stmt else_stmt
 elif_stmt: ("else if" expr "do:" NEWLINE INDENT more_stmt DEDENT)*

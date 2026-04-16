@@ -8,7 +8,7 @@ class TypeCheckerVisitor(Visitor):
     def is_numeric(self, t):
         return t in ["int", "float"]
 
-    def numeric_result_type(self, left_type, right_type):
+    def numeric_result_type(self, node, left_type, right_type):
         if not self.is_numeric(left_type) or not self.is_numeric(right_type):
             raise TypeError(f"Expected numeric types, got {left_type} and {right_type}")
 

@@ -1,4 +1,5 @@
 #Tester parser->builder->node
+#første pipeline test whuuuuuu!
 import sys
 from pathlib import Path
 

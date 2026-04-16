@@ -94,6 +94,7 @@ def test_assign():
     tree_string = parse("X is \"pop\"\n")
     tree_ID = parse("X is Y\n")
     tree_list = parse("X is listing: 1, 3, 2, 4\n")
+
     
     assert tree_int.children[0].data == "assign_v"
     assert tree_float.children[0].data == "assign_v"
@@ -103,17 +104,26 @@ def test_assign():
     
 def test_struct_attribute_assign():
     tree = parse("Health from Zombie is between 5 and 10\n")
+    tree_assign_struct_list = parse("Health from Zombie is listing: \"a\", \"b\"\n")
     
     assert tree.children[0].data == "assign_v"
+    assert tree_assign_struct_list.children[0].data == "assign_l"
 
-def test_assign_index_value_to_ID():
+def test_assign_index_value():
     tree_int = parse("index 0 of X is 5\n")
     tree_expr1 = parse("index 1+1 of X is 5\n")
     tree_expr2 = parse("index I of X is 5\n")
+    tree_assign_index_ID = parse("index 1 of Y is 5\n")
 
     assert tree_int.children[0].data == "assign_index_stmt"
     assert tree_expr1.children[0].data == "assign_index_stmt"
     assert tree_expr2.children[0].data == "assign_index_stmt"
+    assert tree_assign_index_ID.children[0].data == "assign_index_stmt"
+
+def test_assign_ID_index_value():
+    tree_assign_ID_index = parse("X is index 1 of Y\n")
+
+    assert tree_assign_ID_index.children[0].data == "assign_i"
 
 ################
 # Control Flow #
@@ -240,6 +250,11 @@ def test_input():
 
 def test_output():
     tree = parse("output \"goat\"\n")
+    assert tree.children[0].data == "output_stmt"
+
+def test_output_index():
+    tree = parse("output index 2 of X\n")
+    
     assert tree.children[0].data == "output_stmt"
 
 ###############
@@ -461,3 +476,8 @@ def test_unclosed_block_comment():
 this comment never closes
 create X is 5
 """)
+        
+def test_assign_index_not_allowed_value():
+    with pytest.raises(UnexpectedInput):
+        parse("index 1 of Y is 5 + 1\n")
+        

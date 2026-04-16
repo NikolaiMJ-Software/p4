@@ -333,6 +333,46 @@ class TypeCheckerVisitor(Visitor):
         self.v_table[node.name] = list_type
         return list_type
 
+    def visit_forrange(self, node):
+        start_type = self.visit(node.start)
+        end_type = self.visit(node.end)
+
+        if not self.is_numeric(start_type) or not self.is_numeric(end_type):
+            raise TypeError(f"for-range bounds must be numeric, got {start_type} and {end_type}")
+
+        # loop variable is numeric
+        old = self.v_table.copy()
+        self.v_table[node.name] = "int"
+
+        for stmt in node.body:
+            self.visit(stmt)
+
+        self.v_table = old
+        return None
+
+    def visit_foreach(self, node):
+        if node.collection not in self.v_table:
+            raise TypeError(f"The variable: '{node.collection}' don't exist")
+
+        collection_type = self.v_table[node.collection]
+
+        if not isinstance(collection_type, str) or not collection_type.startswith("list"):
+            raise TypeError(f"Cannot iterate over non-list type '{collection_type}'")
+        # extract element type
+        if collection_type == "list":
+            elem_type = None
+        else:
+            elem_type = collection_type[5:-1]  # list[int] → int
+
+        old = self.v_table.copy()
+        self.v_table[node.name] = elem_type
+
+        for stmt in node.body:
+            self.visit(stmt)
+
+        self.v_table = old
+        return None
+        
     def visit_input(self, node):
         # Make sure the value are define before writing to it
         if node.name in self.v_table:

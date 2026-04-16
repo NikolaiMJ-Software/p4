@@ -28,7 +28,11 @@ while G
 create L listing: 1, 2, 3
 create M listing: "a", "b", "c"
 create O listing:
-
+create Arr listing: 1, 2, 3
+for each N from 1 to 5 do:
+    create X is N + 1
+for each Elem in Arr do:
+    create Y is Elem + 2
 """
 
 

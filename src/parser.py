@@ -17,7 +17,6 @@ start: stmt*
     | expr_stmt
     | input_stmt
     | output_stmt
-    | element_stmt
     | NEWLINE
 
 // STATEMENTS
@@ -41,8 +40,11 @@ list_items: list_item ("," list_item)*
 
 assign_stmt: ID inheritance "is" expr NEWLINE -> assign_v
 | ID inheritance "is" list_tail -> assign_l
+| ID inheritance "is" index_tail -> assign_i
 
 assign_index_stmt: "index" expr "of" ID inheritance "is" list_item NEWLINE 
+
+index_tail: "index" expr "of" ID inheritance NEWLINE
 
 if_stmt: "if" expr "do:" NEWLINE INDENT more_stmt DEDENT elif_stmt else_stmt
 elif_stmt: ("else if" expr "do:" NEWLINE INDENT more_stmt DEDENT)*
@@ -67,8 +69,6 @@ input_stmt: "input in" ID NEWLINE
 
 output_stmt: "output" expr_list NEWLINE
 expr_list: expr ("," expr)*
-
-element_stmt: "element" ID "in" ID NEWLINE
 
 // EXPRESSIONS
 ?expr: expr2

@@ -289,15 +289,6 @@ def test_chance_expression():
     assert tree_chance_1 is not None
     assert tree_chance_2 is not None
 
-#########
-# array #
-#########
-
-def test_element():
-    tree = parse("element X in Array\n")
-    
-    assert tree.children[0].data == "element_stmt"
-
 ############
 # Comments #
 ############

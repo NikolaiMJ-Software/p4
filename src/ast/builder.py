@@ -39,7 +39,7 @@ class ASTBuilder(Transformer):
         return list(values)
 
     # general statements
-    def assign_stmt(self, name, base=None, value=None):
+    def assign_v(self, name, base=None, value=None):
         return Assign(name, base, value)
     def if_stmt(self, cond, body, elifs=None, elses=None):
         return If(cond, body, elifs, elses)

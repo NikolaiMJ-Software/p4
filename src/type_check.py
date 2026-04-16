@@ -34,7 +34,19 @@ def check_op(val1, op, val2):
     invalid_chance = op == "chance" and not (is_numeric(t1) and is_numeric(t2))    
 
     if invalid_str or invalid_plus or invalid_arith or invalid_logic or invalid_for_loop or invalid_between or invalid_chance:
-        return f"TypeError: unsupported operand type(s) for {op}: '{t1.__name__}' and '{t2.__name__}'"
+        # problem here: we return string instead of stopping execution
+        # return f"TypeError: unsupported operand type(s) for {op}: '{t1.__name__}' and '{t2.__name__}'"
+
+        # instead: we raise an error and then send a message
+        raise TypeCheckError(
+            f"Unsupported operand type(s) for {op}: '{t1.__name__}' and '{t2.__name__}'"
+        )
     
     print(f"OK -> {t1.__name__} {op} {t2.__name__}")
     return get_type(t1, t2)
+
+class TypeCheckError(Exception):
+    def __init__(self, message, line, column): # question: should line = None + column = None
+        super().__init__(message)
+        self.line = line
+        self.column = column

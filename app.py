@@ -3,11 +3,21 @@ from src.parser import parser
 from src.visitors import type_checker
 
 # TEST
-code = """define Fun1 with Var1, Var2, Var3:
-    create Y is Var1 * Var3
-    create X is Y + Var2
-    return X
-call Fun1 with 1.2, 2, 2.2
+code = """create HEJ with:
+    Health is 2
+    Defense
+    Shield
+create HEJ2 from HEJ with:
+    Mom is 2
+create HEJ3 from HEJ2 with:
+    Dad is "hej"
+    Mom is "med"
+create X is Health from HEJ3
+Defense from HEJ is "haj"
+create Y is Defense from HEJ + Dad from HEJ3
+create HEJ3 with:
+    Dad is "hej"
+    Mom is "med"
 """
 
 
@@ -25,9 +35,9 @@ if __name__ == '__main__':
         print_ast(stmt)
     print("---------AST--------\n")
     
-    #checker = type_checker.TypeCheckerVisitor()
-    #for node in ast:
-        #checker.visit(node)
+    checker = type_checker.TypeCheckerVisitor()
+    for node in ast:
+        checker.visit(node)
     
     # TO DO:
     '''

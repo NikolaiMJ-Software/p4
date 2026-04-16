@@ -44,7 +44,7 @@ class TypeCheckerVisitor(Visitor):
     def visit_expression(self, node):
         return self.visit(node.value)
     
-    def visit_create_v(self, node):
+    def visit_create_variable(self, node):
         if node.name in self.v_table:
             raise TypeError(f"The variable: '{node.name}' already exist")
         
@@ -57,7 +57,19 @@ class TypeCheckerVisitor(Visitor):
         return value_type
     
     def visit_assign(self, node):
-        if node.name not in self.v_table:
+        if node.base:
+            if node.base not in self.v_table:
+                raise TypeError(f"The struct: '{node.base}' don't exist")
+            
+            base_type = self.v_table[node.base]
+            if node.name not in base_type:
+                raise TypeError(f"The variable: '{node.name}' don't exist in the struct: '{node.base}'")
+            
+            value_type = self.visit(node.value)
+            base_type[node.name] = value_type
+            return value_type
+        
+        if node.name not in self.v_table:   
             raise TypeError(f"The variable: '{node.name}' don't exist")
         
         value_type = self.visit(node.value)
@@ -282,3 +294,54 @@ class TypeCheckerVisitor(Visitor):
         if node.name in self.v_table:
             return self.visit(node.name)
         raise TypeError(f"The variable: '{node.name}' don't exist")
+    
+    def visit_var(self, node):
+        # Error, if the parrent (base) are not defined
+        if node.base not in self.v_table:
+            raise TypeError(f"The struct: '{node.base}' are not defined")
+        
+        # Error, if the variable 'name' are not inside of the parrent (base)
+        if node.name not in self.v_table[node.base]:
+            raise TypeError(f"The variable: '{node.name}' are not defined in the struct: '{node.base}'")
+        
+        # Find and return the type of the 'name'
+        return self.v_table[node.base][node.name]
+    
+    def visit_create_struct(self, node):
+        # Error, if the 'name' already exist
+        if node.name in self.v_table:
+            raise TypeError(f"The struct: '{node.name}' already exist")
+        
+        elif node.base in self.v_table:
+            # Merge with the parrent (base)
+            merged = {}
+            
+            # Base first
+            for name, typeof in self.v_table[node.base].items():
+                merged[name] = typeof
+
+            # Afterwards fields (overwrite)
+            for f in node.fields:
+                if type(f.value).__name__ != "NoneType": # Check if it's not a 'None' type
+                    merged[f.name] = self.visit(f.value)
+                else:
+                    merged[f.name] = None
+
+            # Update v_table
+            self.v_table[node.name] = merged
+            
+        elif node.base is None:
+            # Create new struct, if no parrent (base) are defined 
+            res = {}
+            for f in node.fields:
+                if type(f.value).__name__ != "NoneType": # Check if it's not a 'None' type
+                    res[f.name] = self.visit(f.value)
+                else:
+                    res[f.name] = None
+            
+            # Update v_table
+            self.v_table[node.name] = res
+            
+        else:
+            # Error, for no parrent
+            raise TypeError(f"The parrent struct: '{node.base}' don't exist")

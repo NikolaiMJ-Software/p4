@@ -8,7 +8,7 @@ class TypeCheckerVisitor(Visitor):
     def is_numeric(self, t):
         return t in ["int", "float"]
 
-    def numeric_result_type(self, node, left_type, right_type):
+    def numeric_result_type(self, left_type, right_type):
         if not self.is_numeric(left_type) or not self.is_numeric(right_type):
             raise TypeError(f"Expected numeric types, got {left_type} and {right_type}")
 
@@ -62,33 +62,42 @@ class TypeCheckerVisitor(Visitor):
         return self.visit(node.value)
     
     def visit_create_variable(self, node):
+        # Make sure no duplicate of variabels
         if node.name in self.v_table:
             raise TypeError(f"The variable: '{node.name}' already exist")
         
+        # Set type to 'None' if it doesn't exist
         if node.value is None:
             self.v_table[node.name] = None
             return None
 
+        # Save variable in v_table, with name and type
         value_type = self.visit(node.value)
         self.v_table[node.name] = value_type
         return value_type
     
     def visit_assign(self, node):
+        # Check if it got inheritance
         if node.base:
+            # Check if the parrent exist
             if node.base not in self.v_table:
                 raise TypeError(f"The struct: '{node.base}' don't exist")
             
+            # Check if the name exist
             base_type = self.v_table[node.base]
             if node.name not in base_type:
                 raise TypeError(f"The variable: '{node.name}' don't exist in the struct: '{node.base}'")
             
+            # Save in the parrent's v_table and return the type 
             value_type = self.visit(node.value)
             base_type[node.name] = value_type
             return value_type
         
+        # Check if the name exist
         if node.name not in self.v_table:   
             raise TypeError(f"The variable: '{node.name}' don't exist")
         
+        # Save in v_table and return the type
         value_type = self.visit(node.value)
         self.v_table[node.name] = value_type
         return value_type

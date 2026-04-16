@@ -6,6 +6,7 @@ grammar = r"""
 start: stmt*
 ?stmt: create_stmt
     | assign_stmt
+    | assign_index_stmt
     | if_stmt
     | while_stmt
     | dowhile_stmt
@@ -31,12 +32,17 @@ struct_tail: inheritance "with:" NEWLINE INDENT struct_fields DEDENT
 struct_inheritance: "from" ID
 
 struct_fields: (struct_field | NEWLINE)*
-struct_field: ID ("is" expr)? NEWLINE
+struct_field: ID NEWLINE
+            | ID "is" expr NEWLINE
+            | ID "is" "listing:" list_items? NEWLINE
 
 list_tail: "listing:" list_items? NEWLINE
 list_items: list_item ("," list_item)*
 
-assign_stmt: ID inheritance "is" expr NEWLINE
+assign_stmt: ID inheritance "is" expr NEWLINE -> assign_v
+| ID inheritance "is" list_tail -> assign_l
+
+assign_index_stmt: "index" expr "of" ID inheritance "is" list_item NEWLINE 
 
 if_stmt: "if" expr "do:" NEWLINE INDENT more_stmt DEDENT elif_stmt else_stmt
 elif_stmt: ("else if" expr "do:" NEWLINE INDENT more_stmt DEDENT)*

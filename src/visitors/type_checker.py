@@ -15,11 +15,7 @@ class TypeCheckerVisitor(Visitor):
         if "float" in (left_type, right_type):
             return "float"
         return "int"
-    def visit_var(self, node):
-        if node.name not in self.v_table:
-            raise TypeError(f"The variable: '{node.name}' don't exist")
-        return self.v_table[node.name]
-        
+
     def comparable_ordered(self, left_type, right_type):
         # for <, >, <=, >=
         return self.is_numeric(left_type) and self.is_numeric(right_type)
@@ -398,9 +394,9 @@ class TypeCheckerVisitor(Visitor):
         raise TypeError(f"The variable: '{node.name}' don't exist")
     
     def visit_var(self, node):
-        # Error, if the parrent (base) are not defined
-        if node.base not in self.v_table:
-            raise TypeError(f"The struct: '{node.base}' are not defined")
+        if node.name not in self.v_table:
+            raise TypeError(f"The variable: '{node.name}' don't exist")
+        return self.v_table[node.name]
         
         # Error, if the variable 'name' are not inside of the parrent (base)
         if node.name not in self.v_table[node.base]:

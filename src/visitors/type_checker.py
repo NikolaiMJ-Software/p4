@@ -140,7 +140,7 @@ class TypeCheckerVisitor(Visitor):
     def visit_add(self, node):
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
-
+        # Allow string concatenation
         if left_type == "str" and right_type == "str":
             return "str"
 
@@ -283,6 +283,7 @@ class TypeCheckerVisitor(Visitor):
         return "bool"
 
     def visit_if(self, node):
+        # condition must be a bool
         cond_type = self.visit(node.cond)
 
         if cond_type is None:
@@ -290,13 +291,16 @@ class TypeCheckerVisitor(Visitor):
         if cond_type != "bool":
             raise TypeError(f"if condition must be bool, got {cond_type}")
 
+        # Checks statements inside if body
         for stmt in node.body:
             self.visit(stmt)
 
+        # Checks statements inside else body
         if node.elses:
             for stmt in node.elses:
                 self.visit(stmt)
 
+        # Checks all elif branches
         if node.elifs:
             for cond, body in node.elifs:
                 cond_type = self.visit(cond)
@@ -311,21 +315,25 @@ class TypeCheckerVisitor(Visitor):
 
         if cond_type != "bool":
             raise TypeError(f"while condition must be bool, got {cond_type}")
+        # saves current scope
         old = self.v_table.copy()
 
+        # Checks all statements inside loop body
         for stmt in node.body:
             self.visit(stmt)
 
+        #restore previous scope
         self.v_table = old
 
         return None
 
     def visit_dowhile(self, node):
-        # visit body
+        # Saves current scope
         old = self.v_table.copy()
+        # Checks body
         for stmt in node.body:
             self.visit(stmt)
-
+        # Restore previous scope
         self.v_table = old
 
         # check condition
@@ -336,15 +344,18 @@ class TypeCheckerVisitor(Visitor):
         return None
 
     def visit_create_list(self, node):
+        # List name must be unique
         if node.name in self.v_table:
             raise TypeError(f"The variable: '{node.name}' already exist")
 
+        # Empty list gets generic list type
         if node.listing is None:
             self.v_table[node.name] = "list"
             return "list"
 
         element_types = []
 
+        # Finds type of each list element
         for item in node.listing:
             t = self.visit(item)
             element_types.append(t)
@@ -353,48 +364,57 @@ class TypeCheckerVisitor(Visitor):
         if len(set(element_types)) > 1:
             raise TypeError(f"List '{node.name}' has mixed types: {element_types}")
 
+        # Creates typed list, for example list[int]
         list_type = f"list[{element_types[0]}]" if element_types else "list"
 
         self.v_table[node.name] = list_type
         return list_type
 
     def visit_forrange(self, node):
+        # Range start and end must be numeric
         start_type = self.visit(node.start)
         end_type = self.visit(node.end)
 
         if not self.is_numeric(start_type) or not self.is_numeric(end_type):
             raise TypeError(f"for-range bounds must be numeric, got {start_type} and {end_type}")
 
-        # loop variable is numeric
+        # Saves old scope and creates loop variable
         old = self.v_table.copy()
         self.v_table[node.name] = "int"
 
+        # Checks all statements inside loop body once
         for stmt in node.body:
             self.visit(stmt)
 
+        # Restore previous scope
         self.v_table = old
         return None
 
     def visit_foreach(self, node):
+        # List to iterate over must exist
         if node.collection not in self.v_table:
             raise TypeError(f"The variable: '{node.collection}' don't exist")
 
         collection_type = self.v_table[node.collection]
 
+        # Only lists can be used in foreach
         if not isinstance(collection_type, str) or not collection_type.startswith("list"):
             raise TypeError(f"Cannot iterate over non-list type '{collection_type}'")
-        # extract element type
+        # Finds the type of one element inside the list
         if collection_type == "list":
             elem_type = None
         else:
             elem_type = collection_type[5:-1]  # list[int] → int
 
+        # Saves old scope and creates loop variable
         old = self.v_table.copy()
         self.v_table[node.name] = elem_type
 
+        # Checks all statements inside loop body once
         for stmt in node.body:
             self.visit(stmt)
 
+        # Restores previous scope
         self.v_table = old
         return None
         

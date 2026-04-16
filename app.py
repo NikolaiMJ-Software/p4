@@ -33,6 +33,19 @@ for each N from 1 to 5 do:
     create X is N + 1
 for each Elem in Arr do:
     create Y is Elem + 2
+    
+create HEJ with:
+    Health is 2
+    Defense
+    Shield
+create HEJ2 from HEJ with:
+    Mom is 2
+create HEJ3 from HEJ2 with:
+    Dad is "hej"
+    Mom is "med"
+create X is Health from HEJ3
+Defense from HEJ is "haj"
+create Y is Defense from HEJ + Dad from HEJ3
 """
 
 

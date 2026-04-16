@@ -15,10 +15,23 @@ class TypeCheckerVisitor(Visitor):
         if "float" in (left_type, right_type):
             return "float"
         return "int"
+
     def visit_var(self, node):
-        if node.name not in self.v_table:
-            raise TypeError(f"The variable: '{node.name}' don't exist")
-        return self.v_table[node.name]
+        if node.base is None:
+            if node.name not in self.v_table:
+                raise TypeError(f"The variable: '{node.name}' don't exist")
+            return self.v_table[node.name]
+
+        # Error, if the parrent (base) are not defined
+        if node.base not in self.v_table:
+            raise TypeError(f"The struct: '{node.base}' are not defined")
+        
+        # Error, if the variable 'name' are not inside of the parrent (base)
+        if node.name not in self.v_table[node.base]:
+            raise TypeError(f"The variable: '{node.name}' are not defined in the struct: '{node.base}'")
+        
+        # Find and return the type of the 'name'
+        return self.v_table[node.base][node.name]
         
     def comparable_ordered(self, left_type, right_type):
         # for <, >, <=, >=
@@ -396,18 +409,6 @@ class TypeCheckerVisitor(Visitor):
         if node.name in self.v_table:
             return self.visit(node.name)
         raise TypeError(f"The variable: '{node.name}' don't exist")
-    
-    def visit_var(self, node):
-        # Error, if the parrent (base) are not defined
-        if node.base not in self.v_table:
-            raise TypeError(f"The struct: '{node.base}' are not defined")
-        
-        # Error, if the variable 'name' are not inside of the parrent (base)
-        if node.name not in self.v_table[node.base]:
-            raise TypeError(f"The variable: '{node.name}' are not defined in the struct: '{node.base}'")
-        
-        # Find and return the type of the 'name'
-        return self.v_table[node.base][node.name]
     
     def visit_create_struct(self, node):
         # Error, if the 'name' already exist

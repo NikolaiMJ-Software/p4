@@ -26,6 +26,7 @@ while G
 
 # LISTS
 create L listing: 1, 2, 3
+index 1 of L is 5
 create M listing: "a", "b", "c"
 create O listing:
 create Arr listing: 1, 2, 3

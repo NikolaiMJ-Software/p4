@@ -88,8 +88,38 @@ class TypeCheckerVisitor(Visitor):
         value_type = self.visit(node.value)
         self.v_table[node.name] = value_type
         return value_type
-    
+
     def visit_assign(self, node):
+        # Check if assigning to a list index
+        if type(node.name).__name__ == "IndexAccess":
+            # Find the type of the index
+            index_type = self.visit(node.name.index)
+            if index_type != "int":
+                raise TypeError(f"List index must be int, got {index_type}")
+
+            # Find the type of the collection
+            collection_type = self.visit(node.name.target)
+
+            # Make sure the target is a list
+            if not isinstance(collection_type, str) or not collection_type.startswith("list"):
+                raise TypeError(f"Cannot index non-list type '{collection_type}'")
+
+            # Find the element type inside the list
+            if collection_type == "list":
+                elem_type = None
+            else:
+                elem_type = collection_type[5:-1]  # list[int] -> int
+
+            # Find the type of the assigned value
+            value_type = self.visit(node.value)
+
+            # If the list has a known element type, enforce it
+            if elem_type is not None and value_type != elem_type:
+                raise TypeError(
+                    f"Cannot assign value of type '{value_type}' to list element of type '{elem_type}'"
+                )
+            return value_type
+
         # Check if it got inheritance
         if node.base:
             # Check if the parrent exist
@@ -127,7 +157,7 @@ class TypeCheckerVisitor(Visitor):
         value_type = self.visit(node.value)
         self.v_table[node.name] = value_type
         return value_type
-    
+
     def visit_return(self, node):
         return self.visit(node.value)
     
@@ -422,6 +452,21 @@ class TypeCheckerVisitor(Visitor):
 
         self.v_table[node.name] = list_type
         return list_type
+
+    def visit_index_access(self, node):
+        index_type = self.visit(node.index)
+        if index_type != "int":
+            raise TypeError(f"List index must be int, got {index_type}")
+
+        target_type = self.visit(node.target)
+
+        if not isinstance(target_type, str) or not target_type.startswith("list"):
+            raise TypeError(f"Cannot index non-list type '{target_type}'")
+
+        if target_type == "list":
+            return None
+
+        return target_type[5:-1]   # list[int] -> int
 
     def visit_forrange(self, node):
         # Range start and end must be numeric

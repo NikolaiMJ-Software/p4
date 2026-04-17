@@ -114,3 +114,118 @@ def test_ast_chance():
     node = ast[0]
 
     assert node.value.__class__.__name__ == "Chance"
+    
+    
+def test_ast_assign_list():
+    tree = parse("X is listing: 1, 3, 2, 4\n")
+    ast = ASTBuilder().transform(tree)
+
+    node = ast[0]
+
+    assert node.__class__.__name__ == "Assign"
+    assert node.name == "X"
+    assert node.base is None
+    assert isinstance(node.value, list)
+    assert [item.value for item in node.value] == [1, 3, 2, 4]
+
+
+def test_ast_assign_struct_list():
+    tree = parse('Health from Zombie is listing: "a", "b"\n')
+    ast = ASTBuilder().transform(tree)
+
+    node = ast[0]
+
+    assert node.__class__.__name__ == "Assign"
+    assert node.name == "Health"
+    assert node.base == "Zombie"
+    assert isinstance(node.value, list)
+    assert [item.value for item in node.value] == ["a", "b"]
+
+
+def test_ast_assign_index_value():
+    tree = parse("X is index 1 of Y\n")
+    ast = ASTBuilder().transform(tree)
+
+    node = ast[0]
+
+    assert node.__class__.__name__ == "Assign"
+    assert node.name == "X"
+    assert node.base is None
+
+    assert node.value.__class__.__name__ == "IndexAccess"
+    assert node.value.index.value == 1
+    assert node.value.target.__class__.__name__ == "Var"
+    assert node.value.target.name == "Y"
+    assert node.value.target.base is None
+
+
+def test_ast_assign_nested_index_value():
+    tree = parse("X is index 1 of index 3 of Y\n")
+    ast = ASTBuilder().transform(tree)
+
+    node = ast[0]
+    outer = node.value
+    inner = outer.target
+
+    assert node.__class__.__name__ == "Assign"
+    assert node.name == "X"
+
+    assert outer.__class__.__name__ == "IndexAccess"
+    assert outer.index.value == 1
+
+    assert inner.__class__.__name__ == "IndexAccess"
+    assert inner.index.value == 3
+    assert inner.target.__class__.__name__ == "Var"
+    assert inner.target.name == "Y"
+
+
+def test_ast_assign_to_index():
+    tree = parse("index 1 of Y is 5\n")
+    ast = ASTBuilder().transform(tree)
+
+    node = ast[0]
+
+    assert node.__class__.__name__ == "AssignIndex"
+    assert node.target.__class__.__name__ == "IndexAccess"
+    assert node.target.index.value == 1
+    assert node.target.target.__class__.__name__ == "Var"
+    assert node.target.target.name == "Y"
+    assert node.value.value == 5
+
+
+def test_ast_assign_to_nested_index():
+    tree = parse('index 2 of index 1 of Y is "goat"\n')
+    ast = ASTBuilder().transform(tree)
+
+    node = ast[0]
+    outer = node.target
+    inner = outer.target
+
+    assert node.__class__.__name__ == "AssignIndex"
+    assert node.value.__class__.__name__ == "StringLiteral"
+    assert node.value.value == "goat"
+
+    assert outer.__class__.__name__ == "IndexAccess"
+    assert outer.index.value == 2
+
+    assert inner.__class__.__name__ == "IndexAccess"
+    assert inner.index.value == 1
+    assert inner.target.__class__.__name__ == "Var"
+    assert inner.target.name == "Y"
+
+
+def test_ast_output_expr_list():
+    tree = parse('output "hello", X, 5\n')
+    ast = ASTBuilder().transform(tree)
+
+    node = ast[0]
+
+    assert node.__class__.__name__ == "Output"
+    assert isinstance(node.value, list)
+    assert len(node.value) == 3
+    assert node.value[0].__class__.__name__ == "StringLiteral"
+    assert node.value[0].value == "hello"
+    assert node.value[1].__class__.__name__ == "Var"
+    assert node.value[1].name == "X"
+    assert node.value[2].__class__.__name__ == "IntLiteral"
+    assert node.value[2].value == 5

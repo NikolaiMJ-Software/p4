@@ -38,9 +38,17 @@ class ASTBuilder(Transformer):
     def list_items(self, *values):
         return list(values)
 
-    # general statements
+    #Assignment
     def assign_v(self, name, base=None, value=None):
         return Assign(name, base, value)
+    def assign_l(self, name, base=None, value=None):
+        return Assign(name, base, value)
+    def assign_i(self, name, base=None, value=None):
+        return Assign(name, base, value)
+    def assign_index(self, target, value):
+        return AssignIndex(target, value)
+
+    # general statements
     def if_stmt(self, cond, body, elifs=None, elses=None):
         return If(cond, body, elifs, elses)
     def elif_stmt(self, *items):
@@ -109,6 +117,16 @@ class ASTBuilder(Transformer):
         return Var(name, base)
     def call_expr(self, name, args=None):
         return Call(name, args)
+    
+    # INDEX / REFERENCES
+    def index_access(self, index, target):
+        return IndexAccess(index, target)
+    def reference(self, value, inheritance=None):
+        if isinstance(value, str):
+            return Var(value, inheritance)
+        return value
+    def index_expr(self, value):
+        return value
 
     # TOKENS
     def ID(self, token):
@@ -121,8 +139,6 @@ class ASTBuilder(Transformer):
         return StringLiteral(str(token)[1:-1])
     def BOOL(self, token):
         return BoolLiteral(token in ("true", "1"))
-    def call_expr(self, name, args=None):
-        return Call(name, args)
     def args(self, *items):
         return list(items)
     def params(self, *items):

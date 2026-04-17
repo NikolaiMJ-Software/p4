@@ -234,3 +234,18 @@ class Call:
         self.args = args
     def __repr__(self):
         return f"Call({self.name},{self.args})"
+
+#Index nodes
+class IndexAccess(ASTNode):
+    def __init__(self, index, target):
+        self.index = index
+        self.target = target
+    def __repr__(self):
+        return f"IndexAccess({self.index},{self.target})"
+
+class AssignIndex(ASTNode):
+    def __init__(self, target, value):
+        self.target = target
+        self.value = value
+    def __repr__(self):
+        return f"AssignIndex({self.target},{self.value})"

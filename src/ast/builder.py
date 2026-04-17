@@ -25,7 +25,7 @@ class ASTBuilder(Transformer):
         return value
     def struct_tail(self, *items):
         return items
-    def list_tail(self, value):
+    def list_tail(self, value=None):
         return value
 
     # struct specifics
@@ -45,8 +45,8 @@ class ASTBuilder(Transformer):
         return Assign(name, base, value)
     def assign_i(self, name, base=None, value=None):
         return Assign(name, base, value)
-    def assign_index(self, target, value):
-        return AssignIndex(target, value)
+    def assign_index(self, target, value, base=None):
+            return Assign(target, base, value)
     
     #Reference used for assignment
     def reference(self, value, inheritance=None):

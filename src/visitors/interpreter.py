@@ -8,8 +8,20 @@ class ReturnException(Exception):
 
 class InterpreterVisitor(Visitor):
     def __init__(self):
-        self.v_table = {}
+        self.v_tables = [{}]
         self.f_table = {}
+    
+    # SCOPE HANDLING
+    def lookup(self, name):
+        for v_table in reversed(self.v_tables):
+            if name in v_table:
+                return v_table[name]
+        return None
+    def find_scope(self, name):
+        for scope in reversed(self.scopes):
+            if name in scope:
+                return scope
+        return None
     
     # LITERALS
     def visit_int_literal(self, node):
@@ -24,22 +36,22 @@ class InterpreterVisitor(Visitor):
     # STATEMENTS
     def visit_create_v(self, node):
         value = self.visit(node.value) if node.value else "UNINITIALIZED"
-        self.v_table[node.name] = value
+        self.v_tables[-1][node.name] = value
     def visit_create_s(self, node): # IS SUPPOSED TO CHANGE DEPENDING ON TYPECHECKER
-        parent = self.v_table.get(node.base, {})
+        parent = self.lookup(node.base)
         fields = {field.name: self.visit(field.value) if field.value else "UNINITIALIZED" for field in node.fields}
-        self.v_table[node.name] = {**parent, **fields}
+        self.v_tables[-1][node.name] = {**parent, **fields}
     def visit_create_l(self, node):
         listing = [self.visit(item) for item in node.listing] if node.listing else []
-        self.v_table[node.name] = listing
+        self.v_tables[-1][node.name] = listing
     def visit_assign(self, node):
         value = self.visit(node.value)
         if node.base:
-            struct = self.v_table.get(node.base, {})
+            struct = self.lookup(node.base)
             struct[node.name] = value
-            self.v_table[node.base] = struct
-        else:
-            self.v_table[node.name] = value
+            return
+        scope = self.find_scope(node.name)
+        scope[node.name] = value
     def visit_if(self, node):
         if self.visit(node.cond):
             for stmt in node.body:
@@ -65,17 +77,19 @@ class InterpreterVisitor(Visitor):
                 break
     def visit_forrange(self, node):
         for i in range(self.visit(node.start), self.visit(node.end) + 1):
-            self.v_table[node.name] = i
+            self.v_tables.append({})
+            self.v_tables[-1][node.name] = i
             for stmt in node.body:
                 self.visit(stmt)
-            self.v_table.pop(node.name, None)
+            self.v_tables.pop()
     def visit_foreach(self, node):
-        collection = self.v_table[node.collection]
+        collection = self.lookup(node.collection)
         for item in collection:
-            self.v_table[node.name] = item
+            self.v_tables.append({})
+            self.v_tables[-1][node.name] = item
             for stmt in node.body:
                 self.visit(stmt)
-            self.v_table.pop(node.name, None)
+            self.v_tables.pop()
     def visit_define(self, node):
         self.f_table[node.name] = {
             "params" : node.params,
@@ -87,7 +101,8 @@ class InterpreterVisitor(Visitor):
     def visit_expression(self, node):
         self.visit(node.value)
     def visit_input(self, node):
-        self.v_table[node.name] = input()
+        scope = self.find_scope(node.name)
+        scope[node.name] = input()
     def visit_output(self, node):
         values = [self.visit(v) for v in node.value]
         print(*values)
@@ -160,22 +175,21 @@ class InterpreterVisitor(Visitor):
         return random.randrange(0, right) < left
     def visit_var(self, node):
         if node.base:
-            struct = self.v_table.get(node.base, {})
+            struct = self.lookup(node.base)
             return struct.get(node.name, None)
-        return self.v_table.get(node.name, None)
+        return self.lookup(node.name)
     def visit_call(self, node):
         function = self.f_table[node.name]
         params = function["params"]
         body = function["body"]
         args = node.args or []
+        self.v_tables.append({})
         for param, arg in zip(params, args):
-            self.v_table[param] = self.visit(arg)
+            self.v_tables[-1][param] = self.visit(arg)
         try:
             for stmt in body:
                 self.visit(stmt)
         except ReturnException as r:
-            for param in params:
-                self.v_table.pop(param, None)
+            self.v_tables.pop()
             return r.value
-        for param in params:
-            self.v_table.pop(param, None)
+        self.v_tables.pop()

@@ -9,9 +9,11 @@ class TypeCheckerVisitor(Visitor):
         return t in ["int", "float"]
 
     def numeric_result_type(self, node, left_type, right_type):
+        # Makes sure both sides are numeric
         if not self.is_numeric(left_type) or not self.is_numeric(right_type):
             raise TypeError(f"Expected numeric types, got {left_type} and {right_type}")
 
+        # If one side is float, the result also becomes float
         if "float" in (left_type, right_type):
             return "float"
         return "int"
@@ -177,30 +179,36 @@ class TypeCheckerVisitor(Visitor):
         if left_type == "str" and right_type == "str":
             return "str"
 
+        # Otherwise, both sides must be numeric
         return self.numeric_result_type(node, left_type, right_type)
     
     def visit_sub(self, node):
+        #both sides must be numeric
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
 
         return self.numeric_result_type(node, left_type, right_type)
     
     def visit_mul(self, node):
+        #both sides must be numeric
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
 
         return self.numeric_result_type(node, left_type, right_type)
     
     def visit_div(self, node):
+        #both sides must be numeric
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
 
         if not self.is_numeric(left_type) or not self.is_numeric(right_type):
             raise TypeError(f"Expected numeric types, got {left_type} and {right_type}")
 
+        #division always returns float
         return "float"
     
     def visit_pow(self, node):
+        #both sides must be numeric
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
         
@@ -208,6 +216,7 @@ class TypeCheckerVisitor(Visitor):
 
     # comparison operators
     def visit_equal_expr(self, node):
+        #checks both sides of equality
         left_type = self.visit(node.cond)
         right_type = self.visit(node.cond2)
 
@@ -217,6 +226,7 @@ class TypeCheckerVisitor(Visitor):
         return "bool"
     
     def visit_not_equal_expr(self, node):
+        # Checks both sides of inequality
         left_type = self.visit(node.cond)
         right_type = self.visit(node.cond2)
 
@@ -226,6 +236,7 @@ class TypeCheckerVisitor(Visitor):
         return "bool"
 
     def visit_greater_expr(self, node):
+        # Checks both sides of greater than ">"
         left_type = self.visit(node.cond)
         right_type = self.visit(node.cond2)
 
@@ -235,6 +246,7 @@ class TypeCheckerVisitor(Visitor):
         return "bool"
 
     def visit_less_expr(self, node):
+        #checks both sides of less than "<"
         left_type = self.visit(node.cond)
         right_type = self.visit(node.cond2)
 
@@ -244,6 +256,7 @@ class TypeCheckerVisitor(Visitor):
         return "bool"
 
     def visit_greater_equal_expr(self, node):
+        # Checks both sides of greater than or equal ">="
         left_type = self.visit(node.cond)
         right_type = self.visit(node.cond2)
 
@@ -253,6 +266,7 @@ class TypeCheckerVisitor(Visitor):
         return "bool"
 
     def visit_less_equal_expr(self, node):
+        # Checks both sides of less than or equal "<="
         left_type = self.visit(node.cond)
         right_type = self.visit(node.cond2)
 
@@ -264,6 +278,7 @@ class TypeCheckerVisitor(Visitor):
     #boolean operators
 
     def visit_and_expr(self,node):
+        # AND requires both sides to be bool
         left_type = self.visit(node.cond)
         right_type = self.visit(node.cond2)
 
@@ -273,6 +288,7 @@ class TypeCheckerVisitor(Visitor):
         return "bool"
 
     def visit_or_expr(self, node):
+        # OR requires both sides to be bool
         left_type = self.visit(node.cond)
         right_type = self.visit(node.cond2)
 
@@ -282,6 +298,7 @@ class TypeCheckerVisitor(Visitor):
         return "bool"
 
     def visit_not_expr(self, node):
+        # NOT requires a single bool operand
         value_type = self.visit(node.cond)
 
         if value_type != "bool":
@@ -290,6 +307,7 @@ class TypeCheckerVisitor(Visitor):
         return "bool"
 
     def visit_xor_expr(self, node):
+        # XOR requires both sides to be bool
         left_type = self.visit(node.cond)
         right_type = self.visit(node.cond2)
 
@@ -299,6 +317,7 @@ class TypeCheckerVisitor(Visitor):
         return "bool"
 
     def visit_between(self, node):
+        # Between requires numeric values
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
 
@@ -308,6 +327,7 @@ class TypeCheckerVisitor(Visitor):
         return "bool"
 
     def visit_chance(self, node):
+        # Chance requires numeric values
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
 

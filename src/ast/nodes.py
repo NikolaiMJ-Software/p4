@@ -57,6 +57,12 @@ class Assign(ASTNode):
         self.value = value
     def __repr__(self):
         return f"Assign({self.name},{self.base},{self.value})"
+class AssignIndex(ASTNode):
+    def __init__(self, target, value):
+        self.target = target
+        self.value = value
+    def __repr__(self):
+        return f"AssignIndex({self.target},{self.value})"
 class If(ASTNode):
     def __init__(self, cond, body, elifs, elses):
         self.cond = cond
@@ -234,3 +240,9 @@ class Call(ASTNode):
         self.args = args
     def __repr__(self):
         return f"Call({self.name},{self.args})"
+class IndexAccess(ASTNode):
+    def __init__(self, index, target):
+        self.index = index
+        self.target = target
+    def __repr__(self):
+        return f"IndexAccess({self.index},{self.target})"

@@ -52,6 +52,7 @@ def test_creat_struct():
     Health is between 5 and 10
     Speed is chance 30%
     Coolness is chance 10 in 100
+    Items is listing: 1, 2, 3, "cake"
     """
     
     code_comment = """create X with:
@@ -92,16 +93,41 @@ def test_assign():
     tree_float = parse("X is 5.5\n")
     tree_string = parse("X is \"pop\"\n")
     tree_ID = parse("X is Y\n")
+    tree_list = parse("X is listing: 1, 3, 2, 4\n")
+
     
-    assert tree_int.children[0].data == "assign_stmt"
-    assert tree_float.children[0].data == "assign_stmt"
-    assert tree_string.children[0].data == "assign_stmt"
-    assert tree_ID.children[0].data == "assign_stmt"
+    assert tree_int.children[0].data == "assign_v"
+    assert tree_float.children[0].data == "assign_v"
+    assert tree_string.children[0].data == "assign_v"
+    assert tree_ID.children[0].data == "assign_v"
+    assert tree_list.children[0].data == "assign_l"
     
 def test_struct_attribute_assign():
-    tree = parse("Healt from Zombie is between 5 and 10\n")
+    tree = parse("Health from Zombie is between 5 and 10\n")
+    tree_assign_struct_list = parse("Health from Zombie is listing: \"a\", \"b\"\n")
     
-    assert tree.children[0].data == "assign_stmt"
+    assert tree.children[0].data == "assign_v"
+    assert tree_assign_struct_list.children[0].data == "assign_l"
+
+def test_assign_index_value():
+    tree_int = parse("index 0 of X is 5\n")
+    tree_expr1 = parse("index 1+1 of X is 5\n")
+    tree_expr2 = parse("index I of X is 5\n")
+    tree_assign_index_ID = parse("index 1 of Y is 5\n")
+    tree_assign_index_index_ID = parse("index 1 of index 3 of Y is 5\n")
+
+    assert tree_int.children[0].data == "assign_index"
+    assert tree_expr1.children[0].data == "assign_index"
+    assert tree_expr2.children[0].data == "assign_index"
+    assert tree_assign_index_ID.children[0].data == "assign_index"
+    assert tree_assign_index_index_ID.children[0].data == "assign_index"
+
+def test_assign_ID_index_value():
+    tree_assign_ID_index = parse("X is index 1 of Y\n")
+    tree_assign_ID_index_of_index = parse("X is index 1 of index 3 of Y\n")
+
+    assert tree_assign_ID_index.children[0].data == "assign_i"
+    assert tree_assign_ID_index_of_index.children[0].data == "assign_i"
 
 ################
 # Control Flow #
@@ -111,7 +137,7 @@ def test_if_stmt():
     code = """if true do:
     X is 5
     create Y
-    output Y
+    output Y, X, "cake"
     """
     
     tree = parse(code)
@@ -230,6 +256,15 @@ def test_output():
     tree = parse("output \"goat\"\n")
     assert tree.children[0].data == "output_stmt"
 
+def test_output_index():
+    tree = parse("output index 2 of X\n")
+    tree_index = parse("output index 2 of index 7 of index 10 of index I of X\n")
+    
+    assert tree.children[0].data == "output_stmt"
+    assert tree_index.children[0].data == "output_stmt"
+    
+
+
 ###############
 # Expressions #
 ###############
@@ -277,15 +312,6 @@ def test_chance_expression():
     assert tree_chance_1 is not None
     assert tree_chance_2 is not None
 
-#########
-# array #
-#########
-
-def test_element():
-    tree = parse("element X in Array\n")
-    
-    assert tree.children[0].data == "element_stmt"
-
 ############
 # Comments #
 ############
@@ -327,7 +353,7 @@ X is 5
     stmts = [child for child in tree.children if hasattr(child, "data")]
 
     assert stmts[0].data == "create_v"
-    assert stmts[1].data == "assign_stmt"
+    assert stmts[1].data == "assign_v"
     
     
     
@@ -458,3 +484,8 @@ def test_unclosed_block_comment():
 this comment never closes
 create X is 5
 """)
+        
+def test_assign_index_not_allowed_value():
+    with pytest.raises(UnexpectedInput):
+        parse("index 1 of Y is 5 + 1\n")
+        

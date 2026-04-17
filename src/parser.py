@@ -6,6 +6,7 @@ grammar = r"""
 start: stmt*
 ?stmt: create_stmt
     | assign_stmt
+    | assign_index_stmt
     | if_stmt
     | while_stmt
     | dowhile_stmt
@@ -16,7 +17,6 @@ start: stmt*
     | expr_stmt
     | input_stmt
     | output_stmt
-    | element_stmt
     | NEWLINE
 
 // STATEMENTS
@@ -31,12 +31,23 @@ struct_tail: inheritance "with:" NEWLINE INDENT struct_fields DEDENT
 struct_inheritance: "from" ID
 
 struct_fields: (struct_field | NEWLINE)*
-struct_field: ID ("is" expr)? NEWLINE
+struct_field: ID NEWLINE
+            | ID "is" expr NEWLINE
+            | ID "is" "listing:" list_items? NEWLINE
 
 list_tail: "listing:" list_items? NEWLINE
 list_items: list_item ("," list_item)*
 
-assign_stmt: ID inheritance "is" expr NEWLINE
+assign_stmt: ID inheritance "is" expr NEWLINE -> assign_v
+           | ID inheritance "is" list_tail -> assign_l
+           | ID inheritance "is" index_access NEWLINE -> assign_i
+
+assign_index_stmt: index_access "is" list_item NEWLINE -> assign_index
+
+index_access: "index" expr "of" reference
+
+reference: ID inheritance
+         | index_access
 
 if_stmt: "if" expr "do:" NEWLINE INDENT more_stmt DEDENT elif_stmt else_stmt
 elif_stmt: ("else if" expr "do:" NEWLINE INDENT more_stmt DEDENT)*
@@ -61,8 +72,6 @@ input_stmt: "input in" ID NEWLINE
 
 output_stmt: "output" expr_list NEWLINE
 expr_list: expr ("," expr)*
-
-element_stmt: "element" ID "in" ID NEWLINE
 
 // EXPRESSIONS
 ?expr: expr2
@@ -98,6 +107,7 @@ element_stmt: "element" ID "in" ID NEWLINE
     | BOOL
     | ID inheritance -> var
     | call_expr
+    | index_access -> index_expr
 
 // TOKENS
 ID: /[A-Z][a-zA-Z0-9_]*/

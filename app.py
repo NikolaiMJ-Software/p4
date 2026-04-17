@@ -3,11 +3,12 @@ from src.parser import parser
 from src.visitors import type_checker, interpreter
 
 # TEST
-code = """create X with:
-    Y is 5
-create Z from X with:
-    W is 10
-output Z,X
+code = """
+define X with A,B:
+    output "Eurika!"
+    create Y is A+B
+    return Y
+output call X with 1,2
 """
 
 

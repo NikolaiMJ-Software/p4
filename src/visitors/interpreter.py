@@ -2,9 +2,14 @@ from src.visitors.base_visitor import Visitor
 from src.ast.nodes import *
 import random
 
+class ReturnException(Exception):
+    def __init__(self, value):
+        self.value = value
+
 class InterpreterVisitor(Visitor):
     def __init__(self):
         self.v_table = {}
+        self.f_table = {}
     
     # LITERALS
     def visit_int_literal(self, node):
@@ -66,11 +71,21 @@ class InterpreterVisitor(Visitor):
             self.v_table.pop(node.name, None)
     def visit_foreach(self, node):
         collection = self.v_table[node.collection]
-        for i in collection:
-            self.v_table[node.name] = collection[i-1]
+        for item in collection:
+            self.v_table[node.name] = item
             for stmt in node.body:
                 self.visit(stmt)
             self.v_table.pop(node.name, None)
+    def visit_define(self, node):
+        self.f_table[node.name] = {
+            "params" : node.params,
+            "body" : node.body
+        }
+    def visit_return(self, node):
+        value = self.visit(node.value)
+        raise ReturnException(value)
+    def visit_expression(self, node):
+        self.visit(node.value)
     def visit_input(self, node):
         self.v_table[node.name] = input()
     def visit_output(self, node):
@@ -148,3 +163,19 @@ class InterpreterVisitor(Visitor):
             struct = self.v_table.get(node.base, {})
             return struct.get(node.name, None)
         return self.v_table.get(node.name, None)
+    def visit_call(self, node):
+        function = self.f_table[node.name]
+        params = function["params"]
+        body = function["body"]
+        args = node.args or []
+        for param, arg in zip(params, args):
+            self.v_table[param] = self.visit(arg)
+        try:
+            for stmt in body:
+                self.visit(stmt)
+        except ReturnException as r:
+            for param in params:
+                self.v_table.pop(param, None)
+            return r.value
+        for param in params:
+            self.v_table.pop(param, None)

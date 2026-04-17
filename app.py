@@ -44,9 +44,10 @@ create HEJ2 from HEJ with:
 create HEJ3 from HEJ2 with:
     Dad is "hej"
     Mom is "med"
-create X is Health from HEJ3
-Defense from HEJ is "haj"
-create Y is Defense from HEJ + Dad from HEJ3
+Defense from HEJ is "mom"
+Shield from HEJ2 is 4.2
+Shield from HEJ3 is "Dig"
+create Y is Shield from HEJ3 + Mom from HEJ3
 """
 
 

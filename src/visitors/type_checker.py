@@ -26,9 +26,20 @@ class TypeCheckerVisitor(Visitor):
         if node.base not in self.v_table:
             raise TypeError(f"The struct: '{node.base}' are not defined")
         
-        # Error, if the variable 'name' are not inside of the parrent (base)
+        # Check its parrent, if the variable 'name' are not inside of the struct (base)
         if node.name not in self.v_table[node.base]:
-            raise TypeError(f"The variable: '{node.name}' are not defined in the struct: '{node.base}'")
+            parrent = self.v_table[node.base]["_parrent"]
+                       
+            while True:
+                if node.name in self.v_table[parrent]: # Name found
+                    return self.v_table[parrent][node.name]
+                else:
+                    # Error, If no parrent found
+                    if "_parrent" not in self.v_table[parrent]:
+                        raise TypeError(f"The variable: '{node.name}' are not defined in the struct: '{node.base}' or its parrent")
+                    
+                    # Save new parrent
+                    parrent = self.v_table[parrent]["_parrent"]
         
         # Find and return the type of the 'name'
         return self.v_table[node.base][node.name]
@@ -86,7 +97,20 @@ class TypeCheckerVisitor(Visitor):
             # Check if the name exist
             base_type = self.v_table[node.base]
             if node.name not in base_type:
-                raise TypeError(f"The variable: '{node.name}' don't exist in the struct: '{node.base}'")
+                parrent = self.v_table[node.base]["_parrent"]
+
+                # Check its parrent's
+                while True:
+                    base_type = self.v_table[parrent]
+                    if node.name in base_type:
+                        break
+                    else:
+                        # Error, If no parrent found
+                        if "_parrent" not in self.v_table[parrent]:
+                            raise TypeError(f"The variable: '{node.name}' don't exist in the struct: '{node.base}', or its parrent")
+                        
+                        # Save new parrent
+                        parrent = self.v_table[parrent]["_parrent"]
             
             # Save in the parrent's v_table and return the type 
             value_type = self.visit(node.value)
@@ -446,11 +470,7 @@ class TypeCheckerVisitor(Visitor):
         
         elif node.base in self.v_table:
             # Merge with the parrent (base)
-            merged = {}
-            
-            # Base first
-            for name, typeof in self.v_table[node.base].items():
-                merged[name] = typeof
+            merged = {"_parrent": node.base}
 
             # Afterwards fields (overwrite)
             for f in node.fields:

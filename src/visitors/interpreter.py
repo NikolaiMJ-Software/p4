@@ -48,7 +48,10 @@ class InterpreterVisitor(Visitor):
     def visit_create_struct(self, node):
         parent = self.lookup(node.base)
         fields = {field.name: self.visit(field.value) if field.value else "UNINITIALIZED" for field in node.fields}
-        self.v_tables[-1][node.name] = {**parent, **fields}
+        if parent == None:
+            self.v_tables[-1][node.name] = fields
+        else:
+            self.v_tables[-1][node.name] = {**parent, **fields}
         
     def visit_create_list(self, node):
         listing = [self.visit(item) for item in node.listing] if node.listing else []

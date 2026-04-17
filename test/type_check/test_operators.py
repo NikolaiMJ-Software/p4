@@ -1,11 +1,24 @@
 import pytest
-from src.type_check import is_numeric, check_op
+from src.visitors.type_checker import *
+from src.ast.nodes import *
+
+def test_add():
+    # OK test
+    TypeCheckerVisitor().visit(Add(IntLiteral(2),IntLiteral(2)))
+    TypeCheckerVisitor().visit(Add(FloatLiteral(2.0),FloatLiteral(2.0)))
+    TypeCheckerVisitor().visit(Add(IntLiteral(2),FloatLiteral(2.0)))
+    TypeCheckerVisitor().visit(Add(FloatLiteral(2.0),IntLiteral(2)))
+    TypeCheckerVisitor().visit(Add(StringLiteral(2),StringLiteral(2)))
+    
+    # Error test
+    with pytest.raises(TypeError):
+        TypeCheckerVisitor().visit(Add(StringLiteral(2),IntLiteral(2)))
 
 '''
 ------------------------
 helper tests
 ------------------------
-'''
+
 @pytest.mark.parametrize("value, expected", [
     (int, True),
     (float, True),
@@ -16,11 +29,11 @@ def test_is_numeric(value, expected):
     assert is_numeric(value) is expected
 
 
-'''
+
 ------------------------
 operator tests - valid
 ------------------------
-'''
+
 # valid numeric operations
 @pytest.mark.parametrize("x, op, y, expected", [
     (8, "+", 2, "OK -> int + int"),
@@ -58,11 +71,11 @@ def test_check_op_valid_other(x, op, y, expected):
     assert check_op(x, op, y) == expected
 
 
-'''
+
 ------------------------
 operator tests - invalid
 ------------------------
-'''
+
 # mixed string with non-string
 @pytest.mark.parametrize("x, op, y, expected", [
     ("hello", "+", 2, "TypeError: unsupported operand type(s) for +: 'str' and 'int'"),
@@ -126,3 +139,4 @@ def test_check_op_to_invalid(x, y, expected):
 ])
 def test_check_op_between_chance_invalid(x, op, y, expected):
     assert check_op(x, op, y) == expected
+'''

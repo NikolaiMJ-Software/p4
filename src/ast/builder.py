@@ -47,6 +47,12 @@ class ASTBuilder(Transformer):
         return Assign(name, base, value)
     def assign_index(self, target, value):
         return AssignIndex(target, value)
+    
+    #Reference used for assignment
+    def reference(self, value, inheritance=None):
+        if isinstance(value, str):
+            return Var(value, inheritance)
+        return value
 
     # general statements
     def if_stmt(self, cond, body, elifs=None, elses=None):
@@ -117,14 +123,8 @@ class ASTBuilder(Transformer):
         return Var(name, base)
     def call_expr(self, name, args=None):
         return Call(name, args)
-    
-    # INDEX / REFERENCES
     def index_access(self, index, target):
         return IndexAccess(index, target)
-    def reference(self, value, inheritance=None):
-        if isinstance(value, str):
-            return Var(value, inheritance)
-        return value
     def index_expr(self, value):
         return value
 

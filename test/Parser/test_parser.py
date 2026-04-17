@@ -195,14 +195,21 @@ while true
 #########
 
 def test_forrange():
-    code="""for each X from 1 to 10 do:
+    code = """for each X from 1 to 10 do:
     X is Cake+1
-    
-    """
-
+"""
     tree = parse(code)
-    
-    assert tree.children[0].data == "forrange_stmt"
+
+    node = tree.children[0]
+
+    assert node.data == "forrange_stmt"
+    assert node.children[0] == "X"
+    assert node.children[1].value == "1"
+    assert node.children[2].value == "10"
+
+    body = next(child for child in node.children if hasattr(child, "data") and child.data == "mult_stmt")
+    assert len(body.children) == 1
+    assert body.children[0].data == "assign_v"
 
 def test_foreach():
     code="""for each X in Y do:

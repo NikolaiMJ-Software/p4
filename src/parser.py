@@ -112,7 +112,8 @@ inheritance: ("from" ID)?
 more_stmt: stmt+
 mul_stmt: stmt*
 pos_stmt: stmt?
-list_item: INTEGER | FLOAT | STRING | ID
+// remember to insert expr in list_item
+list_item: INTEGER | FLOAT | STRING | ID 
 
 // IMPORTS & IGNORE
 NEWLINE: (/\r?\n[ \t]*/)

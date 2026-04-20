@@ -247,8 +247,8 @@ class TypeCheckerVisitor(Visitor):
     # comparison operators
     def visit_equal_expr(self, node):
         #checks both sides of equality
-        left_type = self.visit(node.cond)
-        right_type = self.visit(node.cond2)
+        left_type = self.visit(node.left)
+        right_type = self.visit(node.right)
 
         if not self.comparable_equality(left_type, right_type):
             raise TypeError(f"Cannot compare {left_type} == {right_type}")
@@ -257,8 +257,8 @@ class TypeCheckerVisitor(Visitor):
     
     def visit_not_equal_expr(self, node):
         # Checks both sides of inequality
-        left_type = self.visit(node.cond)
-        right_type = self.visit(node.cond2)
+        left_type = self.visit(node.left)
+        right_type = self.visit(node.right)
 
         if not self.comparable_equality(left_type, right_type):
             raise TypeError(f"Cannot compare {left_type} != {right_type}")
@@ -267,8 +267,8 @@ class TypeCheckerVisitor(Visitor):
 
     def visit_greater_expr(self, node):
         # Checks both sides of greater than ">"
-        left_type = self.visit(node.cond)
-        right_type = self.visit(node.cond2)
+        left_type = self.visit(node.left)
+        right_type = self.visit(node.right)
 
         if not self.comparable_ordered(left_type, right_type):
             raise TypeError(f"Cannot compare {left_type} > {right_type}")
@@ -277,8 +277,8 @@ class TypeCheckerVisitor(Visitor):
 
     def visit_less_expr(self, node):
         #checks both sides of less than "<"
-        left_type = self.visit(node.cond)
-        right_type = self.visit(node.cond2)
+        left_type = self.visit(node.left)
+        right_type = self.visit(node.right)
 
         if not self.comparable_ordered(left_type, right_type):
             raise TypeError(f"Cannot compare {left_type} < {right_type}")
@@ -287,8 +287,8 @@ class TypeCheckerVisitor(Visitor):
 
     def visit_greater_equal_expr(self, node):
         # Checks both sides of greater than or equal ">="
-        left_type = self.visit(node.cond)
-        right_type = self.visit(node.cond2)
+        left_type = self.visit(node.left)
+        right_type = self.visit(node.right)
 
         if not self.comparable_ordered(left_type, right_type):
             raise TypeError(f"Cannot compare {left_type} >= {right_type}")
@@ -297,8 +297,8 @@ class TypeCheckerVisitor(Visitor):
 
     def visit_less_equal_expr(self, node):
         # Checks both sides of less than or equal "<="
-        left_type = self.visit(node.cond)
-        right_type = self.visit(node.cond2)
+        left_type = self.visit(node.left)
+        right_type = self.visit(node.right)
 
         if not self.comparable_ordered(left_type, right_type):
             raise TypeError(f"Cannot compare {left_type} <= {right_type}")
@@ -309,8 +309,8 @@ class TypeCheckerVisitor(Visitor):
 
     def visit_and_expr(self,node):
         # AND requires both sides to be bool
-        left_type = self.visit(node.cond)
-        right_type = self.visit(node.cond2)
+        left_type = self.visit(node.left)
+        right_type = self.visit(node.right)
 
         if left_type != "bool" or right_type != "bool":
             raise TypeError(f"AND requires bool, got {left_type} and {right_type}")
@@ -319,8 +319,8 @@ class TypeCheckerVisitor(Visitor):
 
     def visit_or_expr(self, node):
         # OR requires both sides to be bool
-        left_type = self.visit(node.cond)
-        right_type = self.visit(node.cond2)
+        left_type = self.visit(node.left)
+        right_type = self.visit(node.right)
 
         if left_type != "bool" or right_type != "bool":
             raise TypeError(f"OR requires bool, got {left_type} and {right_type}")
@@ -338,8 +338,8 @@ class TypeCheckerVisitor(Visitor):
 
     def visit_xor_expr(self, node):
         # XOR requires both sides to be bool
-        left_type = self.visit(node.cond)
-        right_type = self.visit(node.cond2)
+        left_type = self.visit(node.left)
+        right_type = self.visit(node.right)
 
         if left_type != "bool" or right_type != "bool":
             raise TypeError(f"XOR requires bool, got {left_type} and {right_type}")
@@ -366,13 +366,13 @@ class TypeCheckerVisitor(Visitor):
         return "bool"
 
     def visit_if(self, node):
-        # condition must be a bool
-        cond_type = self.visit(node.cond)
+        # leftition must be a bool
+        left_type = self.visit(node.cond)
 
-        if cond_type is None:
+        if left_type is None:
             return None
-        if cond_type != "bool":
-            raise TypeError(f"if condition must be bool, got {cond_type}")
+        if left_type != "bool":
+            raise TypeError(f"if leftition must be bool, got {left_type}")
 
         # Checks statements inside if body
         for stmt in node.body:
@@ -385,19 +385,19 @@ class TypeCheckerVisitor(Visitor):
 
         # Checks all elif branches
         if node.elifs:
-            for cond, body in node.elifs:
-                cond_type = self.visit(cond)
-                if cond_type != "bool":
-                    raise TypeError(f"elif condition must be bool, got {cond_type}")
+            for left, body in node.elifs:
+                left_type = self.visit(left)
+                if left_type != "bool":
+                    raise TypeError(f"elif leftition must be bool, got {left_type}")
                 for stmt in body:
                     self.visit(stmt)
         return None
 
     def visit_while(self, node):
-        cond_type = self.visit(node.cond)
+        left_type = self.visit(node.cond)
 
-        if cond_type != "bool":
-            raise TypeError(f"while condition must be bool, got {cond_type}")
+        if left_type != "bool":
+            raise TypeError(f"while leftition must be bool, got {left_type}")
         # saves current scope
         old = self.v_table.copy()
 
@@ -419,10 +419,10 @@ class TypeCheckerVisitor(Visitor):
         # Restore previous scope
         self.v_table = old
 
-        # check condition
-        cond_type = self.visit(node.cond)
-        if cond_type != "bool":
-            raise TypeError(f"dowhile condition must be bool, got {cond_type}")
+        # check leftition
+        left_type = self.visit(node.cond)
+        if left_type != "bool":
+            raise TypeError(f"dowhile leftition must be bool, got {left_type}")
 
         return None
 

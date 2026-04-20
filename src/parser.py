@@ -14,6 +14,7 @@ start: stmt*
     | foreach_stmt
     | func_def
     | return_stmt
+    | break_stmt
     | expr_stmt
     | input_stmt
     | output_stmt
@@ -65,6 +66,8 @@ func_def: "define" ID params ":" NEWLINE INDENT mul_stmt DEDENT
 params: ("with" ID ("," ID)*)?
 
 return_stmt: "return" expr NEWLINE
+
+break_stmt: "stop" NEWLINE
 
 expr_stmt: expr NEWLINE
 

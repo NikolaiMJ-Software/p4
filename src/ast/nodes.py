@@ -110,6 +110,9 @@ class Return(ASTNode):
         self.value = value
     def __repr__(self):
         return f"Return({self.value})"
+class Break(ASTNode):
+    def __repr__(self):
+        return "Break()"
 class Expression(ASTNode):
     def __init__(self, value):
         self.value = value

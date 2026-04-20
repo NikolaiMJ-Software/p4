@@ -9,6 +9,8 @@ define State:
     while true do:
         output X
         X is X + 1
+        if X equal 1000 do:
+            stop
 
 call State
 

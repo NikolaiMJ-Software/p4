@@ -7,6 +7,9 @@ class ReturnException(Exception): # exception raised by return() to stop functio
     def __init__(self, value):
         self.value = value
 
+class BreakException(Exception):
+    pass
+
 class InterpreterVisitor(Visitor):
     def __init__(self, slot=1):
         self.v_tables = [{}] # list of variables split into scope levels
@@ -115,13 +118,20 @@ class InterpreterVisitor(Visitor):
                 
     def visit_while(self, node):
         while self.visit(node.cond):
-            for stmt in node.body:
-                self.visit(stmt)
+            try:
+                for stmt in node.body:
+                    self.visit(stmt)
+            except BreakException:
+                break
                 
     def visit_dowhile(self, node):
         while True:
-            for stmt in node.body:
-                self.visit(stmt)
+            try:
+                for stmt in node.body:
+                    self.visit(stmt)
+            except BreakException:
+                break
+            
             if not self.visit(node.cond):
                 break
             
@@ -129,19 +139,28 @@ class InterpreterVisitor(Visitor):
         for i in range(self.visit(node.start), self.visit(node.end) + 1):
             self.v_tables.append({}) # start scope
             self.v_tables[-1][node.name] = i
-            for stmt in node.body:
-                self.visit(stmt)
-            self.v_tables.pop() # end scope
-            
+            try:
+                for stmt in node.body:
+                    self.visit(stmt)
+            except BreakException:
+                break
+            finally:
+                self.v_tables.pop() # end scope
+    
     def visit_foreach(self, node):
         collection = self.lookup(node.collection)
         for item in collection:
             self.v_tables.append({}) # start scope
             self.v_tables[-1][node.name] = item
-            for stmt in node.body:
-                self.visit(stmt)
-            self.v_tables.pop() # end scope
-            
+            try:
+                for stmt in node.body:
+                    self.visit(stmt)
+            except BreakException:
+                break
+            finally:
+                self.v_tables.pop() # end scope
+    
+    
     def visit_define(self, node):
         self.f_table[node.name] = {
             "params" : node.params,
@@ -151,6 +170,9 @@ class InterpreterVisitor(Visitor):
     def visit_return(self, node):
         value = self.visit(node.value)
         raise ReturnException(value)
+
+    def visit_break(self, node):
+        raise BreakException()
     
     def visit_expression(self, node):
         self.visit(node.value)

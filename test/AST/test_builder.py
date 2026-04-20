@@ -15,7 +15,7 @@ def test_ast_create_var():
 
     node = ast[0]
 
-    assert node.__class__.__name__ == "Create_v"
+    assert node.__class__.__name__ == "CreateVariable"
     assert node.name == "X"
     assert node.value.value == 5
 
@@ -29,7 +29,7 @@ def test_ast_create_struct():
 
     node = ast[0]
 
-    assert node.__class__.__name__ == "Create_s"
+    assert node.__class__.__name__ == "CreateStruct"
     assert node.name == "X"
     assert len(node.fields) == 2
 
@@ -95,7 +95,7 @@ def test_ast_create_list():
 
     node = ast[0]
 
-    assert node.__class__.__name__ == "Create_l"
+    assert node.__class__.__name__ == "CreateList"
     assert len(node.listing) == 3
     assert node.listing[0].value == 1
 

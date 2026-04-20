@@ -8,6 +8,8 @@ from lark import UnexpectedInput
 from parser import parse
 
 
+####Expand the test to include values within to see if they also fits and are right######
+
 ####################
 # CREATE functions #
 ####################

@@ -1,8 +1,8 @@
 from src.ast import builder
 from src.parser import parser
-from src.visitors import type_checker
+from src.visitors import type_checker, interpreter
 
-#tes
+#TEST
 code = """define Fun1 with Var1, Var2, Var3:
     create Y is Var1 * Var3
     create X is Y + Var2
@@ -93,6 +93,21 @@ if __name__ == '__main__':
     
     print("\n---------TYPE CHECK--------\n")
     
+    #interpreter = interpreter.InterpreterVisitor()
+    #for node in ast:
+    #    interpreter.visit(node)
+    
+    # TO DO:
+    '''
+    code = load_source() -> read a txt file
+
+    tree = parser.parse(code)
+    ast = ASTBuilder().transform(tree)
+
+    TypeCheckerVisitor().visit(ast)
+
+    InterpreterVisitor().visit(ast)
+    '''
     checker = type_checker.TypeCheckerVisitor()
     for node in ast:
         checker.visit(node)

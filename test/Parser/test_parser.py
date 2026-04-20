@@ -67,6 +67,8 @@ def test_creat_struct():
     #hello
     Speed #test
     """
+    
+    code_test = """create X from Y"""
     tree = parse(code)
     tree_value = parse(code_with_values)
     tree_comment = parse(code_comment)
@@ -207,7 +209,7 @@ def test_forrange():
     assert node.children[1].value == "1"
     assert node.children[2].value == "10"
 
-    body = next(child for child in node.children if hasattr(child, "data") and child.data == "mult_stmt")
+    body = next(child for child in node.children if hasattr(child, "data") and child.data == "mul_stmt")
     assert len(body.children) == 1
     assert body.children[0].data == "assign_v"
 

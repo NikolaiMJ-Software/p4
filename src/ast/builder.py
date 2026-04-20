@@ -145,6 +145,8 @@ class ASTBuilder(Transformer):
         return list(items)
     def list_item(self, value):
         return value
+    def inherits_from(sef, base):
+        return base
     def inheritance(self, base=None):
         return base
     def more_stmt(self, *items):

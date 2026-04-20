@@ -7,7 +7,8 @@ def typecheck_test(code):
     tree = parser.parse(code)
     ast = builder.ASTBuilder().transform(tree)
     checker = type_checker.TypeCheckerVisitor()
-    last_return = []
+    res = []
     for node in ast:
-        last_return.append(checker.visit(node))
-    return last_return
+        res.append(checker.visit(node))
+    # Return an array of the code's node types
+    return res

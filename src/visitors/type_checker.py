@@ -28,20 +28,9 @@ class TypeCheckerVisitor(Visitor):
         if node.base not in self.v_table:
             raise TypeError(f"The struct: '{node.base}' are not defined")
         
-        # Check its parrent, if the variable 'name' are not inside of the struct (base)
+        # Error, if the variable 'name' are not inside of the struct (base)
         if node.name not in self.v_table[node.base]:
-            parrent = self.v_table[node.base]["_parrent"]
-                       
-            while True:
-                if node.name in self.v_table[parrent]: # Name found
-                    return self.v_table[parrent][node.name]
-                else:
-                    # Error, If no parrent found
-                    if "_parrent" not in self.v_table[parrent]:
-                        raise TypeError(f"The variable: '{node.name}' are not defined in the struct: '{node.base}' or its parrent")
-                    
-                    # Save new parrent
-                    parrent = self.v_table[parrent]["_parrent"]
+            raise TypeError(f"The variable: '{node.name}' are not defined in the struct: '{node.base}'")
         
         # Find and return the type of the 'name'
         return self.v_table[node.base][node.name]
@@ -72,6 +61,9 @@ class TypeCheckerVisitor(Visitor):
         return "bool"
 
     def visit_expression(self, node):
+        return self.visit(node.value)
+    
+    def visit_neg(self, node):
         return self.visit(node.value)
     
     def visit_create_variable(self, node):
@@ -129,22 +121,9 @@ class TypeCheckerVisitor(Visitor):
             # Check if the name exist
             base_type = self.v_table[node.base]
             if node.name not in base_type:
-                parrent = self.v_table[node.base]["_parrent"]
-
-                # Check its parrent's
-                while True:
-                    base_type = self.v_table[parrent]
-                    if node.name in base_type:
-                        break
-                    else:
-                        # Error, If no parrent found
-                        if "_parrent" not in self.v_table[parrent]:
-                            raise TypeError(f"The variable: '{node.name}' don't exist in the struct: '{node.base}', or its parrent")
-                        
-                        # Save new parrent
-                        parrent = self.v_table[parrent]["_parrent"]
+                raise TypeError(f"The variable: '{node.name}' don't exist in the struct: '{node.base}'")
             
-            # Save in the parrent's v_table and return the type 
+            # Save in the struct's v_table and return the type 
             value_type = self.visit(node.value)
             base_type[node.name] = value_type
             return value_type
@@ -534,8 +513,8 @@ class TypeCheckerVisitor(Visitor):
             raise TypeError(f"The struct: '{node.name}' already exist")
         
         elif node.base in self.v_table:
-            # Merge with the parrent (base)
-            merged = {"_parrent": node.base}
+            # Copy the parrent (base)
+            merged = self.v_table[node.base].copy()
 
             # Afterwards fields (overwrite)
             for f in node.fields:

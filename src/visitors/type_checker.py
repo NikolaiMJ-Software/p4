@@ -74,6 +74,9 @@ class TypeCheckerVisitor(Visitor):
     def visit_expression(self, node):
         return self.visit(node.value)
     
+    def visit_neg(self, node):
+        return self.visit(node.value)
+    
     def visit_create_variable(self, node):
         # Make sure no duplicate of variabels
         if node.name in self.v_table:
@@ -129,22 +132,9 @@ class TypeCheckerVisitor(Visitor):
             # Check if the name exist
             base_type = self.v_table[node.base]
             if node.name not in base_type:
-                parrent = self.v_table[node.base]["_parrent"]
-
-                # Check its parrent's
-                while True:
-                    base_type = self.v_table[parrent]
-                    if node.name in base_type:
-                        break
-                    else:
-                        # Error, If no parrent found
-                        if "_parrent" not in self.v_table[parrent]:
-                            raise TypeError(f"The variable: '{node.name}' don't exist in the struct: '{node.base}', or its parrent")
-                        
-                        # Save new parrent
-                        parrent = self.v_table[parrent]["_parrent"]
+                raise TypeError(f"The variable: '{node.name}' don't exist in the struct: '{node.base}'")
             
-            # Save in the parrent's v_table and return the type 
+            # Save in the struct's v_table and return the type 
             value_type = self.visit(node.value)
             base_type[node.name] = value_type
             return value_type
@@ -534,8 +524,8 @@ class TypeCheckerVisitor(Visitor):
             raise TypeError(f"The struct: '{node.name}' already exist")
         
         elif node.base in self.v_table:
-            # Merge with the parrent (base)
-            merged = {"_parrent": node.base}
+            # Copy the parrent (base)
+            merged = self.v_table[node.base].copy()
 
             # Afterwards fields (overwrite)
             for f in node.fields:

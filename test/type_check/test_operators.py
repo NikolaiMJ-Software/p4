@@ -141,7 +141,7 @@ def test_assign_missing_variable_fails():
     with pytest.raises(TypeError, match="don't exist"):
         checker.visit(Assign("x", None, IntLiteral(10)))
 
-def test_assign_existing_variable_can_change_type_current_behavior():
+def test_assign_existing_variable_updates_type():
     checker = make_checker()
     checker.v_table["x"] = "int"
 
@@ -151,7 +151,7 @@ def test_assign_existing_variable_can_change_type_current_behavior():
     assert checker.v_table["x"] == "str"
 
 
-def test_assign_list_variable_can_change_type_current_behavior():
+def test_assign_list_variable_updates_type():
     checker = make_checker()
     checker.v_table["xs"] = "list[int]"
 

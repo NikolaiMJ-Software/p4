@@ -241,8 +241,9 @@ class Call(ASTNode):
     def __repr__(self):
         return f"Call({self.name},{self.args})"
 class IndexAccess(ASTNode):
-    def __init__(self, index, target):
-        self.index = index
+    def __init__(self, indexing, target, base):
+        self.indexing = indexing
         self.target = target
+        self.base = base
     def __repr__(self):
-        return f"IndexAccess({self.index},{self.target})"
+        return f"IndexAccess({self.index},{self.target},{self.base})"

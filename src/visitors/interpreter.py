@@ -21,7 +21,7 @@ class InterpreterVisitor(Visitor):
         return None
     
     def find_scope(self, name): # goes through scopes to find scope level of variable
-        for scope in reversed(self.scopes):
+        for scope in reversed(self.v_tables):
             if name in scope:
                 return scope
         return None
@@ -65,7 +65,20 @@ class InterpreterVisitor(Visitor):
             return
         scope = self.find_scope(node.name)
         scope[node.name] = value
-        
+
+    def visit_assign_index(self, node):
+        value = self.visit(node.value)
+        if node.target.base == None:
+            list = self.lookup(node.target.target)
+        else:
+            list_base = self.lookup(node.target.base)
+            list = list_base[node.target.target]
+        for index in reversed(node.target.indexing[:-1]):
+            index = self.visit(index) # convert from Literal-Class to primal value
+            list = list[index]
+        val = self.visit(node.target.indexing[0])
+        list[val] = value
+
     def visit_if(self, node):
         if self.visit(node.cond): # original if-statement
             self.v_tables.append({}) # start scope
@@ -242,3 +255,14 @@ class InterpreterVisitor(Visitor):
             self.v_tables.pop() # end scope
             return r.value
         self.v_tables.pop() # end scope
+    
+    def visit_index_access(self, node):
+        if node.base == None:
+            list = self.lookup(node.target)
+        else:
+            list_base = self.lookup(node.base)
+            list = list_base[node.target]
+        for index in reversed(node.indexing):
+            index = self.visit(index) # convert from Literal-Class to primal value
+            list = list[index]
+        return list

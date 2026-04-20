@@ -28,20 +28,9 @@ class TypeCheckerVisitor(Visitor):
         if node.base not in self.v_table:
             raise TypeError(f"The struct: '{node.base}' are not defined")
         
-        # Check its parrent, if the variable 'name' are not inside of the struct (base)
+        # Error, if the variable 'name' are not inside of the struct (base)
         if node.name not in self.v_table[node.base]:
-            parrent = self.v_table[node.base]["_parrent"]
-                       
-            while True:
-                if node.name in self.v_table[parrent]: # Name found
-                    return self.v_table[parrent][node.name]
-                else:
-                    # Error, If no parrent found
-                    if "_parrent" not in self.v_table[parrent]:
-                        raise TypeError(f"The variable: '{node.name}' are not defined in the struct: '{node.base}' or its parrent")
-                    
-                    # Save new parrent
-                    parrent = self.v_table[parrent]["_parrent"]
+            raise TypeError(f"The variable: '{node.name}' are not defined in the struct: '{node.base}'")
         
         # Find and return the type of the 'name'
         return self.v_table[node.base][node.name]

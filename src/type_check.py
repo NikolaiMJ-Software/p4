@@ -9,7 +9,7 @@ def get_type(val1, val2):
         return int
     return val1
 
-def check_op(val1, op, val2):
+def check_op(val1, op, val2, node, code):
     # Get the type of the values
     t1 = val1 if isinstance(val1, type) else type(val1)
     t2 = val2 if isinstance(val2, type) else type(val2)
@@ -39,14 +39,33 @@ def check_op(val1, op, val2):
 
         # instead: we raise an error and then send a message
         raise TypeCheckError(
-            f"Unsupported operand type(s) for {op}: '{t1.__name__}' and '{t2.__name__}'"
+            f"Unsupported operand type(s) for {op}: '{t1.__name__}' and '{t2.__name__}'",
+            line = node.line,
+            column = node.column,
+            context = make_context(code, node.line, node.column)
         )
     
     print(f"OK -> {t1.__name__} {op} {t2.__name__}")
     return get_type(t1, t2)
 
+# visitor class for passing code into type checker
+class TypeCheckerVisitor:
+    def __init__(self, code):
+        self.code = code
+
+# function to manually recreate context (to also pass that)
+def make_context(code, line, column):
+    lines = code.splitlines()
+    if line - 1 < len(lines):
+        line_text = lines[line - 1]
+        pointer = " " * (column - 1) + "^"
+        return line_text + "\n" + pointer
+    return None
+
+# actual type check error class
 class TypeCheckError(Exception):
-    def __init__(self, message, line, column): # question: should line = None + column = None
+    def __init__(self, message, line, column): # line, column, context are None at first (must be)
         super().__init__(message)
         self.line = line
         self.column = column
+        self.context = context

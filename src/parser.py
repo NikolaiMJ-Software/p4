@@ -1,5 +1,6 @@
 from lark import Lark
 from lark.indenter import Indenter
+from lark.exceptions import UnexpectedInput
 
 # GRAMMAR
 grammar = r"""
@@ -121,7 +122,8 @@ inheritance: ("from" ID)?
 more_stmt: stmt+
 mul_stmt: stmt*
 pos_stmt: stmt?
-list_item: INTEGER | FLOAT | STRING | ID
+// remember to insert expr in list_item
+list_item: INTEGER | FLOAT | STRING | ID 
 
 // IMPORTS & IGNORE
 NEWLINE: (/\r?\n[ \t]*/)
@@ -152,5 +154,22 @@ parser = Lark(
     postlex=TreeIndenter()
 )
 
+# wrapping Lark errors in our own (decouples us from Lark)
+class ParseError(Exception):
+    def __init__(self, message, line, column, context):
+        super().__init__(message)
+        self.line = line
+        self.column = column
+        self.context = context
+
+# NEW: raising our own wrapped errors while parsing
 def parse(code):
-    return parser.parse(code)
+    try:
+        return parser.parse(code)
+    except UnexpectedInput as e:
+        raise ParseError( # raise error with line + column + context from caught exception
+            "Syntax error",
+            e.line,
+            e.column,
+            e.get_context(code)
+        )

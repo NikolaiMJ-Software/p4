@@ -1,7 +1,9 @@
 from src.visitors.base_visitor import Visitor
+from src.type_check import TypeCheckError
 
 class TypeCheckerVisitor(Visitor):
     def __init__(self):
+        self.code = code
         self.v_table = {}
         self.f_table = {}
         
@@ -11,9 +13,14 @@ class TypeCheckerVisitor(Visitor):
     def numeric_result_type(self, node, left_type, right_type):
         # Makes sure both sides are numeric
         if not self.is_numeric(left_type) or not self.is_numeric(right_type):
-            raise TypeError(f"Expected numeric types, got {left_type} and {right_type}")
-
-        # If one side is float, the result also becomes float
+            # raise TypeError(f"Expected numeric types, got {left_type} and {right_type}")
+            raise TypeCheckError(
+                # message,
+                f"Expected numeric types, got {left_type} and {right_type}", # this is the value of message
+                line=node.line,
+                column=node.column,
+                context=make_context(self.code, node.line, node.column)
+            )
         if "float" in (left_type, right_type):
             return "float"
         return "int"
@@ -77,7 +84,14 @@ class TypeCheckerVisitor(Visitor):
     def visit_create_variable(self, node):
         # Make sure no duplicate of variabels
         if node.name in self.v_table:
-            raise TypeError(f"The variable: '{node.name}' already exist")
+            # raise TypeError(f"The variable: '{node.name}' already exist")
+            raise TypeCheckError(
+                #message,
+                f"The variable: '{node.name}' already exist",
+                line=node.line,
+                column=node.column,
+                context=make_context(self.code, node.line, node.column)
+            )
         
         # Set type to 'None' if it doesn't exist
         if node.value is None:
@@ -164,7 +178,14 @@ class TypeCheckerVisitor(Visitor):
     def visit_define(self, node):
         # Check if fthe function are already defined
         if node.name in self.f_table:
-            raise TypeError(f"Function: '{node.name}' already exist")
+            # raise TypeError(f"Function: '{node.name}' already exist")
+            raise TypeCheckError(
+                #message,
+                f"Function: '{node.name}' already exist",
+                line=node.line,
+                column=node.column,
+                context=make_context(self.code, node.line, node.column)
+            )
 
         # Save data as 'params' and 'body' in functions
         self.f_table[node.name] = {
@@ -177,7 +198,14 @@ class TypeCheckerVisitor(Visitor):
     def visit_call(self, node):
         # Check if the function are already definend, then get its data
         if node.name not in self.f_table:
-            raise TypeError(f"The function: '{node.name}' don't exist")
+            # raise TypeError(f"The function: '{node.name}' don't exist")
+            raise TypeCheckError(
+                #message,
+                f"The function: '{node.name}' don't exist",
+                line=node.line,
+                column=node.column,
+                context=make_context(self.code, node.line, node.column)
+            )
         func = self.f_table[node.name]
         
         # Update the local variable types
@@ -232,7 +260,14 @@ class TypeCheckerVisitor(Visitor):
         right_type = self.visit(node.right)
 
         if not self.is_numeric(left_type) or not self.is_numeric(right_type):
-            raise TypeError(f"Expected numeric types, got {left_type} and {right_type}")
+            # raise TypeError(f"Expected numeric types, got {left_type} and {right_type}")
+            raise TypeCheckError(
+                #message,
+                f"Expected numeric types, got {left_type} and {right_type}",
+                line=node.line,
+                column=node.column,
+                context=make_context(self.code, node.line, node.column)
+            )
 
         #division always returns float
         return "float"
@@ -251,7 +286,14 @@ class TypeCheckerVisitor(Visitor):
         right_type = self.visit(node.cond2)
 
         if not self.comparable_equality(left_type, right_type):
-            raise TypeError(f"Cannot compare {left_type} == {right_type}")
+            # raise TypeError(f"Cannot compare {left_type} == {right_type}")
+            raise TypeCheckError(
+                #message,
+                f"Cannot compare {left_type} == {right_type}",
+                line=node.line,
+                column=node.column,
+                context=make_context(self.code, node.line, node.column)
+            )
 
         return "bool"
     
@@ -261,7 +303,14 @@ class TypeCheckerVisitor(Visitor):
         right_type = self.visit(node.cond2)
 
         if not self.comparable_equality(left_type, right_type):
-            raise TypeError(f"Cannot compare {left_type} != {right_type}")
+            # raise TypeError(f"Cannot compare {left_type} != {right_type}")
+            raise TypeCheckError(
+                #message,
+                f"Cannot compare {left_type} != {right_type}",
+                line=node.line,
+                column=node.column,
+                context=make_context(self.code, node.line, node.column)
+            )
 
         return "bool"
 
@@ -271,7 +320,14 @@ class TypeCheckerVisitor(Visitor):
         right_type = self.visit(node.cond2)
 
         if not self.comparable_ordered(left_type, right_type):
-            raise TypeError(f"Cannot compare {left_type} > {right_type}")
+            # raise TypeError(f"Cannot compare {left_type} > {right_type}")
+            raise TypeCheckError(
+                #message,
+                f"Cannot compare {left_type} > {right_type}",
+                line=node.line,
+                column=node.column,
+                context=make_context(self.code, node.line, node.column)
+            )
 
         return "bool"
 
@@ -281,7 +337,14 @@ class TypeCheckerVisitor(Visitor):
         right_type = self.visit(node.cond2)
 
         if not self.comparable_ordered(left_type, right_type):
-            raise TypeError(f"Cannot compare {left_type} < {right_type}")
+            # raise TypeError(f"Cannot compare {left_type} < {right_type}")
+            raise TypeCheckError(
+                #message,
+                f"Cannot compare {left_type} > {right_type}",
+                line=node.line,
+                column=node.column,
+                context=make_context(self.code, node.line, node.column)
+            )
 
         return "bool"
 
@@ -291,7 +354,14 @@ class TypeCheckerVisitor(Visitor):
         right_type = self.visit(node.cond2)
 
         if not self.comparable_ordered(left_type, right_type):
-            raise TypeError(f"Cannot compare {left_type} >= {right_type}")
+            # raise TypeError(f"Cannot compare {left_type} >= {right_type}")
+            raise TypeCheckError(
+                #message,
+                f"Cannot compare {left_type} >= {right_type}",
+                line=node.line,
+                column=node.column,
+                context=make_context(self.code, node.line, node.column)
+            )
 
         return "bool"
 
@@ -301,7 +371,14 @@ class TypeCheckerVisitor(Visitor):
         right_type = self.visit(node.cond2)
 
         if not self.comparable_ordered(left_type, right_type):
-            raise TypeError(f"Cannot compare {left_type} <= {right_type}")
+            # raise TypeError(f"Cannot compare {left_type} <= {right_type}")
+            raise TypeCheckError(
+                #message,
+                f"Cannot compare {left_type} <= {right_type}",
+                line=node.line,
+                column=node.column,
+                context=make_context(self.code, node.line, node.column)
+            )
 
         return "bool"
     
@@ -313,7 +390,14 @@ class TypeCheckerVisitor(Visitor):
         right_type = self.visit(node.cond2)
 
         if left_type != "bool" or right_type != "bool":
-            raise TypeError(f"AND requires bool, got {left_type} and {right_type}")
+            # raise TypeError(f"AND requires bool, got {left_type} and {right_type}")
+            raise TypeCheckError(
+                #message,
+                f"AND requires bool, got {left_type} and {right_type}",
+                line=node.line,
+                column=node.column,
+                context=make_context(self.code, node.line, node.column)
+            )
 
         return "bool"
 
@@ -323,7 +407,14 @@ class TypeCheckerVisitor(Visitor):
         right_type = self.visit(node.cond2)
 
         if left_type != "bool" or right_type != "bool":
-            raise TypeError(f"OR requires bool, got {left_type} and {right_type}")
+            # raise TypeError(f"OR requires bool, got {left_type} and {right_type}")
+            raise TypeCheckError(
+                #message,
+                f"OR requires bool, got {left_type} and {right_type}",
+                line=node.line,
+                column=node.column,
+                context=make_context(self.code, node.line, node.column)
+            )
 
         return "bool"
 
@@ -332,7 +423,14 @@ class TypeCheckerVisitor(Visitor):
         value_type = self.visit(node.cond)
 
         if value_type != "bool":
-            raise TypeError(f"NOT requires bool, got {value_type}")
+            # raise TypeError(f"NOT requires bool, got {value_type}")
+            raise TypeCheckError(
+                #message,
+                f"NOT requires bool, got {value_type}",
+                line=node.line,
+                column=node.column,
+                context=make_context(self.code, node.line, node.column)
+            )
 
         return "bool"
 
@@ -342,7 +440,14 @@ class TypeCheckerVisitor(Visitor):
         right_type = self.visit(node.cond2)
 
         if left_type != "bool" or right_type != "bool":
-            raise TypeError(f"XOR requires bool, got {left_type} and {right_type}")
+            # raise TypeError(f"XOR requires bool, got {left_type} and {right_type}")
+            raise TypeCheckError(
+                #message,
+                f"XOR requires bool, got {left_type} and {right_type}",
+                line=node.line,
+                column=node.column,
+                context=make_context(self.code, node.line, node.column)
+            )
 
         return "bool"
 
@@ -352,7 +457,14 @@ class TypeCheckerVisitor(Visitor):
         right_type = self.visit(node.right)
 
         if not self.is_numeric(left_type) or not self.is_numeric(right_type):
-            raise TypeError(f"between requires numeric types, got {left_type} and {right_type}")
+            # raise TypeError(f"between requires numeric types, got {left_type} and {right_type}")
+            raise TypeCheckError(
+                #message,
+                f"between requires numeric types, got {left_type} and {right_type}",
+                line=node.line,
+                column=node.column,
+                context=make_context(self.code, node.line, node.column)
+            )
 
         return "bool"
 

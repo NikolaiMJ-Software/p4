@@ -3,7 +3,9 @@ from pathlib import Path
 
 class GameStateManager:
     def __init__(self, slot=1):
-        self.path = Path(f"save_slot_{slot}.json")
+        base_dir = Path(__file__).parent
+        self.path = base_dir / "save_states" / f"save_slot_{slot}.json"
+        self.path.parent.mkdir(parents=True, exist_ok=True)
 
     def load(self):
         if not self.path.exists():

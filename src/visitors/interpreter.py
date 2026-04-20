@@ -1,5 +1,6 @@
 from src.visitors.base_visitor import Visitor
 from src.ast.nodes import *
+from ..runtime.game_state import GameStateManager
 import random
 
 class ReturnException(Exception): # exception raised by return() to stop function call
@@ -7,9 +8,10 @@ class ReturnException(Exception): # exception raised by return() to stop functio
         self.value = value
 
 class InterpreterVisitor(Visitor):
-    def __init__(self):
+    def __init__(self, slot=1):
         self.v_tables = [{}] # list of variables split into scope levels
         self.f_table = {} # list of defined functions
+        self.game_state_manager = GameStateManager(slot) # safe state manager, where slot equals save file
     
     
     
@@ -21,12 +23,37 @@ class InterpreterVisitor(Visitor):
         return None
     
     def find_scope(self, name): # goes through scopes to find scope level of variable
-        for scope in reversed(self.scopes):
+        for scope in reversed(self.v_tables):
             if name in scope:
                 return scope
         return None
     
+    # Game state handling
+    def load_game_state(self):
+        loaded_game = self.game_state_manager.load()
+        if loaded_game is not None and "Game" in self.v_tables[0]:
+            self.v_tables[0]["Game"] = loaded_game
     
+    def save_game_state(self):
+        game = self.v_tables[0].get("Game")
+        if game is not None:
+            self.game_state_manager.save(game)
+    
+    def run(self, ast, args=None):
+        try:
+            for stmt in ast:
+                self.visit(stmt)
+
+            self.load_game_state()
+
+            if "Play" in self.f_table:
+                self.visit(Call("Play", args or []))
+
+        except KeyboardInterrupt:
+            print("\nProgram interrupted. Saving game state...")
+
+        finally:
+            self.save_game_state()
     
     # LITERALS
     def visit_int_literal(self, node):

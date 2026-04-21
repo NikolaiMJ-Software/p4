@@ -1,7 +1,6 @@
 from src.ast import builder
-# from src.parser import parser # not needed here, only used by parse() in parser.py
 from src.visitors import type_checker
-# from src.visitors import interpreter # this doesn't exist anywhere, so commented out to avoid ImportError
+from src.visitors import interpreter
 from src.parser import parse, ParseError
 from src.errors import Error, TypeError, RuntimeError # , SyntaxError # replaced by ParseError
 

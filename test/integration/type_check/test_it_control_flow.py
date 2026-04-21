@@ -1,0 +1,141 @@
+import pytest
+from src.visitors.type_checker import *
+from src.ast.nodes import *
+from setup_type_checker import type_check_test
+
+'''
+-----------------
+Passing integration tests for control flow
+-----------------
+'''
+
+def test_it_pass_if_valid():
+    result = type_check_test(if_valid_code)
+    assert [None] == result
+if_valid_code = """if true do:
+    create X is 1
+else if false do:
+    create Y is 2
+else do:
+    create Z is 3
+"""
+
+
+def test_it_pass_if_creates_variable():
+    result = type_check_test(if_creates_variable_code)
+    assert [None, "int"] == result
+if_creates_variable_code = """if true do:
+    create X is 1
+X
+"""
+
+
+def test_it_pass_if_else_creates_variable():
+    result = type_check_test(if_else_creates_variable_code)
+    assert [None, "int"] == result
+if_else_creates_variable_code = """if false do:
+    create X is 1
+else do:
+    create Y is 2
+Y
+"""
+
+
+def test_it_pass_if_none_condition_skips_body():
+    result = type_check_test(if_none_condition_skips_body_code)
+    assert [None, None] == result
+if_none_condition_skips_body_code = """create Cond
+if Cond do:
+    create X is 1
+"""
+
+
+def test_it_pass_while_valid_and_scope_restored():
+    result = type_check_test(while_valid_code)
+    assert ["bool", None] == result
+while_valid_code = """create Cond is true
+while Cond do:
+    create X is 1
+"""
+
+
+def test_it_pass_dowhile_valid_and_scope_restored():
+    result = type_check_test(dowhile_valid_code)
+    assert ["bool", None] == result
+dowhile_valid_code = """create Cond is true
+do:
+    create X is 1
+while Cond
+"""
+
+
+def test_it_pass_if_with_expression_condition():
+    result = type_check_test(if_expression_condition_code)
+    assert [None] == result
+if_expression_condition_code = """if 1 less than 2 do:
+    create X is 1
+"""
+
+
+def test_it_pass_while_with_boolean_expression():
+    result = type_check_test(while_boolean_expression_code)
+    assert [None] == result
+while_boolean_expression_code = """while true and false do:
+    create X is 1
+"""
+
+
+'''
+-----------------
+Failing integration tests for control flow
+-----------------
+'''
+
+def test_it_fail_if_invalid_condition():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(if_invalid_condition_code)
+    assert "if condition must be bool, got int" in str(exc_info.value)
+if_invalid_condition_code = """if 1 do:
+    create X is 1
+"""
+
+
+def test_it_fail_if_invalid_elif_condition():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(if_invalid_elif_condition_code)
+    assert "elif condition must be bool, got int" in str(exc_info.value)
+if_invalid_elif_condition_code = """if true do:
+    create X is 1
+else if 1 do:
+    create Y is 2
+"""
+
+
+def test_it_fail_while_invalid_condition():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(while_invalid_condition_code)
+    assert "while condition must be bool, got int" in str(exc_info.value)
+while_invalid_condition_code = """create Cond is 1
+while Cond do:
+    create X is 1
+"""
+
+
+def test_it_fail_dowhile_invalid_condition():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(dowhile_invalid_condition_code)
+    assert "dowhile condition must be bool, got int" in str(exc_info.value)
+dowhile_invalid_condition_code = """create Cond is 1
+do:
+    create X is 1
+while Cond
+"""
+
+
+def test_it_fail_if_body_uses_invalid_operation():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(if_body_invalid_operation_code)
+    assert "Expected numeric types" in str(exc_info.value)
+if_body_invalid_operation_code = '''if true do:
+    create X is "a" + 1
+'''

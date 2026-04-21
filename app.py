@@ -1,23 +1,13 @@
 from src.ast import builder
-from src.parser import parser
-from src.visitors import type_checker, interpreter
+from src.visitors import type_checker
+from src.visitors import interpreter
 from src.parser import parse, ParseError
-from src.type_check import TypeCheckError
+from src.errors import Error, TypeError, RuntimeError # , SyntaxError # replaced by ParseError
 
 #TEST
 code = """
-create X is 0
-define State:
-    while true do:
-        output X
-        X is X + 1
-        if X equal 1000 do:
-            stop
-
-call State
-
+create A is B
 """
-
 
 def print_ast(node, indent=0):
     prefix = "  " * indent
@@ -51,57 +41,40 @@ def print_ast(node, indent=0):
         for child in node.body:
             print_ast(child, indent + 1)
 
-# function for making a node (instead of passing raw line + column)
-# TODO: THIS IS ESSENTIAL FOR ERROR HANDLING (COORDINATES) BUT PROBABLY ISN'T IN THE RIGHT SPOT
-def make_node(self, tree):
-    return MyNode(
-        ...,
-        line=tree.meta.line,
-        column=tree.meta.column
-    )
-
 if __name__ == '__main__':
-    tree = parser.parse(code)
-    ast = builder.ASTBuilder().transform(tree)
-
-    print("---------AST--------\n")
-    for stmt in ast:
-        print_ast(stmt)
-    
-    print("\n---------TYPE CHECK--------\n")
-    
-    interpreter = interpreter.InterpreterVisitor(slot = 2)
-    interpreter.run(ast)
-    '''
-    for node in ast:
-        interpreter.visit(node)
-    '''
-    
-    #interpreter = interpreter.InterpreterVisitor()
-    #for node in ast:
-        # interpreter.visit(node)
-        # checker.visit(node)
-
     try:
         tree = parse(code) # parse code, save as tree (not format, just name)
         ast = builder.ASTBuilder().transform(tree) # build ast from tree
 
+        print("---------AST--------\n")
+        for stmt in ast:
+            print_ast(stmt)
+
+        print("\n---------TYPE CHECK--------\n")
         checker = type_checker.TypeCheckerVisitor(code) # needs code passing
         for node in ast:
             checker.visit(node)
 
+        print("\n---------INTERPRETATION--------\n")
+        interpreter = interpreter.InterpreterVisitor(slot = 2)
+        interpreter.run(ast)
+
         print("Success!")
 
     except ParseError as e:
-        print(f"[Syntax Error] Line {e.line}, Column {e.column}")
+        print(f"[Syntax Error] Line {e.line}, Col {e.column}")
+        print(e.context)
+    
+    except TypeError as e:
+        print(f"[Type Error] Line {e.line}, Col {e.column}")
+        print(e.context)
+    
+    except RuntimeError as e:
+        print(f"[Runtime Error] Line {e.line}, Col {e.column}")
         print(e.context)
 
-    except TypeCheckError as e:
-        print(f"[Type Error] {e}")
-        if e.line:
-            print(f"Line {e.line}, Column {e.column}")
-        if e.context:
-            print(e.context)
+    except Error as e:
+        print(f"[Error] {e}")  # fallback for any other Error subclass
     
     except Exception as e:
         print("[Internal Error]", e)

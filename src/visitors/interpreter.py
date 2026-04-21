@@ -30,7 +30,9 @@ class InterpreterVisitor(Visitor):
             if name in scope:
                 return scope
         return None
-    
+
+
+
     # Game state handling
     def load_game_state(self):
         loaded_game = self.game_state_manager.load()
@@ -57,7 +59,9 @@ class InterpreterVisitor(Visitor):
 
         finally:
             self.save_game_state()
-    
+
+
+
     # LITERALS
     def visit_int_literal(self, node):
         return node.value
@@ -172,7 +176,6 @@ class InterpreterVisitor(Visitor):
                 break
             finally:
                 self.v_tables.pop() # end scope
-    
     
     def visit_define(self, node):
         self.f_table[node.name] = {

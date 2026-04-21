@@ -158,7 +158,10 @@ class TypeCheckerVisitor(Visitor):
         if node.name not in self.f_table:
             raise TypeError(f"The function: '{node.name}' don't exist")
         func = self.f_table[node.name]
-        
+        if len(node.args) != len(func["params"]):
+            raise TypeError(
+                f"{node.name} expects {len(func['params'])} arguments, got {len(node.args)}"
+            )
         # Update the local variable types
         local_vars = {}
         for p, arg in zip(func["params"], node.args):

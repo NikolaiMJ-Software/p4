@@ -36,6 +36,36 @@ def test_call_missing_function_fails():
         checker.visit(Call("Fun1", []))
 
 
+def test_call_too_few_args_fails():
+    checker = make_checker()
+
+    checker.visit(
+        Define(
+            "Fun",
+            ["a", "b"],
+            [Return(Var("a", None))]
+        )
+    )
+
+    with pytest.raises(TypeError, match="expects 2 arguments, got 1"):
+        checker.visit(Call("Fun", [IntLiteral(1)]))
+
+
+def test_call_too_many_args_fails():
+    checker = make_checker()
+
+    checker.visit(
+        Define(
+            "Fun",
+            ["a"],
+            [Return(Var("a", None))]
+        )
+    )
+
+    with pytest.raises(TypeError, match="expects 1 arguments, got 2"):
+        checker.visit(Call("Fun", [IntLiteral(1), IntLiteral(2)]))
+
+
 def test_call_function_returns_type():
     checker = make_checker()
 

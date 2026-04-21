@@ -26,7 +26,7 @@ start: stmt*
 // STATEMENTS
 create_stmt: "create" ID var_tail NEWLINE -> create_v
     | "create" ID struct_tail -> create_s
-    | "create" ID list_tail -> create_l
+    | "create" ID "is" list_tail -> create_l
 
 var_tail: ("is" expr)?
 

@@ -7,7 +7,7 @@ class ReturnException(Exception): # exception raised by return() to stop functio
     def __init__(self, value):
         self.value = value
 
-class BreakException(Exception):
+class BreakException(Exception): # Exceptuon raised be "stop" (break function) to stop loops
     pass
 
 class InterpreterVisitor(Visitor):
@@ -121,7 +121,7 @@ class InterpreterVisitor(Visitor):
             try:
                 for stmt in node.body:
                     self.visit(stmt)
-            except BreakException:
+            except BreakException: # break statement
                 break
                 
     def visit_dowhile(self, node):
@@ -129,7 +129,7 @@ class InterpreterVisitor(Visitor):
             try:
                 for stmt in node.body:
                     self.visit(stmt)
-            except BreakException:
+            except BreakException: # break statement
                 break
             
             if not self.visit(node.cond):
@@ -142,7 +142,7 @@ class InterpreterVisitor(Visitor):
             try:
                 for stmt in node.body:
                     self.visit(stmt)
-            except BreakException:
+            except BreakException: # break statment
                 break
             finally:
                 self.v_tables.pop() # end scope
@@ -155,7 +155,7 @@ class InterpreterVisitor(Visitor):
             try:
                 for stmt in node.body:
                     self.visit(stmt)
-            except BreakException:
+            except BreakException: # break statment
                 break
             finally:
                 self.v_tables.pop() # end scope

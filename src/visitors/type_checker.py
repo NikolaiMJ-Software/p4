@@ -1,6 +1,6 @@
 from src.visitors.base_visitor import Visitor
 from src.errors import Error
-from src.ast.nodes import Return
+from src.ast.nodes import Return, Var 
 from src.errors import TypeError
 
 class TypeCheckerVisitor(Visitor):
@@ -121,31 +121,36 @@ class TypeCheckerVisitor(Visitor):
     def visit_assign(self, node):
         # Check if assigning to a list index
         if type(node.name).__name__ == "IndexAccess":
-            # Find the type of the index
-            index_type = self.visit(node.name.index)
-            if index_type != "int":
-                raise TypeError(
-                    self.code,
-                    node,
-                    f"List index must be int, got {index_type}"
-                )
-
             # Find the type of the collection
-            collection_type = self.visit(node.name.target)
+            current_type = self.visit(Var(node.name.target, node.name.base))
 
-            # Make sure the target is a list
-            if not isinstance(collection_type, str) or not collection_type.startswith("list"):
-                raise TypeError(
-                    self.code,
-                    node,
-                    f"Cannot index non-list type '{collection_type}'"
-                )
+            elem_type = None
 
-            # Find the element type inside the list
-            if collection_type == "list":
-                elem_type = None
-            else:
-                elem_type = collection_type[5:-1]  # list[int] -> int
+            # Find the type of the index
+            for idx_expr in node.name.indexing:
+                index_type = self.visit(idx_expr)
+                if index_type != "int":
+                    raise TypeError(
+                        self.code,
+                        node,
+                        f"List index must be int, got {index_type}"
+                    )
+
+                # Make sure the target is a list
+                if not isinstance(current_type, str) or not current_type.startswith("list"):
+                    raise TypeError(
+                        self.code,
+                        node,
+                        f"Cannot index non-list type '{current_type}'"
+                    )
+
+                # Find the element type inside the list
+                if current_type == "list":
+                    elem_type = None
+                    current_type = None
+                else:
+                    elem_type = current_type[5:-1]  # list[int] -> int
+                    current_type = elem_type
 
             # Find the type of the assigned value
             value_type = self.visit(node.value)
@@ -587,28 +592,33 @@ class TypeCheckerVisitor(Visitor):
         self.v_table[node.name] = list_type
         return list_type
 
+
     def visit_index_access(self, node):
-        index_type = self.visit(node.index)
-        if index_type != "int":
-            raise TypeError(
-                self.code,
-                node,
-                f"List index must be int, got {index_type}"
-            )
+        current_type = self.visit(Var(node.target, node.base))
 
-        target_type = self.visit(node.target)
+        for idx_expr in node.indexing:
+            index_type = self.visit(idx_expr)
+            if index_type != "int":
+                raise TypeError(
+                    self.code,
+                    node,
+                    f"List index must be int, got {index_type}"
+                )
 
-        if not isinstance(target_type, str) or not target_type.startswith("list"):
-            raise TypeError(
-                self.code,
-                node,
-                f"Cannot index non-list type '{target_type}'"
-            )
+            if not isinstance(current_type, str) or not current_type.startswith("list"):
+                raise TypeError(
+                    self.code,
+                    node,
+                    f"Cannot index non-list type '{current_type}'"
+                )
 
-        if target_type == "list":
-            return None
+            if current_type == "list":
+                current_type = None
+            else:
+                current_type = current_type[5:-1]   # list[int] -> int
 
-        return target_type[5:-1]   # list[int] -> int
+        return current_type
+
 
     def visit_forrange(self, node):
         # Range start and end must be numeric

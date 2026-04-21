@@ -153,7 +153,8 @@ parser = Lark(
     grammar,
     parser="lalr",
     start="start",
-    postlex=TreeIndenter()
+    postlex=TreeIndenter(),
+    propagate_positions=True
 )
 
 # wrapping Lark errors in our own (decouples us from Lark)

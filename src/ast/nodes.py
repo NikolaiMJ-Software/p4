@@ -1,13 +1,17 @@
 # CLASSES FOR AST
 import re
 class ASTNode:
+    def __init__(self):
+        self.line = None
+        self.column = None
+
     def accept(self, visitor):
         snake_case_string = re.sub(r"(?<!^)(?=[A-Z])", "_", type(self).__name__).lower()
         method_name = f"visit_{snake_case_string}"
         visitor_method = getattr(visitor, method_name)
         return visitor_method(self)
-    
-# classes for litterals
+
+# classes for literals
 class IntLiteral(ASTNode):
     def __init__(self, value):
         self.value = value
@@ -27,8 +31,7 @@ class BoolLiteral(ASTNode):
     def __init__(self, value):
         self.value = value
     def __repr__(self):
-        return f"Bool({self.value})"    
-
+        return f"Bool({self.value})"
 
 # STATEMENTS
 class CreateVariable(ASTNode):

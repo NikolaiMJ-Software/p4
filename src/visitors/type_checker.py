@@ -595,12 +595,12 @@ class TypeCheckerVisitor(Visitor):
             element_types.append(t)
 
         # enforce same type
-        if len(set(element_types)) > 1:
-            raise TypeError(
-                self.code,
-                node,
-                f"List '{node.name}' has mixed types: {element_types}"
-            )
+        # if len(set(element_types)) > 1:
+        #     raise TypeError(
+        #         self.code,
+        #         node,
+        #         f"List '{node.name}' has mixed types: {element_types}"
+        #     )
 
         # Creates typed list, for example list[int]
         list_type = f"list[{element_types[0]}]" if element_types else "list"

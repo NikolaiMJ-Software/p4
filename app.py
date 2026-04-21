@@ -2,11 +2,13 @@ from src.ast import builder
 from src.visitors import type_checker
 from src.visitors import interpreter
 from src.parser import parse, ParseError
-from src.errors import Error, TypeError, RuntimeError # , SyntaxError # replaced by ParseError
+from src.errors import Error, TypeError, RuntimeError
 
 #TEST
-code = """
-create A is B
+code = """create A is 5
+create B is "hello"
+if A equal B do:
+    create C is 1
 """
 
 def print_ast(node, indent=0):
@@ -62,22 +64,34 @@ if __name__ == '__main__':
         print("Success!")
 
     except ParseError as e:
-        print(f"[Syntax Error] Line {e.line}, Col {e.column}")
+        print(f"[Syntax Error] {e}")
+        print(f"Line {e.line}, Col {e.column}")
         print(e.context)
     
     except TypeError as e:
-        print(f"[Type Error] Line {e.line}, Col {e.column}")
+        print(f"[Type Error] {e}")
+        print(f"Line {e.line}, Col {e.column}")
         print(e.context)
     
     except RuntimeError as e:
-        print(f"[Runtime Error] Line {e.line}, Col {e.column}")
+        print(f"[Runtime Error] {e}")
+        print(f"Line {e.line}, Col {e.column}")
         print(e.context)
 
     except Error as e:
         print(f"[Error] {e}")  # fallback for any other Error subclass
-    
+        print(f"Line {e.line}, Col {e.column}")
+        print(e.context)
+
+    # except Exception as e:
+    #     print("[Internal Error]", e)
+    #     print(f"Line {e.line}, Col {e.column}")
+    #     print(e.context)
+
     except Exception as e:
         print("[Internal Error]", e)
+        import traceback
+        traceback.print_exc()
 
     # TO DO:
     '''

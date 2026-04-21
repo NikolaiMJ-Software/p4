@@ -97,14 +97,14 @@ if __name__ == "__main__":
 
 
 
-
+    '''
 """
 #TEST
 code = """create A is 5
 create B is "hello"
 if A equal B do:
     create C is 1
-"""
+
 
 def print_ast(node, indent=0):
     prefix = "  " * indent
@@ -189,6 +189,7 @@ if __name__ == '__main__':
         traceback.print_exc()
 
     # TO DO:
+    '''
     '''
     code = load_source() -> read a txt file
 

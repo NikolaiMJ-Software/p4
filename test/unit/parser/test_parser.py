@@ -1,10 +1,5 @@
-import sys
-from pathlib import Path
-
-sys.path.append(str(Path(__file__).resolve().parents[2] / "src"))
-
 import pytest
-from parser import parse, ParseError
+from src.parser import parse, ParseError
 
 
 ####Expand the test to include values within to see if they also fits and are right######

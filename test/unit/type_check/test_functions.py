@@ -47,7 +47,7 @@ def test_call_too_few_args_fails():
         )
     )
 
-    with pytest.raises(TypeError, match="expects 2 arguments, got 1"):
+    with pytest.raises(TypeError, match="expects 2 args, got 1"):
         checker.visit(Call("Fun", [IntLiteral(1)]))
 
 
@@ -62,7 +62,7 @@ def test_call_too_many_args_fails():
         )
     )
 
-    with pytest.raises(TypeError, match="expects 1 arguments, got 2"):
+    with pytest.raises(TypeError, match="expects 1 args, got 2"):
         checker.visit(Call("Fun", [IntLiteral(1), IntLiteral(2)]))
 
 

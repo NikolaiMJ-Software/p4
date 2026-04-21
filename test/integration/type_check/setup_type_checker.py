@@ -3,7 +3,7 @@ from src.ast import builder
 from src.visitors import type_checker
 
 # Help funtion to exictue integration test for type checker
-def typecheck_test(code):
+def type_check_test(code):
     tree = parser.parse(code)
     ast = builder.ASTBuilder().transform(tree)
     checker = type_checker.TypeCheckerVisitor()

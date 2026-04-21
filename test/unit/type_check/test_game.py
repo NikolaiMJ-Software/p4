@@ -1,9 +1,5 @@
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parents[2] / "src"))
-
 import pytest
-from parser import parse
+from src.parser import parse
 from src.ast.builder import ASTBuilder
 from src.visitors.type_checker import TypeCheckerVisitor
 from src.errors import TypeError

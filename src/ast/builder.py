@@ -125,8 +125,10 @@ class ASTBuilder(Transformer):
         return Var(name, base)
     def call_expr(self, name, args=None):
         return Call(name, args)
-    def index_access(self, index, target):
-        return IndexAccess(index, target)
+    def index_access(self, indexing, target, base):
+        return IndexAccess(indexing, target, base)
+    def indexing(self, *items):
+        return list(items)
     def index_expr(self, value):
         return value
 

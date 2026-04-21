@@ -1,7 +1,9 @@
 import sys
 from src.ast import builder
-from src.parser import parser
-from src.visitors import type_checker, interpreter
+from src.visitors import type_checker
+from src.visitors import interpreter
+from src.parser import parse, ParseError
+from src.errors import Error, TypeError, RuntimeError # , SyntaxError # replaced by ParseError
 
 
 
@@ -64,22 +66,43 @@ def print_ast(node, indent=0):
             print_ast(child, indent + 1)
 
 if __name__ == '__main__':
-    tree = parser.parse(code)
-    ast = builder.ASTBuilder().transform(tree)
+    try:
+        tree = parse(code) # parse code, save as tree (not format, just name)
+        ast = builder.ASTBuilder().transform(tree) # build ast from tree
 
-    print("---------AST--------\n")
-    for stmt in ast:
-        print_ast(stmt)
+        print("---------AST--------\n")
+        for stmt in ast:
+            print_ast(stmt)
+
+        print("\n---------TYPE CHECK--------\n")
+        checker = type_checker.TypeCheckerVisitor(code) # needs code passing
+        for node in ast:
+            checker.visit(node)
+
+        print("\n---------INTERPRETATION--------\n")
+        interpreter = interpreter.InterpreterVisitor(slot = 2)
+        interpreter.run(ast)
+
+        print("Success!")
+
+    except ParseError as e:
+        print(f"[Syntax Error] Line {e.line}, Col {e.column}")
+        print(e.context)
     
-    print("\n---------TYPE CHECK--------\n")
+    except TypeError as e:
+        print(f"[Type Error] Line {e.line}, Col {e.column}")
+        print(e.context)
     
-    interpreter = interpreter.InterpreterVisitor(slot = 2)
-    interpreter.run(ast)
-    '''
-    for node in ast:
-        interpreter.visit(node)
-    '''
+    except RuntimeError as e:
+        print(f"[Runtime Error] Line {e.line}, Col {e.column}")
+        print(e.context)
+
+    except Error as e:
+        print(f"[Error] {e}")  # fallback for any other Error subclass
     
+    except Exception as e:
+        print("[Internal Error]", e)
+
     # TO DO:
     '''
     code = load_source() -> read a txt file

@@ -1,5 +1,8 @@
 from lark import Lark
 from lark.indenter import Indenter
+from lark.exceptions import UnexpectedInput
+# from src.errors import Error
+# from src.errors import SyntaxError
 
 # GRAMMAR
 grammar = r"""
@@ -22,8 +25,8 @@ start: stmt*
 
 // STATEMENTS
 create_stmt: "create" ID var_tail NEWLINE -> create_v
-| "create" ID struct_tail -> create_s
-| "create" ID list_tail -> create_l
+    | "create" ID struct_tail -> create_s
+    | "create" ID list_tail -> create_l
 
 var_tail: ("is" expr)?
 
@@ -33,22 +36,18 @@ struct_inheritance: "from" ID
 
 struct_fields: (struct_field | NEWLINE)*
 struct_field: ID NEWLINE
-            | ID "is" expr NEWLINE
-            | ID "is" "listing:" list_items? NEWLINE
+    | ID "is" expr NEWLINE
+    | ID "is" "listing:" list_items? NEWLINE
 
 list_tail: "listing:" list_items? NEWLINE
 list_items: list_item ("," list_item)*
 
 assign_stmt: ID inheritance "is" expr NEWLINE -> assign_v
-           | ID inheritance "is" list_tail -> assign_l
-           | ID inheritance "is" index_access NEWLINE -> assign_i
+    | ID inheritance "is" list_tail -> assign_l
 
 assign_index_stmt: index_access "is" list_item NEWLINE -> assign_index
-
-index_access: "index" expr "of" reference
-
-reference: ID inheritance
-         | index_access
+index_access: indexing ID inheritance
+indexing: ("index" expr "of")*
 
 if_stmt: "if" expr "do:" NEWLINE INDENT more_stmt DEDENT elif_stmt else_stmt
 elif_stmt: ("else if" expr "do:" NEWLINE INDENT more_stmt DEDENT)*
@@ -125,7 +124,8 @@ inheritance: ("from" ID)?
 more_stmt: stmt+
 mul_stmt: stmt*
 pos_stmt: stmt?
-list_item: INTEGER | FLOAT | STRING | ID
+// remember to insert expr in list_item
+list_item: INTEGER | FLOAT | STRING | ID 
 
 // IMPORTS & IGNORE
 NEWLINE: (/\r?\n[ \t]*/)
@@ -156,5 +156,22 @@ parser = Lark(
     postlex=TreeIndenter()
 )
 
+# wrapping Lark errors in our own (decouples us from Lark)
+class ParseError(Exception):
+    def __init__(self, message, line, column, context):
+        super().__init__(message)
+        self.line = line
+        self.column = column
+        self.context = context
+
+# raising our own wrapped errors while parsing
 def parse(code):
-    return parser.parse(code)
+    try:
+        return parser.parse(code)
+    except UnexpectedInput as e:
+        raise ParseError( # raise error with line + column + context from caught exception
+            "Syntax error",
+            e.line,
+            e.column,
+            e.get_context(code)
+        )

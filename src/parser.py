@@ -39,7 +39,7 @@ struct_field: ID NEWLINE
     | ID "is" expr NEWLINE
     | ID "is" "listing:" list_items? NEWLINE
 
-list_tail: "listing:" list_items? NEWLINE
+list_tail: "is listing:" list_items? NEWLINE
 list_items: list_item ("," list_item)*
 
 assign_stmt: ID inheritance "is" expr NEWLINE -> assign_v

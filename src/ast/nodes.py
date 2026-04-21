@@ -249,4 +249,4 @@ class IndexAccess(ASTNode):
         self.target = target
         self.base = base
     def __repr__(self):
-        return f"IndexAccess({self.index},{self.target},{self.base})"
+        return f"IndexAccess({self.indexing},{self.target},{self.base})"

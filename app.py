@@ -19,7 +19,7 @@ if __name__ == "__main__":
     source_path = sys.argv[1]
     code = load_source(source_path)
 
-    tree = parser.parse(code)
+    tree = parse(code)
     ast = builder.ASTBuilder().transform(tree)
 
     interp = interpreter.InterpreterVisitor()

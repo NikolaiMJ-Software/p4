@@ -1,6 +1,8 @@
 from lark import Lark
 from lark.indenter import Indenter
 from lark.exceptions import UnexpectedInput
+# from src.errors import Error
+# from src.errors import SyntaxError
 
 # GRAMMAR
 grammar = r"""
@@ -162,7 +164,7 @@ class ParseError(Exception):
         self.column = column
         self.context = context
 
-# NEW: raising our own wrapped errors while parsing
+# raising our own wrapped errors while parsing
 def parse(code):
     try:
         return parser.parse(code)

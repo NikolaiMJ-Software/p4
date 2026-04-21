@@ -1,8 +1,10 @@
 from src.visitors.base_visitor import Visitor
-from src.type_check import TypeCheckError
+from src.errors import Error
+from src.ast.nodes import Return
+from src.errors import TypeError
 
 class TypeCheckerVisitor(Visitor):
-    def __init__(self):
+    def __init__(self, code=""):
         self.code = code
         self.v_table = {}
         self.f_table = {}
@@ -13,13 +15,10 @@ class TypeCheckerVisitor(Visitor):
     def numeric_result_type(self, node, left_type, right_type):
         # Makes sure both sides are numeric
         if not self.is_numeric(left_type) or not self.is_numeric(right_type):
-            # raise TypeError(f"Expected numeric types, got {left_type} and {right_type}")
-            raise TypeCheckError(
-                # message,
-                f"Expected numeric types, got {left_type} and {right_type}", # this is the value of message
-                line=node.line,
-                column=node.column,
-                context=make_context(self.code, node.line, node.column)
+            raise TypeError(
+                self.code,
+                node,
+                f"Expected numeric types, got {left_type} and {right_type}"
             )
         if "float" in (left_type, right_type):
             return "float"
@@ -28,27 +27,39 @@ class TypeCheckerVisitor(Visitor):
     def visit_var(self, node):
         if node.base is None:
             if node.name not in self.v_table:
-                raise TypeError(f"The variable: '{node.name}' don't exist")
+                raise TypeError(
+                    self.code,
+                    node,
+                    f"The variable: '{node.name}' does not exist"
+                )
             return self.v_table[node.name]
 
-        # Error, if the parrent (base) are not defined
+        # Error, if the parent (base) is not defined
         if node.base not in self.v_table:
-            raise TypeError(f"The struct: '{node.base}' are not defined")
+            raise TypeError(
+                self.code,
+                node,
+                f"The struct: '{node.base}' is not defined"
+            )
         
-        # Check its parrent, if the variable 'name' are not inside of the struct (base)
+        # Check its parent, if the variable 'name' are not inside of the struct (base)
         if node.name not in self.v_table[node.base]:
-            parrent = self.v_table[node.base]["_parrent"]
+            parent = self.v_table[node.base]["_parent"]
                        
             while True:
-                if node.name in self.v_table[parrent]: # Name found
-                    return self.v_table[parrent][node.name]
+                if node.name in self.v_table[parent]: # Name found
+                    return self.v_table[parent][node.name]
                 else:
-                    # Error, If no parrent found
-                    if "_parrent" not in self.v_table[parrent]:
-                        raise TypeError(f"The variable: '{node.name}' are not defined in the struct: '{node.base}' or its parrent")
+                    # Error, If no parent found
+                    if "_parent" not in self.v_table[parent]:
+                        raise TypeError(
+                            self.code,
+                            node,
+                            f"The variable: '{node.name}' is not defined in the struct: '{node.base}' or its parent"
+                        )
                     
-                    # Save new parrent
-                    parrent = self.v_table[parrent]["_parrent"]
+                    # Save new parent
+                    parent = self.v_table[parent]["_parent"]
         
         # Find and return the type of the 'name'
         return self.v_table[node.base][node.name]
@@ -58,7 +69,7 @@ class TypeCheckerVisitor(Visitor):
         return self.is_numeric(left_type) and self.is_numeric(right_type)
 
     def comparable_equality(self, left_type, right_type):
-        # fpr ==, !=
+        # for ==, !=
         if left_type == right_type:
             return True
         if self.is_numeric(left_type) and self.is_numeric(right_type):
@@ -66,13 +77,17 @@ class TypeCheckerVisitor(Visitor):
         
         return False
     
-    def validate_game_name(self, name, type_type):
+    def validate_game_name(self, node, type_type):
         #check if we are dealing with and ID game
-        if name != "Game":
+        if node.name != "Game":
             return
         #if game is not a struct sent back an error
         if type_type != "struct":
-            raise TypeError("The identifier 'Game' is reserved and can only be used as a struct name.")
+            raise TypeError(
+                self.code,
+                node,
+                "The identifier 'Game' is reserved and can only be used as a struct name."
+            )
 
     def visit_int_literal(self, node):
         return "int"
@@ -91,17 +106,14 @@ class TypeCheckerVisitor(Visitor):
     
     def visit_create_variable(self, node):
         
-        self.validate_game_name(node.name, "variable")
+        self.validate_game_name(node, "variable")
         
         # Make sure no duplicate of variabels
         if node.name in self.v_table:
-            # raise TypeError(f"The variable: '{node.name}' already exist")
-            raise TypeCheckError(
-                #message,
-                f"The variable: '{node.name}' already exist",
-                line=node.line,
-                column=node.column,
-                context=make_context(self.code, node.line, node.column)
+            raise TypeError(
+                self.code,
+                node,
+                f"The variable: '{node.name}' already exists"
             )
         
         # Set type to 'None' if it doesn't exist
@@ -120,14 +132,22 @@ class TypeCheckerVisitor(Visitor):
             # Find the type of the index
             index_type = self.visit(node.name.index)
             if index_type != "int":
-                raise TypeError(f"List index must be int, got {index_type}")
+                raise TypeError(
+                    self.code,
+                    node,
+                    f"List index must be int, got {index_type}"
+                )
 
             # Find the type of the collection
             collection_type = self.visit(node.name.target)
 
             # Make sure the target is a list
             if not isinstance(collection_type, str) or not collection_type.startswith("list"):
-                raise TypeError(f"Cannot index non-list type '{collection_type}'")
+                raise TypeError(
+                    self.code,
+                    node,
+                    f"Cannot index non-list type '{collection_type}'"
+                )
 
             # Find the element type inside the list
             if collection_type == "list":
@@ -141,42 +161,56 @@ class TypeCheckerVisitor(Visitor):
             # If the list has a known element type, enforce it
             if elem_type is not None and value_type != elem_type:
                 raise TypeError(
+                    self.code,
+                    node,
                     f"Cannot assign value of type '{value_type}' to list element of type '{elem_type}'"
                 )
             return value_type
 
         # Check if it got inheritance
         if node.base:
-            # Check if the parrent exist
+            # Check if the parent exist
             if node.base not in self.v_table:
-                raise TypeError(f"The struct: '{node.base}' don't exist")
+                raise TypeError(
+                    self.code,
+                    node,
+                    f"The struct: '{node.base}' does not exist"
+                )
             
             # Check if the name exist
             base_type = self.v_table[node.base]
             if node.name not in base_type:
-                parrent = self.v_table[node.base]["_parrent"]
+                parent = self.v_table[node.base]["_parent"]
 
-                # Check its parrent's
+                # Check its parent's
                 while True:
-                    base_type = self.v_table[parrent]
+                    base_type = self.v_table[parent]
                     if node.name in base_type:
                         break
                     else:
-                        # Error, If no parrent found
-                        if "_parrent" not in self.v_table[parrent]:
-                            raise TypeError(f"The variable: '{node.name}' don't exist in the struct: '{node.base}', or its parrent")
+                        # Error, If no parent found
+                        if "_parent" not in self.v_table[parent]:
+                            raise TypeError(
+                                self.code,
+                                node,
+                                f"The variable: '{node.name}' does not exist in the struct: '{node.base}', or its parent"
+                            )
                         
-                        # Save new parrent
-                        parrent = self.v_table[parrent]["_parrent"]
+                        # Save new parent
+                        parent = self.v_table[parent]["_parent"]
             
-            # Save in the parrent's v_table and return the type 
+            # Save in the parent's v_table and return the type 
             value_type = self.visit(node.value)
             base_type[node.name] = value_type
             return value_type
         
         # Check if the name exist
         if node.name not in self.v_table:   
-            raise TypeError(f"The variable: '{node.name}' don't exist")
+            raise TypeError(
+                self.code,
+                node,
+                f"The variable: '{node.name}' does not exist"
+            )
         
         # Save in v_table and return the type
         value_type = self.visit(node.value)
@@ -187,18 +221,14 @@ class TypeCheckerVisitor(Visitor):
         return self.visit(node.value)
     
     def visit_define(self, node):
-        
-        self.validate_game_name(node.name, "function")
+        self.validate_game_name(node, "function")
         
         # Check if fthe function are already defined
         if node.name in self.f_table:
-            # raise TypeError(f"Function: '{node.name}' already exist")
-            raise TypeCheckError(
-                #message,
-                f"Function: '{node.name}' already exist",
-                line=node.line,
-                column=node.column,
-                context=make_context(self.code, node.line, node.column)
+            raise TypeError(
+                self.code,
+                node,
+                f"Function: '{node.name}' already exists"
             )
 
         # Save data as 'params' and 'body' in functions
@@ -212,15 +242,21 @@ class TypeCheckerVisitor(Visitor):
     def visit_call(self, node):
         # Check if the function are already definend, then get its data
         if node.name not in self.f_table:
-            # raise TypeError(f"The function: '{node.name}' don't exist")
-            raise TypeCheckError(
-                #message,
-                f"The function: '{node.name}' don't exist",
-                line=node.line,
-                column=node.column,
-                context=make_context(self.code, node.line, node.column)
+            raise TypeError(
+                self.code,
+                node,
+                f"The function: '{node.name}' does not exist"
             )
+
         func = self.f_table[node.name]
+
+        # validate argument counts
+        if len(func["params"]) != len(node.args):
+            raise TypeError(
+                self.code,
+                node,
+                f"Function '{node.name}' expects {len(func['params'])} args, got {len(node.args)}"
+            )
         
         # Update the local variable types
         local_vars = {}
@@ -233,7 +269,6 @@ class TypeCheckerVisitor(Visitor):
 
         # Typecheck the function
         return_type = None
-        from src.ast.nodes import Return
         for stmt in func["body"]:
             t = self.visit(stmt)
             if isinstance(stmt, Return):
@@ -274,13 +309,10 @@ class TypeCheckerVisitor(Visitor):
         right_type = self.visit(node.right)
 
         if not self.is_numeric(left_type) or not self.is_numeric(right_type):
-            # raise TypeError(f"Expected numeric types, got {left_type} and {right_type}")
-            raise TypeCheckError(
-                #message,
-                f"Expected numeric types, got {left_type} and {right_type}",
-                line=node.line,
-                column=node.column,
-                context=make_context(self.code, node.line, node.column)
+            raise TypeError(
+                self.code,
+                node,
+                f"Expected numeric types, got {left_type} and {right_type}"
             )
 
         #division always returns float
@@ -300,13 +332,10 @@ class TypeCheckerVisitor(Visitor):
         right_type = self.visit(node.cond2)
 
         if not self.comparable_equality(left_type, right_type):
-            # raise TypeError(f"Cannot compare {left_type} == {right_type}")
-            raise TypeCheckError(
-                #message,
-                f"Cannot compare {left_type} == {right_type}",
-                line=node.line,
-                column=node.column,
-                context=make_context(self.code, node.line, node.column)
+            raise TypeError(
+                self.code,
+                node,
+                f"Cannot compare {left_type} == {right_type}"
             )
 
         return "bool"
@@ -317,13 +346,10 @@ class TypeCheckerVisitor(Visitor):
         right_type = self.visit(node.cond2)
 
         if not self.comparable_equality(left_type, right_type):
-            # raise TypeError(f"Cannot compare {left_type} != {right_type}")
-            raise TypeCheckError(
-                #message,
-                f"Cannot compare {left_type} != {right_type}",
-                line=node.line,
-                column=node.column,
-                context=make_context(self.code, node.line, node.column)
+            raise TypeError(
+                self.code,
+                node,
+                f"Cannot compare {left_type} != {right_type}"
             )
 
         return "bool"
@@ -334,13 +360,10 @@ class TypeCheckerVisitor(Visitor):
         right_type = self.visit(node.cond2)
 
         if not self.comparable_ordered(left_type, right_type):
-            # raise TypeError(f"Cannot compare {left_type} > {right_type}")
-            raise TypeCheckError(
-                #message,
-                f"Cannot compare {left_type} > {right_type}",
-                line=node.line,
-                column=node.column,
-                context=make_context(self.code, node.line, node.column)
+            raise TypeError(
+                self.code,
+                node,
+                f"Cannot compare {left_type} > {right_type}"
             )
 
         return "bool"
@@ -351,13 +374,10 @@ class TypeCheckerVisitor(Visitor):
         right_type = self.visit(node.cond2)
 
         if not self.comparable_ordered(left_type, right_type):
-            # raise TypeError(f"Cannot compare {left_type} < {right_type}")
-            raise TypeCheckError(
-                #message,
-                f"Cannot compare {left_type} > {right_type}",
-                line=node.line,
-                column=node.column,
-                context=make_context(self.code, node.line, node.column)
+            raise TypeError(
+                self.code,
+                node,
+                f"Cannot compare {left_type} < {right_type}"
             )
 
         return "bool"
@@ -368,13 +388,10 @@ class TypeCheckerVisitor(Visitor):
         right_type = self.visit(node.cond2)
 
         if not self.comparable_ordered(left_type, right_type):
-            # raise TypeError(f"Cannot compare {left_type} >= {right_type}")
-            raise TypeCheckError(
-                #message,
-                f"Cannot compare {left_type} >= {right_type}",
-                line=node.line,
-                column=node.column,
-                context=make_context(self.code, node.line, node.column)
+            raise TypeError(
+                self.code,
+                node,
+                f"Cannot compare {left_type} >= {right_type}"
             )
 
         return "bool"
@@ -385,13 +402,10 @@ class TypeCheckerVisitor(Visitor):
         right_type = self.visit(node.cond2)
 
         if not self.comparable_ordered(left_type, right_type):
-            # raise TypeError(f"Cannot compare {left_type} <= {right_type}")
-            raise TypeCheckError(
-                #message,
-                f"Cannot compare {left_type} <= {right_type}",
-                line=node.line,
-                column=node.column,
-                context=make_context(self.code, node.line, node.column)
+            raise TypeError(
+                self.code,
+                node,
+                f"Cannot compare {left_type} <= {right_type}"
             )
 
         return "bool"
@@ -404,13 +418,10 @@ class TypeCheckerVisitor(Visitor):
         right_type = self.visit(node.cond2)
 
         if left_type != "bool" or right_type != "bool":
-            # raise TypeError(f"AND requires bool, got {left_type} and {right_type}")
-            raise TypeCheckError(
-                #message,
-                f"AND requires bool, got {left_type} and {right_type}",
-                line=node.line,
-                column=node.column,
-                context=make_context(self.code, node.line, node.column)
+            raise TypeError(
+                self.code,
+                node,
+                f"AND requires bool, got {left_type} and {right_type}"
             )
 
         return "bool"
@@ -421,13 +432,10 @@ class TypeCheckerVisitor(Visitor):
         right_type = self.visit(node.cond2)
 
         if left_type != "bool" or right_type != "bool":
-            # raise TypeError(f"OR requires bool, got {left_type} and {right_type}")
-            raise TypeCheckError(
-                #message,
-                f"OR requires bool, got {left_type} and {right_type}",
-                line=node.line,
-                column=node.column,
-                context=make_context(self.code, node.line, node.column)
+            raise TypeError(
+                self.code,
+                node,
+                f"OR requires bool, got {left_type} and {right_type}"
             )
 
         return "bool"
@@ -437,13 +445,10 @@ class TypeCheckerVisitor(Visitor):
         value_type = self.visit(node.cond)
 
         if value_type != "bool":
-            # raise TypeError(f"NOT requires bool, got {value_type}")
-            raise TypeCheckError(
-                #message,
-                f"NOT requires bool, got {value_type}",
-                line=node.line,
-                column=node.column,
-                context=make_context(self.code, node.line, node.column)
+            raise TypeError(
+                self.code,
+                node,
+                f"NOT requires bool, got {value_type}"
             )
 
         return "bool"
@@ -454,13 +459,10 @@ class TypeCheckerVisitor(Visitor):
         right_type = self.visit(node.cond2)
 
         if left_type != "bool" or right_type != "bool":
-            # raise TypeError(f"XOR requires bool, got {left_type} and {right_type}")
-            raise TypeCheckError(
-                #message,
-                f"XOR requires bool, got {left_type} and {right_type}",
-                line=node.line,
-                column=node.column,
-                context=make_context(self.code, node.line, node.column)
+            raise TypeError(
+                self.code,
+                node,
+                f"XOR requires bool, got {left_type} and {right_type}"
             )
 
         return "bool"
@@ -471,13 +473,10 @@ class TypeCheckerVisitor(Visitor):
         right_type = self.visit(node.right)
 
         if not self.is_numeric(left_type) or not self.is_numeric(right_type):
-            # raise TypeError(f"between requires numeric types, got {left_type} and {right_type}")
-            raise TypeCheckError(
-                #message,
-                f"between requires numeric types, got {left_type} and {right_type}",
-                line=node.line,
-                column=node.column,
-                context=make_context(self.code, node.line, node.column)
+            raise TypeError(
+                self.code,
+                node,
+                f"between requires numeric types, got {left_type} and {right_type}"
             )
 
         return "bool"
@@ -488,7 +487,11 @@ class TypeCheckerVisitor(Visitor):
         right_type = self.visit(node.right)
 
         if not self.is_numeric(left_type) or not self.is_numeric(right_type):
-            raise TypeError(f"chance requires numeric types, got {left_type} and {right_type}")
+            raise TypeError(
+                self.code,
+                node,
+                f"chance requires numeric types, got {left_type} and {right_type}"
+            )
         return "bool"
 
     def visit_if(self, node):
@@ -498,7 +501,11 @@ class TypeCheckerVisitor(Visitor):
         if cond_type is None:
             return None
         if cond_type != "bool":
-            raise TypeError(f"if condition must be bool, got {cond_type}")
+            raise TypeError(
+                self.code,
+                node,
+                f"if condition must be bool, got {cond_type}"
+            )
 
         # Checks statements inside if body
         for stmt in node.body:
@@ -514,7 +521,11 @@ class TypeCheckerVisitor(Visitor):
             for cond, body in node.elifs:
                 cond_type = self.visit(cond)
                 if cond_type != "bool":
-                    raise TypeError(f"elif condition must be bool, got {cond_type}")
+                    raise TypeError(
+                        self.code,
+                        node,
+                        f"elif condition must be bool, got {cond_type}"
+                    )
                 for stmt in body:
                     self.visit(stmt)
         return None
@@ -523,7 +534,11 @@ class TypeCheckerVisitor(Visitor):
         cond_type = self.visit(node.cond)
 
         if cond_type != "bool":
-            raise TypeError(f"while condition must be bool, got {cond_type}")
+            raise TypeError(
+                self.code,
+                node,
+                f"while condition must be bool, got {cond_type}"
+            )
         # saves current scope
         old = self.v_table.copy()
 
@@ -548,17 +563,24 @@ class TypeCheckerVisitor(Visitor):
         # check condition
         cond_type = self.visit(node.cond)
         if cond_type != "bool":
-            raise TypeError(f"dowhile condition must be bool, got {cond_type}")
+            raise TypeError(
+                self.code,
+                node,
+                f"dowhile condition must be bool, got {cond_type}"
+            )
 
         return None
 
     def visit_create_list(self, node):
-        
-        self.validate_game_name(node.name, "list")
+        self.validate_game_name(node, "list")
         
         # List name must be unique
         if node.name in self.v_table:
-            raise TypeError(f"The variable: '{node.name}' already exist")
+            raise TypeError(
+                self.code,
+                node,
+                f"The variable: '{node.name}' already exists"
+            )
 
         # Empty list gets generic list type
         if node.listing is None:
@@ -574,7 +596,11 @@ class TypeCheckerVisitor(Visitor):
 
         # enforce same type
         if len(set(element_types)) > 1:
-            raise TypeError(f"List '{node.name}' has mixed types: {element_types}")
+            raise TypeError(
+                self.code,
+                node,
+                f"List '{node.name}' has mixed types: {element_types}"
+            )
 
         # Creates typed list, for example list[int]
         list_type = f"list[{element_types[0]}]" if element_types else "list"
@@ -585,12 +611,20 @@ class TypeCheckerVisitor(Visitor):
     def visit_index_access(self, node):
         index_type = self.visit(node.index)
         if index_type != "int":
-            raise TypeError(f"List index must be int, got {index_type}")
+            raise TypeError(
+                self.code,
+                node,
+                f"List index must be int, got {index_type}"
+            )
 
         target_type = self.visit(node.target)
 
         if not isinstance(target_type, str) or not target_type.startswith("list"):
-            raise TypeError(f"Cannot index non-list type '{target_type}'")
+            raise TypeError(
+                self.code,
+                node,
+                f"Cannot index non-list type '{target_type}'"
+            )
 
         if target_type == "list":
             return None
@@ -603,7 +637,11 @@ class TypeCheckerVisitor(Visitor):
         end_type = self.visit(node.end)
 
         if not self.is_numeric(start_type) or not self.is_numeric(end_type):
-            raise TypeError(f"for-range bounds must be numeric, got {start_type} and {end_type}")
+            raise TypeError(
+                self.code,
+                node,
+                f"for-range bounds must be numeric, got {start_type} and {end_type}"
+            )
 
         # Saves old scope and creates loop variable
         old = self.v_table.copy()
@@ -620,13 +658,20 @@ class TypeCheckerVisitor(Visitor):
     def visit_foreach(self, node):
         # List to iterate over must exist
         if node.collection not in self.v_table:
-            raise TypeError(f"The variable: '{node.collection}' don't exist")
+            raise TypeError(
+                self.code,
+                node,
+                f"The variable: '{node.collection}' does not exist"
+            )
 
         collection_type = self.v_table[node.collection]
 
         # Only lists can be used in foreach
         if not isinstance(collection_type, str) or not collection_type.startswith("list"):
-            raise TypeError(f"Cannot iterate over non-list type '{collection_type}'")
+            raise TypeError(
+                self.code,
+                node,f"Cannot iterate over non-list type '{collection_type}'"
+            )
         # Finds the type of one element inside the list
         if collection_type == "list":
             elem_type = None
@@ -648,30 +693,41 @@ class TypeCheckerVisitor(Visitor):
     def visit_input(self, node):
         # Make sure the value are define before writing to it
         if node.name in self.v_table:
-            return self.visit(node.name)
-        raise TypeError(f"The variable: '{node.name}' don't exist")
+            return self.v_table[node.name]
+        raise TypeError(
+                self.code,
+                node,
+                f"The variable: '{node.name}' does not exist"
+            )
     
     def visit_output(self, node):
         # Make sure the value are define before writing to it
         if node.name in self.v_table:
-            return self.visit(node.name)
-        raise TypeError(f"The variable: '{node.name}' don't exist")
+            return self.v_table[node.name]
+        raise TypeError(
+                self.code,
+                node,
+                f"The variable: '{node.name}' does not exist"
+            )
     
     def visit_create_struct(self, node):
-        
-        self.validate_game_name(node.name, "struct")
+        self.validate_game_name(node, "struct")
         
         # Error, if the 'name' already exist
         if node.name in self.v_table:
-            raise TypeError(f"The struct: '{node.name}' already exist")
+            raise TypeError(
+                self.code,
+                node,
+                f"The struct: '{node.name}' already exists"
+            )
         
         elif node.base in self.v_table:
-            # Merge with the parrent (base)
-            merged = {"_parrent": node.base}
+            # Merge with the parent (base)
+            merged = {"_parent": node.base}
 
             # Afterwards fields (overwrite)
             for f in node.fields:
-                if type(f.value).__name__ != "NoneType": # Check if it's not a 'None' type
+                if f.value is not None: # Check if it's not a 'None' type
                     merged[f.name] = self.visit(f.value)
                 else:
                     merged[f.name] = None
@@ -680,10 +736,10 @@ class TypeCheckerVisitor(Visitor):
             self.v_table[node.name] = merged
             
         elif node.base is None:
-            # Create new struct, if no parrent (base) are defined 
+            # Create new struct, if no parent (base) are defined 
             res = {}
             for f in node.fields:
-                if type(f.value).__name__ != "NoneType": # Check if it's not a 'None' type
+                if f.value is not None: # Check if it's not a 'None' type
                     res[f.name] = self.visit(f.value)
                 else:
                     res[f.name] = None
@@ -692,5 +748,9 @@ class TypeCheckerVisitor(Visitor):
             self.v_table[node.name] = res
             
         else:
-            # Error, for no parrent
-            raise TypeError(f"The parrent struct: '{node.base}' don't exist")
+            # Error, for no parent
+            raise TypeError(
+                self.code,
+                node,
+                f"The parent struct: '{node.base}' does not exist"
+            )

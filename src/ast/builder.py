@@ -73,6 +73,8 @@ class ASTBuilder(Transformer):
         return Define(name, params, body)
     def return_stmt(self, value):
         return Return(value)
+    def break_stmt(self):
+        return Break()
     def expr_stmt(self, value):
         return Expression(value)
     def input_stmt(self, value):
@@ -147,6 +149,8 @@ class ASTBuilder(Transformer):
         return list(items)
     def list_item(self, value):
         return value
+    def inherits_from(sef, base):
+        return base
     def inheritance(self, base=None):
         return base
     def more_stmt(self, *items):

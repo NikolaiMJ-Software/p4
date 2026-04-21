@@ -1,15 +1,20 @@
 from src.visitors.base_visitor import Visitor
 from src.ast.nodes import *
+from ..runtime.game_state import GameStateManager
 import random
 
 class ReturnException(Exception): # exception raised by return() to stop function call
     def __init__(self, value):
         self.value = value
 
+class BreakException(Exception): # Exceptuon raised be "stop" (break function) to stop loops
+    pass
+
 class InterpreterVisitor(Visitor):
-    def __init__(self):
+    def __init__(self, slot=1):
         self.v_tables = [{}] # list of variables split into scope levels
         self.f_table = {} # list of defined functions
+        self.game_state_manager = GameStateManager(slot) # safe state manager, where slot equals save file
     
     
     
@@ -26,7 +31,32 @@ class InterpreterVisitor(Visitor):
                 return scope
         return None
     
+    # Game state handling
+    def load_game_state(self):
+        loaded_game = self.game_state_manager.load()
+        if loaded_game is not None and "Game" in self.v_tables[0]:
+            self.v_tables[0]["Game"] = loaded_game
     
+    def save_game_state(self):
+        game = self.v_tables[0].get("Game")
+        if game is not None:
+            self.game_state_manager.save(game)
+    
+    def run(self, ast, args=None):
+        try:
+            for stmt in ast:
+                self.visit(stmt)
+
+            self.load_game_state()
+
+            if "Play" in self.f_table:
+                self.visit(Call("Play", args or []))
+
+        except KeyboardInterrupt:
+            print("\nProgram interrupted. Saving game state...")
+
+        finally:
+            self.save_game_state()
     
     # LITERALS
     def visit_int_literal(self, node):
@@ -101,13 +131,20 @@ class InterpreterVisitor(Visitor):
                 
     def visit_while(self, node):
         while self.visit(node.cond):
-            for stmt in node.body:
-                self.visit(stmt)
+            try:
+                for stmt in node.body:
+                    self.visit(stmt)
+            except BreakException: # break statement
+                break
                 
     def visit_dowhile(self, node):
         while True:
-            for stmt in node.body:
-                self.visit(stmt)
+            try:
+                for stmt in node.body:
+                    self.visit(stmt)
+            except BreakException: # break statement
+                break
+            
             if not self.visit(node.cond):
                 break
             
@@ -115,19 +152,28 @@ class InterpreterVisitor(Visitor):
         for i in range(self.visit(node.start), self.visit(node.end) + 1):
             self.v_tables.append({}) # start scope
             self.v_tables[-1][node.name] = i
-            for stmt in node.body:
-                self.visit(stmt)
-            self.v_tables.pop() # end scope
-            
+            try:
+                for stmt in node.body:
+                    self.visit(stmt)
+            except BreakException: # break statment
+                break
+            finally:
+                self.v_tables.pop() # end scope
+    
     def visit_foreach(self, node):
         collection = self.lookup(node.collection)
         for item in collection:
             self.v_tables.append({}) # start scope
             self.v_tables[-1][node.name] = item
-            for stmt in node.body:
-                self.visit(stmt)
-            self.v_tables.pop() # end scope
-            
+            try:
+                for stmt in node.body:
+                    self.visit(stmt)
+            except BreakException: # break statment
+                break
+            finally:
+                self.v_tables.pop() # end scope
+    
+    
     def visit_define(self, node):
         self.f_table[node.name] = {
             "params" : node.params,
@@ -137,6 +183,9 @@ class InterpreterVisitor(Visitor):
     def visit_return(self, node):
         value = self.visit(node.value)
         raise ReturnException(value)
+
+    def visit_break(self, node):
+        raise BreakException()
     
     def visit_expression(self, node):
         self.visit(node.value)

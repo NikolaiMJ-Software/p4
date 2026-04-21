@@ -15,6 +15,7 @@ start: stmt*
     | foreach_stmt
     | func_def
     | return_stmt
+    | break_stmt
     | expr_stmt
     | input_stmt
     | output_stmt
@@ -27,7 +28,7 @@ create_stmt: "create" ID var_tail NEWLINE -> create_v
 
 var_tail: ("is" expr)?
 
-struct_tail: inheritance "with:" NEWLINE INDENT struct_fields DEDENT
+struct_tail: (inheritance "with:" NEWLINE INDENT struct_fields DEDENT | inherits_from)
 
 struct_inheritance: "from" ID
 
@@ -62,6 +63,8 @@ func_def: "define" ID params ":" NEWLINE INDENT mul_stmt DEDENT
 params: ("with" ID ("," ID)*)?
 
 return_stmt: "return" expr NEWLINE
+
+break_stmt: "stop" NEWLINE
 
 expr_stmt: expr NEWLINE
 
@@ -114,6 +117,7 @@ STRING: /"[^"]*"/
 BOOL: "true"|"false"|"1"|"0"
 call_expr: "call" ID args -> call_expr
 args: ("with" expr ("," expr)*)?
+inherits_from: "from" ID
 inheritance: ("from" ID)?
 more_stmt: stmt+
 mul_stmt: stmt*

@@ -5,51 +5,17 @@ from src.parser import parse, ParseError
 from src.type_check import TypeCheckError
 
 #TEST
-code = """define Fun1 with Var1, Var2, Var3:
-    create Y is Var1 * Var3
-    create X is Y + Var2
-    return X
-call Fun1 with 1.2, 2, 2.2
-create A is false
-create D is true
-if A do:
-    create B is 5
-else if D do:
-    create C is 10
-else do:
-    create E is 15
-while A do:
-    create F is 20
-# DOWHILE
-create G is true
-do:
-    create H is 25
-while G
+code = """
+create X is 0
+define State:
+    while true do:
+        output X
+        X is X + 1
+        if X equal 1000 do:
+            stop
 
-# LISTS
-create L listing: 1, 2, 3
-index 1 of L is 5
-create M listing: "a", "b", "c"
-create O listing:
-create Arr listing: 1, 2, 3
-for each N from 1 to 5 do:
-    create X is N + 1
-for each Elem in Arr do:
-    create Y is Elem + 2
-    
-create HEJ with:
-    Health is 2
-    Defense
-    Shield
-create HEJ2 from HEJ with:
-    Mom is 2
-create HEJ3 from HEJ2 with:
-    Dad is "hej"
-    Mom is "med"
-Defense from HEJ is "mom"
-Shield from HEJ2 is 4.2
-Shield from HEJ3 is "Dig"
-create Y is Shield from HEJ3 + Mom from HEJ3
+call State
+
 """
 
 
@@ -104,6 +70,13 @@ if __name__ == '__main__':
     
     print("\n---------TYPE CHECK--------\n")
     
+    interpreter = interpreter.InterpreterVisitor(slot = 2)
+    interpreter.run(ast)
+    '''
+    for node in ast:
+        interpreter.visit(node)
+    '''
+    
     #interpreter = interpreter.InterpreterVisitor()
     #for node in ast:
         # interpreter.visit(node)
@@ -144,6 +117,8 @@ if __name__ == '__main__':
 
     InterpreterVisitor().visit(ast)
     '''
+    '''
     checker = type_checker.TypeCheckerVisitor()
     for node in ast:
         checker.visit(node)
+'''

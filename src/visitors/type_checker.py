@@ -65,6 +65,14 @@ class TypeCheckerVisitor(Visitor):
             return True
         
         return False
+    
+    def validate_game_name(self, name, type_type):
+        #check if we are dealing with and ID game
+        if name != "Game":
+            return
+        #if game is not a struct sent back an error
+        if type_type != "struct":
+            raise TypeError("The identifier 'Game' is reserved and can only be used as a struct name.")
 
     def visit_int_literal(self, node):
         return "int"
@@ -82,6 +90,9 @@ class TypeCheckerVisitor(Visitor):
         return self.visit(node.value)
     
     def visit_create_variable(self, node):
+        
+        self.validate_game_name(node.name, "variable")
+        
         # Make sure no duplicate of variabels
         if node.name in self.v_table:
             # raise TypeError(f"The variable: '{node.name}' already exist")
@@ -176,6 +187,9 @@ class TypeCheckerVisitor(Visitor):
         return self.visit(node.value)
     
     def visit_define(self, node):
+        
+        self.validate_game_name(node.name, "function")
+        
         # Check if fthe function are already defined
         if node.name in self.f_table:
             # raise TypeError(f"Function: '{node.name}' already exist")
@@ -539,6 +553,9 @@ class TypeCheckerVisitor(Visitor):
         return None
 
     def visit_create_list(self, node):
+        
+        self.validate_game_name(node.name, "list")
+        
         # List name must be unique
         if node.name in self.v_table:
             raise TypeError(f"The variable: '{node.name}' already exist")
@@ -641,6 +658,9 @@ class TypeCheckerVisitor(Visitor):
         raise TypeError(f"The variable: '{node.name}' don't exist")
     
     def visit_create_struct(self, node):
+        
+        self.validate_game_name(node.name, "struct")
+        
         # Error, if the 'name' already exist
         if node.name in self.v_table:
             raise TypeError(f"The struct: '{node.name}' already exist")

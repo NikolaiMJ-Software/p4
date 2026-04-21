@@ -6,6 +6,7 @@ import pytest
 from parser import parse
 from src.ast.builder import ASTBuilder
 from src.visitors.type_checker import TypeCheckerVisitor
+from src.errors import TypeError
 
 
 def type_check(code):

@@ -1,22 +1,7 @@
 import pytest
 from src.visitors.type_checker import *
 from src.ast.nodes import *
-from test.type_check.it_test import typecheck_test
-
-def test_pass_struct():
-    # OK test 
-    TypeCheckerVisitor().visit(
-        CreateStruct(
-            "Character", 
-            (None, 
-            [
-                CreateVariable("Health", IntLiteral(100)), 
-                CreateVariable("Defense", None), 
-                CreateVariable("Attack", IntLiteral(5)),
-                CreateVariable("Name", None)
-            ])
-        )
-    )
+from test.type_check.integration.it_test_type_checker import typecheck_test
 
 '''
 -----------------
@@ -130,7 +115,7 @@ Failing integration test for the type checker
 def test_it_fail_struct_duplicate_name():
     with pytest.raises(TypeError) as exc_info:
         typecheck_test(duplicate_struct_name_code)
-    assert str(exc_info.value) == "The struct: 'Character' already exist"
+    assert str(exc_info.value) == "The struct: 'Character' already exists"
 duplicate_struct_name_code = """create Character with:
     Health is 100
     Attack is 5
@@ -143,7 +128,7 @@ create Character with:
 def test_it_fail_struct_undefined_parrent():
     with pytest.raises(TypeError) as exc_info:
         typecheck_test(wrong_parrent_code)
-    assert str(exc_info.value) == "The parrent struct: 'Person' don't exist"
+    assert str(exc_info.value) == "The parent struct: 'Person' does not exist"
 wrong_parrent_code = """create Character with:
     Health is 100
     Attack is 5
@@ -157,14 +142,14 @@ create Warrior from Person with:
 def test_it_fail_struct_undefined_struct():
     with pytest.raises(TypeError) as exc_info:
         typecheck_test(accing_undefined_struct_code)
-    assert str(exc_info.value) == "The struct: 'Enemy' are not defined"
+    assert str(exc_info.value) == "The struct: 'Enemy' is not defined"
 accing_undefined_struct_code = """Health from Enemy
 """    
 
 def test_it_fail_struct_undefined_var():
     with pytest.raises(TypeError) as exc_info:
         typecheck_test(undefined_var_code)
-    assert str(exc_info.value) == "The variable: 'Speed' are not defined in the struct: 'Character'"
+    assert str(exc_info.value) == "The variable: 'Speed' is not defined in the struct: 'Character'"
 undefined_var_code = """create Character with:
     Health is 100
     Attack is 5

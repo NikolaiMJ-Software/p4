@@ -29,7 +29,7 @@ def test_if_invalid_condition():
         []
     )
 
-    with pytest.raises(TypeError, match="if leftition must be bool"):
+    with pytest.raises(TypeError, match="if condition must be bool, got int"):
         checker.visit(node)
 
 
@@ -43,7 +43,7 @@ def test_if_invalid_elif_condition():
         []
     )
 
-    with pytest.raises(TypeError, match="elif leftition must be bool"):
+    with pytest.raises(TypeError, match="elif condition must be bool, got int"):
         checker.visit(node)
 
 
@@ -116,7 +116,7 @@ def test_while_invalid_condition():
         []
     )
 
-    with pytest.raises(TypeError, match="while leftition must be bool"):
+    with pytest.raises(TypeError, match="while condition must be bool, got int"):
         checker.visit(node)
 
 
@@ -142,5 +142,5 @@ def test_dowhile_invalid_condition():
         Var("cond", None)
     )
 
-    with pytest.raises(TypeError, match="dowhile leftition must be bool"):
+    with pytest.raises(TypeError, match="dowhile condition must be bool, got int"):
         checker.visit(node)

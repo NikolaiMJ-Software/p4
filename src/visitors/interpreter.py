@@ -1,15 +1,20 @@
 from src.visitors.base_visitor import Visitor
 from src.ast.nodes import *
+from ..runtime.game_state import GameStateManager
 import random
 
 class ReturnException(Exception): # exception raised by return() to stop function call
     def __init__(self, value):
         self.value = value
 
+class BreakException(Exception): # Exceptuon raised be "stop" (break function) to stop loops
+    pass
+
 class InterpreterVisitor(Visitor):
-    def __init__(self):
+    def __init__(self, slot=1):
         self.v_tables = [{}] # list of variables split into scope levels
         self.f_table = {} # list of defined functions
+        self.game_state_manager = GameStateManager(slot) # safe state manager, where slot equals save file
     
     
     
@@ -21,13 +26,42 @@ class InterpreterVisitor(Visitor):
         return None
     
     def find_scope(self, name): # goes through scopes to find scope level of variable
-        for scope in reversed(self.scopes):
+        for scope in reversed(self.v_tables):
             if name in scope:
                 return scope
         return None
+
+
+
+    # Game state handling
+    def load_game_state(self):
+        loaded_game = self.game_state_manager.load()
+        if loaded_game is not None and "Game" in self.v_tables[0]:
+            self.v_tables[0]["Game"] = loaded_game
     
+    def save_game_state(self):
+        game = self.v_tables[0].get("Game")
+        if game is not None:
+            self.game_state_manager.save(game)
     
-    
+    def run(self, ast, args=None):
+        try:
+            for stmt in ast:
+                self.visit(stmt)
+
+            self.load_game_state()
+
+            if "Play" in self.f_table:
+                self.visit(Call("Play", args or []))
+
+        except KeyboardInterrupt:
+            print("\nProgram interrupted. Saving game state...")
+
+        finally:
+            self.save_game_state()
+
+
+
     # LITERALS
     def visit_int_literal(self, node):
         return node.value
@@ -65,7 +99,20 @@ class InterpreterVisitor(Visitor):
             return
         scope = self.find_scope(node.name)
         scope[node.name] = value
-        
+
+    def visit_assign_index(self, node):
+        value = self.visit(node.value)
+        if node.target.base == None:
+            list = self.lookup(node.target.target)
+        else:
+            list_base = self.lookup(node.target.base)
+            list = list_base[node.target.target]
+        for index in reversed(node.target.indexing[:-1]):
+            index = self.visit(index) # convert from Literal-Class to primal value
+            list = list[index]
+        val = self.visit(node.target.indexing[0])
+        list[val] = value
+
     def visit_if(self, node):
         if self.visit(node.cond): # original if-statement
             self.v_tables.append({}) # start scope
@@ -88,13 +135,20 @@ class InterpreterVisitor(Visitor):
                 
     def visit_while(self, node):
         while self.visit(node.cond):
-            for stmt in node.body:
-                self.visit(stmt)
+            try:
+                for stmt in node.body:
+                    self.visit(stmt)
+            except BreakException: # break statement
+                break
                 
     def visit_dowhile(self, node):
         while True:
-            for stmt in node.body:
-                self.visit(stmt)
+            try:
+                for stmt in node.body:
+                    self.visit(stmt)
+            except BreakException: # break statement
+                break
+            
             if not self.visit(node.cond):
                 break
             
@@ -102,19 +156,27 @@ class InterpreterVisitor(Visitor):
         for i in range(self.visit(node.start), self.visit(node.end) + 1):
             self.v_tables.append({}) # start scope
             self.v_tables[-1][node.name] = i
-            for stmt in node.body:
-                self.visit(stmt)
-            self.v_tables.pop() # end scope
-            
+            try:
+                for stmt in node.body:
+                    self.visit(stmt)
+            except BreakException: # break statment
+                break
+            finally:
+                self.v_tables.pop() # end scope
+    
     def visit_foreach(self, node):
         collection = self.lookup(node.collection)
         for item in collection:
             self.v_tables.append({}) # start scope
             self.v_tables[-1][node.name] = item
-            for stmt in node.body:
-                self.visit(stmt)
-            self.v_tables.pop() # end scope
-            
+            try:
+                for stmt in node.body:
+                    self.visit(stmt)
+            except BreakException: # break statment
+                break
+            finally:
+                self.v_tables.pop() # end scope
+    
     def visit_define(self, node):
         self.f_table[node.name] = {
             "params" : node.params,
@@ -124,6 +186,9 @@ class InterpreterVisitor(Visitor):
     def visit_return(self, node):
         value = self.visit(node.value)
         raise ReturnException(value)
+
+    def visit_break(self, node):
+        raise BreakException()
     
     def visit_expression(self, node):
         self.visit(node.value)
@@ -242,3 +307,14 @@ class InterpreterVisitor(Visitor):
             self.v_tables.pop() # end scope
             return r.value
         self.v_tables.pop() # end scope
+    
+    def visit_index_access(self, node):
+        if node.base == None:
+            list = self.lookup(node.target)
+        else:
+            list_base = self.lookup(node.base)
+            list = list_base[node.target]
+        for index in reversed(node.indexing):
+            index = self.visit(index) # convert from Literal-Class to primal value
+            list = list[index]
+        return list

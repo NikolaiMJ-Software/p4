@@ -4,8 +4,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[2] / "src"))
 
 import pytest
-from lark import UnexpectedInput
-from parser import parse
+from parser import parse, ParseError
 
 
 ####Expand the test to include values within to see if they also fits and are right######
@@ -67,6 +66,8 @@ def test_creat_struct():
     #hello
     Speed #test
     """
+    
+    code_test = """create X from Y"""
     tree = parse(code)
     tree_value = parse(code_with_values)
     tree_comment = parse(code_comment)
@@ -128,8 +129,8 @@ def test_assign_ID_index_value():
     tree_assign_ID_index = parse("X is index 1 of Y\n")
     tree_assign_ID_index_of_index = parse("X is index 1 of index 3 of Y\n")
 
-    assert tree_assign_ID_index.children[0].data == "assign_i"
-    assert tree_assign_ID_index_of_index.children[0].data == "assign_i"
+    assert tree_assign_ID_index.children[0].data == "assign_v"
+    assert tree_assign_ID_index_of_index.children[0].data == "assign_v"
 
 ################
 # Control Flow #
@@ -195,14 +196,21 @@ while true
 #########
 
 def test_forrange():
-    code="""for each X from 1 to 10 do:
+    code = """for each X from 1 to 10 do:
     X is Cake+1
-    
-    """
-
+"""
     tree = parse(code)
-    
-    assert tree.children[0].data == "forrange_stmt"
+
+    node = tree.children[0]
+
+    assert node.data == "forrange_stmt"
+    assert node.children[0] == "X"
+    assert node.children[1].value == "1"
+    assert node.children[2].value == "10"
+
+    body = next(child for child in node.children if hasattr(child, "data") and child.data == "mul_stmt")
+    assert len(body.children) == 1
+    assert body.children[0].data == "assign_v"
 
 def test_foreach():
     code="""for each X in Y do:
@@ -370,37 +378,39 @@ def test_struct_with_comments():
     tree = parse(code)
     assert tree is not None
     
-    
+def test_break_stmt():
+    tree = parse("stop\n")
+    assert tree.children[0].data == "break_stmt"
 ##################
 # Negative tests #
 ##################
 
 def test_create_missing_id():
-    with pytest.raises(UnexpectedInput):
+    with pytest.raises(ParseError):
         parse("create is \"idk\"\n")
 
 def test_create_lowercase_id():
-    with pytest.raises(UnexpectedInput):
+    with pytest.raises(ParseError):
         parse("create x is 5\n")
 
 def test_create_missing_expr():
-    with pytest.raises(UnexpectedInput):
+    with pytest.raises(ParseError):
         parse("create X is\n")
 
 def test_create_list_trailing_comma():
-    with pytest.raises(UnexpectedInput):
+    with pytest.raises(ParseError):
         parse("create X listing: 1, 2, 3,\n")
         
 def test_assign_missing_expr():
-    with pytest.raises(UnexpectedInput):
+    with pytest.raises(ParseError):
         parse("X is\n")
         
 def test_assign_lowercase_id():
-    with pytest.raises(UnexpectedInput):
+    with pytest.raises(ParseError):
         parse("x is 5\n")
 
 def test_struct_bad_indent():
-    with pytest.raises(UnexpectedInput):
+    with pytest.raises(ParseError):
         parse("""create X with:
               Health
                 Speed
@@ -408,86 +418,86 @@ def test_struct_bad_indent():
               """)
 
 def test_struct_lowercase_expr():
-    with pytest.raises(UnexpectedInput):
+    with pytest.raises(ParseError):
         parse("""create X with:
               health
               
               """)
         
 def test_else_stmt_missing_if():
-    with pytest.raises(UnexpectedInput):
+    with pytest.raises(ParseError):
         parse("""else do:
               output 0
               """)
         
 def test_if_stmt_missing_indent():
-    with pytest.raises(UnexpectedInput):
+    with pytest.raises(ParseError):
         parse("""if true do:
             output 1
               """)
         
 def test_while_stmt_missing_do():
-    with pytest.raises(UnexpectedInput):
+    with pytest.raises(ParseError):
         parse("""while true:
               X is 5
               """)
         
 def test_do_while_stmt_missing_while():
-    with pytest.raises(UnexpectedInput):
+    with pytest.raises(ParseError):
         parse("""do:
               X is 5
               """)
 
 def test_foreach_stmt_missing_in():
-    with pytest.raises(UnexpectedInput):
+    with pytest.raises(ParseError):
         parse("""for each X Y do:
               X is 5
               """)
 
 def test_define_missing_colon():
-    with pytest.raises(UnexpectedInput):
+    with pytest.raises(ParseError):
         parse("""define X
               return Y
               """)
 
 def test_input_missing_id():
-    with pytest.raises(UnexpectedInput):
+    with pytest.raises(ParseError):
         parse("input in\n")
 
 
 def test_output_missing_expr():
-    with pytest.raises(UnexpectedInput):
+    with pytest.raises(ParseError):
         parse("output\n")
 
 
 def test_equal_missing_lhs():
-    with pytest.raises(UnexpectedInput):
+    with pytest.raises(ParseError):
         parse("create X is equal Y\n")
 
 
 def test_between_missing_rhs():
-    with pytest.raises(UnexpectedInput):
+    with pytest.raises(ParseError):
         parse("create X is between 1 and\n")
 
 
 def test_chance_missing_value():
-    with pytest.raises(UnexpectedInput):
+    with pytest.raises(ParseError):
         parse("create X is chance %\n")
 
 
 def test_element_missing_array():
-    with pytest.raises(UnexpectedInput):
+    with pytest.raises(ParseError):
         parse("element X in\n")
 
 
 def test_unclosed_block_comment():
-    with pytest.raises(UnexpectedInput):
+    with pytest.raises(ParseError):
         parse("""#/
 this comment never closes
 create X is 5
 """)
         
 def test_assign_index_not_allowed_value():
-    with pytest.raises(UnexpectedInput):
+    with pytest.raises(ParseError):
         parse("index 1 of Y is 5 + 1\n")
         

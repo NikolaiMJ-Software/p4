@@ -39,7 +39,7 @@ def test_visit_var_existing_variable():
 def test_visit_var_missing_variable_fails():
     checker = make_checker()
 
-    with pytest.raises(TypeError, match="don't exist"):
+    with pytest.raises(TypeError, match="does not exist"):
         checker.visit(Var("x", None))
 
 
@@ -54,7 +54,7 @@ def test_assign_existing_variable():
 def test_assign_missing_variable_fails():
     checker = make_checker()
 
-    with pytest.raises(TypeError, match="don't exist"):
+    with pytest.raises(TypeError, match="does not exist"):
         checker.visit(Assign("x", None, IntLiteral(10)))
 
 def test_assign_existing_variable_updates_type():

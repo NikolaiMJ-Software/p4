@@ -174,7 +174,7 @@ def test_struct_duplicate_name():
     with pytest.raises(TypeError) as exc_info:
         for n in node: 
             check.visit(n)
-    assert str(exc_info.value) == f"The struct: '{struct_name}' already exist"
+    assert str(exc_info.value) == f"The struct: '{struct_name}' already exists"
     
 def test_struct_undefined_parrent():
     undefined_parrent = "Warrior"
@@ -196,7 +196,7 @@ def test_struct_undefined_parrent():
     with pytest.raises(TypeError) as exc_info:
         for n in node: 
             check.visit(n)
-    assert str(exc_info.value) == f"The parrent struct: '{undefined_parrent}' don't exist"
+    assert str(exc_info.value) == f"The parent struct: '{undefined_parrent}' does not exist"
     
 def test_struct_undefined_struct():
     undefined_struct = "Warrior"
@@ -213,7 +213,7 @@ def test_struct_undefined_struct():
     with pytest.raises(TypeError) as exc_info:
         for n in node: 
             check.visit(n)
-    assert str(exc_info.value) == f"The struct: '{undefined_struct}' are not defined"
+    assert str(exc_info.value) == f"The struct: '{undefined_struct}' is not defined"
 
 def test_struct_undefined_var():
     var_name = "Defense"
@@ -230,4 +230,4 @@ def test_struct_undefined_var():
     with pytest.raises(TypeError) as exc_info:
         for n in node: 
             check.visit(n)
-    assert str(exc_info.value) == f"The variable: '{var_name}' are not defined in the struct: 'Character'"
+    assert str(exc_info.value) == f"The variable: '{var_name}' is not defined in the struct: 'Character'"

@@ -32,7 +32,7 @@ def test_define_duplicate_function_fails():
 def test_call_missing_function_fails():
     checker = make_checker()
 
-    with pytest.raises(TypeError, match="don't exist"):
+    with pytest.raises(TypeError, match="does not exist"):
         checker.visit(Call("Fun1", []))
 
 

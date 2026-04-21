@@ -55,7 +55,7 @@ def test_foreach_missing_collection_fails():
 
     node = Foreach("item", "xs", [])
 
-    with pytest.raises(TypeError, match="don't exist"):
+    with pytest.raises(TypeError, match="does not exist"):
         checker.visit(node)
 
 

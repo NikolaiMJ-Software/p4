@@ -1,20 +1,34 @@
+import sys
 from src.ast import builder
 from src.parser import parser
 from src.visitors import type_checker, interpreter
 
-#TEST
-code = """
-create X is 0
-define State:
-    while true do:
-        output X
-        X is X + 1
-        if X equal 1000 do:
-            stop
 
-call State
+
+def load_source(path):
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python app.py <sourcefile>")
+        sys.exit(1)
+
+    source_path = sys.argv[1]
+    code = load_source(source_path)
+
+    tree = parser.parse(code)
+    ast = builder.ASTBuilder().transform(tree)
+
+    interp = interpreter.InterpreterVisitor()
+    interp.run(ast)
+
+
+
 
 """
+#TEST
+
 
 
 def print_ast(node, indent=0):
@@ -82,3 +96,4 @@ if __name__ == '__main__':
     for node in ast:
         checker.visit(node)
 '''
+"""

@@ -2,7 +2,7 @@
 .venv/
 __pycache__/
 .pytest_cache
-runtime/save_states/*
+src/runtime/save_states/*
 
 # Except the following files
 !requirements.txt

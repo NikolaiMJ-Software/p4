@@ -71,7 +71,7 @@ break_stmt: "stop" NEWLINE
 
 expr_stmt: expr NEWLINE
 
-input_stmt: "input in" ID NEWLINE
+input_stmt: "input in" ID (inheritance)? NEWLINE
 
 output_stmt: "output" expr_list NEWLINE
 expr_list: expr ("," expr)*

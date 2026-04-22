@@ -234,6 +234,23 @@ boolean_in_if_code = """if true and false do:
     create X is 5
 """
 
+# -------------------------
+# Input / Output
+# -------------------------
+def test_it_pass_input():
+    res = type_check_test(create_var_and_input_in_it)
+    assert [None, None] == res
+create_var_and_input_in_it = """create X
+input in X
+"""
+
+def test_it_pass_output():
+    res = type_check_test(create_var_and_output_it)
+    assert [None, None] == res
+create_var_and_output_it = """create X
+output X
+"""
+
 
 '''
 -----------------
@@ -350,4 +367,21 @@ def test_it_fail_chance_bool_int():
         type_check_test(chance_bool_int_code)
     assert "chance requires numeric types" in str(exc_info.value)
 chance_bool_int_code = """chance true in 100
+"""
+
+# -------------------------
+# Input / Output
+# -------------------------
+def test_it_fail_input():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(input_in_var)
+    assert "does not exist" in str(exc_info.value)
+input_in_var = """input in X
+"""
+
+def test_it_fail_output():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(output_var)
+    assert "does not exist" in str(exc_info.value)
+output_var = """output X
 """

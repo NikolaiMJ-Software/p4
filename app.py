@@ -6,7 +6,9 @@ from src.errors import Error, TypeError, RuntimeError # , SyntaxError # replaced
 
 #TEST
 code = """
-create A is B
+create X
+input in X
+output "HEj", X
 """
 
 def print_ast(node, indent=0):

@@ -690,14 +690,13 @@ class TypeCheckerVisitor(Visitor):
             )
     
     def visit_output(self, node):
-        # Make sure the value are define before writing to it
-        if node.name in self.v_table:
-            return self.v_table[node.name]
-        raise TypeError(
-                self.code,
-                node,
-                f"The variable: '{node.name}' does not exist"
-            )
+        for each in node.value:
+            if isinstance(each, Var) and each.name not in self.v_table:
+                raise TypeError(
+                    self.code,
+                    node,
+                    f"The variable: '{each.name}' does not exist"
+                )
     
     def visit_create_struct(self, node):
         self.validate_game_name(node, "struct")

@@ -6,13 +6,12 @@ from src.visitors import interpreter
 from src.parser import parse, ParseError
 from src.errors import Error, TypeError, RuntimeError 
 
-# To run your code use the following command in terminal "python app.py <file>" an example on the file could be test.rogue
-
+# Reading the code file
 def load_source(path):
     with open(path, "r", encoding="utf-8") as f:
         return f.read()
 
-
+# Prints the AST
 def print_ast(node, indent=0):
     prefix = "  " * indent
     print(prefix + str(node))

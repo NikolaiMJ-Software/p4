@@ -50,7 +50,7 @@ X is "hello"
 def test_it_pass_assign_list_variable_updates_type():
     result = type_check_test(assign_list_variable_updates_type_code)
     assert ["list[int]", "str"] == result
-assign_list_variable_updates_type_code = '''create Xs listing: 1, 2, 3
+assign_list_variable_updates_type_code = '''create Xs is listing: 1, 2, 3
 Xs is "hello"
 '''
 

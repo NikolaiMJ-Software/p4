@@ -28,7 +28,7 @@ forrange_expression_bounds_code = """for each I from 1 + 1 to 5 * 2 do:
 def test_it_pass_foreach_valid():
     result = type_check_test(foreach_valid_code)
     assert ["list[int]", None] == result
-foreach_valid_code = """create Xs listing: 1, 2, 3
+foreach_valid_code = """create Xs is listing: 1, 2, 3
 for each Item in Xs do:
     create Y is Item + 1
 """
@@ -37,7 +37,7 @@ for each Item in Xs do:
 def test_it_pass_foreach_generic_list():
     result = type_check_test(foreach_generic_list_code)
     assert ["list", None] == result
-foreach_generic_list_code = """create Xs listing:
+foreach_generic_list_code = """create Xs is listing:
 for each Item in Xs do:
     create Y
 """
@@ -46,7 +46,7 @@ for each Item in Xs do:
 def test_it_pass_foreach_with_indexed_list_element_use():
     result = type_check_test(foreach_with_math_code)
     assert ["list[int]", None] == result
-foreach_with_math_code = """create Xs listing: 1, 2, 3
+foreach_with_math_code = """create Xs is listing: 1, 2, 3
 for each Item in Xs do:
     create Y is Item * 2
 """
@@ -90,7 +90,7 @@ def test_it_fail_foreach_invalid_body_operation():
     with pytest.raises(TypeError) as exc_info:
         type_check_test(foreach_invalid_body_operation_code)
     assert "Expected numeric types" in str(exc_info.value)
-foreach_invalid_body_operation_code = '''create Xs listing: 1, 2, 3
+foreach_invalid_body_operation_code = '''create Xs is listing: 1, 2, 3
 for each Item in Xs do:
     create Y is Item + "a"
 '''

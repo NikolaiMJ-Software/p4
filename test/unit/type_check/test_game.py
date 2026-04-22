@@ -38,7 +38,7 @@ create Game is 10
         
 def test_game_as_list_invalid():
     code = """
-create Game listing: 10, 2, 3
+create Game is listing: 10, 2, 3
 """
     with pytest.raises(TypeError):
         type_check(code)

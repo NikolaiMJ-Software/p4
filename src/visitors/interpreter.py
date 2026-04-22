@@ -10,6 +10,10 @@ class ReturnException(Exception): # exception raised by return() to stop functio
 class BreakException(Exception): # Exceptuon raised be "stop" (break function) to stop loops
     pass
 
+class ValueException(Exception): # exception raised if values are illegal
+    def __init__(self, value):
+        self.value = value
+
 class InterpreterVisitor(Visitor):
     def __init__(self, slot=1):
         self.v_tables = [{}] # list of variables split into scope levels
@@ -33,7 +37,7 @@ class InterpreterVisitor(Visitor):
 
 
 
-    # Game state handling
+    # GAME STATE HANDLING
     def load_game_state(self):
         loaded_game = self.game_state_manager.load()
         if loaded_game is not None and "Game" in self.v_tables[0]:
@@ -56,7 +60,8 @@ class InterpreterVisitor(Visitor):
 
         except KeyboardInterrupt:
             print("\nProgram interrupted. Saving game state...")
-
+        except ValueException as exception:
+            print("\nProgram stopped due to execution exception:",exception.value)
         finally:
             self.save_game_state()
 
@@ -100,7 +105,7 @@ class InterpreterVisitor(Visitor):
         scope = self.find_scope(node.name)
         scope[node.name] = value
 
-    def visit_assign_index(self, node):
+    def visit_assign_index(self, node): # need error message for no listing found
         value = self.visit(node.value)
         if node.target.base == None:
             list = self.lookup(node.target.target)
@@ -148,21 +153,38 @@ class InterpreterVisitor(Visitor):
                     self.visit(stmt)
             except BreakException: # break statement
                 break
-            
             if not self.visit(node.cond):
                 break
             
     def visit_forrange(self, node):
-        for i in range(self.visit(node.start), self.visit(node.end) + 1):
-            self.v_tables.append({}) # start scope
-            self.v_tables[-1][node.name] = i
-            try:
-                for stmt in node.body:
-                    self.visit(stmt)
-            except BreakException: # break statment
-                break
-            finally:
-                self.v_tables.pop() # end scope
+        start = self.visit(node.start)
+        end = self.visit(node.end)
+        reverse = False
+        if end < start:
+            end,start = start,end
+            reverse = True
+        if not reverse:
+            for i in range(start, end+1):
+                self.v_tables.append({}) # start scope
+                self.v_tables[-1][node.name] = i
+                try:
+                    for stmt in node.body:
+                        self.visit(stmt)
+                except BreakException: # break statment
+                    break
+                finally:
+                    self.v_tables.pop() # end scope
+        if reverse:
+            for i in reversed(range(start, end+1)):
+                self.v_tables.append({}) # start scope
+                self.v_tables[-1][node.name] = i
+                try:
+                    for stmt in node.body:
+                        self.visit(stmt)
+                except BreakException: # break statment
+                    break
+                finally:
+                    self.v_tables.pop() # end scope
     
     def visit_foreach(self, node):
         collection = self.lookup(node.collection)
@@ -266,6 +288,8 @@ class InterpreterVisitor(Visitor):
     def visit_div(self, node):
         left = self.visit(node.left)
         right = self.visit(node.right)
+        if right == 0:
+            raise ValueException("division by 0")
         return left / right
     
     def visit_pow(self, node):
@@ -279,7 +303,12 @@ class InterpreterVisitor(Visitor):
     def visit_between(self, node):
         left = self.visit(node.left)
         right = self.visit(node.right)
-        return random.randrange(left, right + 1)
+        if left < right: # if first value smallest
+            return random.randrange(left, right+1)
+        elif left > right: # if second value smallest
+            return random.randrange(right, left+1)
+        else: # if both are equal
+            return left
     
     def visit_chance(self, node):
         left = self.visit(node.left)
@@ -309,9 +338,9 @@ class InterpreterVisitor(Visitor):
         self.v_tables.pop() # end scope
     
     def visit_index_access(self, node):
-        if node.base == None:
+        if node.base == None: # If not from parent, look up value
             list = self.lookup(node.target)
-        else:
+        else: # If has a parent, look up parent, and then find the target value
             list_base = self.lookup(node.base)
             list = list_base[node.target]
         for index in reversed(node.indexing):

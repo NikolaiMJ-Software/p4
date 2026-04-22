@@ -1,6 +1,5 @@
 from src.ast import builder
-from src.visitors import type_checker
-from src.visitors import interpreter
+from src.visitors import type_checker, interpreter
 from src.parser import parse, ParseError
 from src.errors import Error, TypeError, RuntimeError # , SyntaxError # replaced by ParseError
 
@@ -58,8 +57,6 @@ if __name__ == '__main__':
         print("\n---------INTERPRETATION--------\n")
         interpreter = interpreter.InterpreterVisitor(slot = 2)
         interpreter.run(ast)
-
-        print("Success!")
 
     except ParseError as e:
         print(f"[Syntax Error] Line {e.line}, Col {e.column}")

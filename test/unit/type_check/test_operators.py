@@ -200,3 +200,29 @@ def test_chance():
 
     with pytest.raises(TypeError, match="chance requires numeric types"):
         checker.visit(Chance(BoolLiteral(True), IntLiteral(100)))
+        
+# -------------------------
+# Input / Output
+# -------------------------
+def test_input():
+    checker = make_checker()
+    
+    # X not initilized
+    with pytest.raises(TypeError, match="does not exist"):
+        checker.visit(Input("X"))
+    
+    # X are initilized
+    nodes = [CreateVariable("X", None),Input("X")]
+    for node in nodes:
+        checker.visit(node)
+
+def test_output():
+    checker = make_checker()
+    # X not initilized
+    with pytest.raises(TypeError, match="does not exist"):
+        checker.visit(Output([StringLiteral("Hello"), Var("X", None), IntLiteral(5)]))
+    
+    # X are initilized
+    nodes = [CreateVariable("X", None),Output([StringLiteral("Hello"), Var("X", None)])]
+    for node in nodes:
+        checker.visit(node)

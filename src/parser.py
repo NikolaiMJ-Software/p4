@@ -26,7 +26,7 @@ start: stmt*
 // STATEMENTS
 create_stmt: "create" ID var_tail NEWLINE -> create_v
     | "create" ID struct_tail -> create_s
-    | "create" ID list_tail -> create_l
+    | "create" ID "is" list_tail -> create_l
 
 var_tail: ("is" expr)?
 
@@ -153,7 +153,8 @@ parser = Lark(
     grammar,
     parser="lalr",
     start="start",
-    postlex=TreeIndenter()
+    postlex=TreeIndenter(),
+    propagate_positions=True
 )
 
 # wrapping Lark errors in our own (decouples us from Lark)

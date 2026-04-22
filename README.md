@@ -45,9 +45,11 @@ pip install -r requirements.txt
 ```
 
 ### Running the app for the first time
-Connect your OS device and start the program:
+1. Write some code in `main.rouge`
+
+2. Start the program:
 ```bash
-python app.py
+python app.py main.rouge
 ```
 
 ### Running tests

@@ -1,0 +1,52 @@
+create Game with:
+    Class
+    Health
+    Weapon
+    Weapon_damage
+
+create Class
+
+define Play:
+    while true do:
+        output "choose class, between: Warrior, Wizard or Slave"
+        input in Class
+        Class from Game is Class
+        if Class from Game equal "Warrior" do:
+            Health from Game is between 20 and 25
+            Weapon from Game is between 1 and 3
+            if Weapon from Game equal 1 do:
+                Weapon from Game is "rusty sword"
+                Weapon_damage from Game is 5
+            else if Weapon from Game equal 2 do:
+                Weapon from Game is "sword"
+                Weapon_damage from Game is 10
+            else if Weapon from Game equal 3 do:
+                Weapon from Game is "legendary sword"
+                Weapon_damage from Game is 100
+            stop
+        else if Class from Game equal "Wizard" do:
+            Health from Game is between 5 and 15
+            Weapon from Game is between 1 and 3
+            if Weapon from Game equal 1 do:
+                Weapon from Game is "Magic Missle"
+                Weapon_damage from Game is 10
+            else if Weapon from Game equal 2 do:
+                Weapon from Game is "Fire Ball"
+                Weapon_damage from Game is 25
+            else if Weapon from Game equal 3 do:
+                Weapon from Game is "Delete"
+                Weapon_damage from Game is "infinite"
+            stop
+        else if Class from Game equal "Slave" do:
+            Health from Game is between 1 and 2
+            Weapon from Game is between 1 and 3
+            if Weapon from Game equal 1 do:
+                Weapon from Game is "fists"
+                Weapon_damage from Game is 1
+            else if Weapon from Game equal 2 do:
+                Weapon from Game is "stick"
+                Weapon_damage from Game is 2
+            else if Weapon from Game equal 3 do:
+                Weapon from Game is "rusty knife"
+                Weapon_damage from Game is 3
+            stop

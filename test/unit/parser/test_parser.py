@@ -1,10 +1,10 @@
 import sys
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parents[2] / "src"))
+sys.path.append(str(Path(__file__).resolve().parents[3]))
 
 import pytest
-from parser import parse, ParseError
+from src.parser import parse, ParseError
 
 
 ####Expand the test to include values within to see if they also fits and are right######
@@ -30,10 +30,10 @@ def test_create_variable_unassigned():
 
 #Lists
 def test_create_list():
-    tree_int = parse("create X listing: 1, 2, 3\n")
-    tree_string = parse("create X listing: \"a\", \"b\", \"c\"\n")
-    tree_float = parse("create X listing: 1.2, 3, 2.11\n")
-    tree_ID = parse("create X listing: A, B, C\n")
+    tree_int = parse("create X is listing: 1, 2, 3\n")
+    tree_string = parse("create X is listing: \"a\", \"b\", \"c\"\n")
+    tree_float = parse("create X is listing: 1.2, 3, 2.11\n")
+    tree_ID = parse("create X is listing: A, B, C\n")
     
     assert tree_int.children[0].data == "create_l"
     assert tree_string.children[0].data == "create_l"
@@ -399,7 +399,7 @@ def test_create_missing_expr():
 
 def test_create_list_trailing_comma():
     with pytest.raises(ParseError):
-        parse("create X listing: 1, 2, 3,\n")
+        parse("create X is listing: 1, 2, 3,\n")
         
 def test_assign_missing_expr():
     with pytest.raises(ParseError):

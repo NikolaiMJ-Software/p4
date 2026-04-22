@@ -1,13 +1,9 @@
-#Tester parser->builder->node
-#første pipeline test whuuuuuu!
 import sys
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parents[2]))
-
+sys.path.append(str(Path(__file__).resolve().parents[3]))
 from src.parser import parse
 from src.ast.builder import ASTBuilder
-
 
 def test_ast_create_var():
     tree = parse("create X is 5\n")
@@ -90,7 +86,7 @@ def test_ast_call():
     assert len(node.value.args) == 2
 
 def test_ast_create_list():
-    tree = parse("create X listing: 1, 2, 3\n")
+    tree = parse("create X is listing: 1, 2, 3\n")
     ast = ASTBuilder().transform(tree)
 
     node = ast[0]
@@ -153,10 +149,9 @@ def test_ast_assign_index_value():
     assert node.base is None
 
     assert node.value.__class__.__name__ == "IndexAccess"
-    assert node.value.index.value == 1
-    assert node.value.target.__class__.__name__ == "Var"
-    assert node.value.target.name == "Y"
-    assert node.value.target.base is None
+    assert node.value.indexing[0].value == 1
+    assert node.value.target == "Y"
+    assert node.value.base is None
 
 
 def test_ast_assign_nested_index_value():
@@ -164,19 +159,18 @@ def test_ast_assign_nested_index_value():
     ast = ASTBuilder().transform(tree)
 
     node = ast[0]
-    outer = node.value
-    inner = outer.target
+    access = node.value
 
     assert node.__class__.__name__ == "Assign"
     assert node.name == "X"
+    assert node.base is None
 
-    assert outer.__class__.__name__ == "IndexAccess"
-    assert outer.index.value == 1
-
-    assert inner.__class__.__name__ == "IndexAccess"
-    assert inner.index.value == 3
-    assert inner.target.__class__.__name__ == "Var"
-    assert inner.target.name == "Y"
+    assert access.__class__.__name__ == "IndexAccess"
+    assert len(access.indexing) == 2
+    assert access.indexing[0].value == 1
+    assert access.indexing[1].value == 3
+    assert access.target == "Y"
+    assert access.base is None
 
 
 def test_ast_assign_to_index():
@@ -185,11 +179,14 @@ def test_ast_assign_to_index():
 
     node = ast[0]
 
-    assert node.__class__.__name__ == "AssignIndex"
-    assert node.target.__class__.__name__ == "IndexAccess"
-    assert node.target.index.value == 1
-    assert node.target.target.__class__.__name__ == "Var"
-    assert node.target.target.name == "Y"
+    assert node.__class__.__name__ == "Assign"
+    assert node.base is None
+    assert node.name.__class__.__name__ == "IndexAccess"
+    assert node.name.indexing[0].value == 1
+    assert node.name.target == "Y"
+    assert node.name.base is None
+
+    assert node.value.__class__.__name__ == "IntLiteral"
     assert node.value.value == 5
 
 
@@ -198,20 +195,19 @@ def test_ast_assign_to_nested_index():
     ast = ASTBuilder().transform(tree)
 
     node = ast[0]
-    outer = node.target
-    inner = outer.target
+    access = node.name
 
-    assert node.__class__.__name__ == "AssignIndex"
+    assert node.__class__.__name__ == "Assign"
+    assert node.base is None
     assert node.value.__class__.__name__ == "StringLiteral"
     assert node.value.value == "goat"
 
-    assert outer.__class__.__name__ == "IndexAccess"
-    assert outer.index.value == 2
-
-    assert inner.__class__.__name__ == "IndexAccess"
-    assert inner.index.value == 1
-    assert inner.target.__class__.__name__ == "Var"
-    assert inner.target.name == "Y"
+    assert access.__class__.__name__ == "IndexAccess"
+    assert len(access.indexing) == 2
+    assert access.indexing[0].value == 2
+    assert access.indexing[1].value == 1
+    assert access.target == "Y"
+    assert access.base is None
 
 
 def test_ast_output_expr_list():

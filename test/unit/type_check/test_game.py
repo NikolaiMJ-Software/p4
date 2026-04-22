@@ -1,11 +1,8 @@
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parents[2] / "src"))
-
 import pytest
-from parser import parse
+from src.parser import parse
 from src.ast.builder import ASTBuilder
 from src.visitors.type_checker import TypeCheckerVisitor
+from src.errors import TypeError
 
 
 def type_check(code):
@@ -41,7 +38,7 @@ create Game is 10
         
 def test_game_as_list_invalid():
     code = """
-create Game listing: 10, 2, 3
+create Game is listing: 10, 2, 3
 """
     with pytest.raises(TypeError):
         type_check(code)

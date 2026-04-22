@@ -65,6 +65,41 @@ add_string_string_code = '''"a" + "b"
 '''
 
 
+def test_it_pass_neg_int():
+    result = type_check_test(neg_int_code)
+    assert ["int"] == result
+neg_int_code = """-2
+"""
+
+
+def test_it_pass_neg_float():
+    result = type_check_test(neg_float_code)
+    assert ["float"] == result
+neg_float_code = """-2.5
+"""
+
+
+def test_it_pass_double_neg_int():
+    result = type_check_test(double_neg_int_code)
+    assert ["int"] == result
+double_neg_int_code = """--2
+"""
+
+
+def test_it_pass_neg_in_addition():
+    result = type_check_test(neg_in_addition_code)
+    assert ["int"] == result
+neg_in_addition_code = """2 + -3
+"""
+
+
+def test_it_pass_neg_in_variable_creation():
+    result = type_check_test(neg_in_variable_creation_code)
+    assert ["float"] == result
+neg_in_variable_creation_code = """create X is -2.5
+"""
+
+
 def test_it_pass_mul_int_int():
     result = type_check_test(mul_int_int_code)
     assert ["int"] == result
@@ -264,6 +299,22 @@ def test_it_fail_add_string_int():
     assert "Expected numeric types" in str(exc_info.value)
 add_string_int_code = '''"a" + 2
 '''
+
+
+def test_it_fail_neg_string():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(neg_string_code)
+    assert "NEG requires numeric type" in str(exc_info.value)
+neg_string_code = '''-"a"
+'''
+
+
+def test_it_fail_neg_bool():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(neg_bool_code)
+    assert "NEG requires numeric type" in str(exc_info.value)
+neg_bool_code = """-true
+"""
 
 
 def test_it_fail_mul_string_int():

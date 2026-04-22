@@ -94,7 +94,16 @@ class TypeCheckerVisitor(Visitor):
         return self.visit(node.value)
     
     def visit_neg(self, node):
-        return self.visit(node.value)
+        value_type = self.visit(node.value)
+
+        if not self.is_numeric(value_type):
+            raise TypeError(
+                self.code,
+                node,
+                f"NEG requires numeric type, got {value_type}"
+            )
+
+        return value_type
     
     def visit_create_variable(self, node):
         

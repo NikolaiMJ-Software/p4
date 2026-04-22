@@ -55,7 +55,20 @@ def test_add():
         checker.visit(Add(StringLiteral("a"), IntLiteral(2)))
 
 
-# we need to take another look at "-"
+def test_neg():
+    checker = make_checker()
+
+    assert checker.visit(Neg(IntLiteral(2))) == "int"
+    assert checker.visit(Neg(FloatLiteral(2.5))) == "float"
+    assert checker.visit(Neg(Neg(IntLiteral(2)))) == "int"
+    assert checker.visit(Neg(Neg(FloatLiteral(2.5)))) == "float"
+
+    with pytest.raises(TypeError, match="NEG requires numeric type"):
+        checker.visit(Neg(StringLiteral("hello")))
+
+    with pytest.raises(TypeError, match="NEG requires numeric type"):
+        checker.visit(Neg(BoolLiteral(True)))
+
 
 def test_mul():
     checker = make_checker()

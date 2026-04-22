@@ -1,13 +1,5 @@
-#Tester parser->builder->node
-#første pipeline test whuuuuuu!
-import sys
-from pathlib import Path
-
-sys.path.append(str(Path(__file__).resolve().parents[2]))
-
 from src.parser import parse
 from src.ast.builder import ASTBuilder
-
 
 def test_ast_create_var():
     tree = parse("create X is 5\n")

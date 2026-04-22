@@ -22,13 +22,11 @@ def test_create_typed_list():
     assert checker.v_table["xs"] == "list[int]"
 
 
-def test_create_list_mixed_types_fails():
+def test_create_list_mixed_types_pass():
     checker = make_checker()
-
     node = CreateList("xs", [IntLiteral(1), StringLiteral("a")])
-
-    with pytest.raises(TypeError, match="mixed types"):
-        checker.visit(node)
+    assert checker.visit(node) == "list[int]"
+    assert checker.v_table["xs"] == "list[int]"
 
 
 def test_index_access_typed_list():

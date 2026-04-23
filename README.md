@@ -45,7 +45,7 @@ pip install -r requirements.txt
 ```
 
 ### Running the app for the first time
-1. Write some code in `main.rouge`
+1. Write some code in `main.rogue`
 
 2. Start the program:
 ```bash

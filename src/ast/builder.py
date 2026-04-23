@@ -83,7 +83,7 @@ class ASTBuilder(Transformer):
     def assign_index(self, tree):
         target = tree.children[0]
         value = tree.children[1]
-        return self._pos(Assign(target, None, value), tree)
+        return self._pos(AssignIndex(target, value), tree)
 
     # Reference used for assignment
     def reference(self, tree):

@@ -105,7 +105,7 @@ class InterpreterVisitor(Visitor):
         scope = self.find_scope(node.name)
         scope[node.name] = value
 
-    def visit_assign_index(self, node): # need error message for no listing found
+    def visit_assign_index(self, node):
         value = self.visit(node.value)
         if node.target.base == None: # if list is not in struct
             lst = self.lookup(node.target.target)
@@ -328,6 +328,8 @@ class InterpreterVisitor(Visitor):
     def visit_var(self, node):
         if node.base:
             struct = self.lookup(node.base)
+            if node.name not in struct:
+                raise ValueException(f"Field '{node.name}' not found in struct '{node.base}'")
             return struct.get(node.name, None)
         return self.lookup(node.name)
     

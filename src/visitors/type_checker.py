@@ -93,6 +93,9 @@ class TypeCheckerVisitor(Visitor):
     def visit_expression(self, node):
         return self.visit(node.value)
     
+    def visit_break(self, node):
+        return None
+    
     def visit_neg(self, node):
         value_type = self.visit(node.value)
 

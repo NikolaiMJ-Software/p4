@@ -239,3 +239,26 @@ def test_output():
     nodes = [CreateVariable("X", None),Output([StringLiteral("Hello"), Var("X", None)])]
     for node in nodes:
         checker.visit(node)
+
+# -------------------------
+# Expression / Break
+# -------------------------
+def test_expression():
+    checker = make_checker()
+
+    assert checker.visit(Expression(IntLiteral(2))) == "int"
+    assert checker.visit(Expression(FloatLiteral(2.5))) == "float"
+    assert checker.visit(Expression(StringLiteral("hello"))) == "str"
+    assert checker.visit(Expression(BoolLiteral(True))) == "bool"
+    assert checker.visit(Expression(Add(IntLiteral(2), IntLiteral(3)))) == "int"
+
+    checker.visit(CreateVariable("X", IntLiteral(5)))
+    assert checker.visit(Expression(Var("X", None))) == "int"
+
+    with pytest.raises(TypeError, match="does not exist"):
+        checker.visit(Expression(Var("Y", None)))
+
+def test_break():
+    checker = make_checker()
+
+    assert checker.visit(Break()) is None

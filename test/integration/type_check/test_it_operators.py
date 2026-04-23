@@ -286,6 +286,31 @@ create_var_and_output_it = """create X
 output X
 """
 
+# -------------------------
+# Expression / Break
+# -------------------------
+def test_it_pass_expression_variable():
+    result = type_check_test(expression_variable_code)
+    assert ["int", "int"] == result
+expression_variable_code = """create X is 5
+X
+"""
+
+
+def test_it_pass_expression_call():
+    result = type_check_test(expression_call_code)
+    assert [None, "int"] == result
+expression_call_code = """define AddOne with A:
+    return A + 1
+call AddOne with 2
+"""
+
+def test_it_pass_break_in_while():
+    result = type_check_test(break_in_while_code)
+    assert [None] == result
+break_in_while_code = """while true do:
+    stop
+"""
 
 '''
 -----------------
@@ -435,4 +460,14 @@ def test_it_fail_output():
         type_check_test(output_var)
     assert "does not exist" in str(exc_info.value)
 output_var = """output X
+"""
+
+# -------------------------
+# Expression / Break
+# -------------------------
+def test_it_fail_expression_missing_variable():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(expression_missing_variable_code)
+    assert "does not exist" in str(exc_info.value)
+expression_missing_variable_code = """X
 """

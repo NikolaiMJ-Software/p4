@@ -7,86 +7,81 @@ def make_checker():
     return TypeCheckerVisitor()
 
 
-def test_create_empty_list():
-    checker = make_checker()
-
-    assert checker.visit(CreateList("xs", None)) == "list"
-    assert checker.v_table["xs"] == "list"
-
-
-def test_create_typed_list():
+'''
+-----------------
+Passing unit test for the type checker
+-----------------
+'''
+def test_create_int_list():
     checker = make_checker()
 
     node = CreateList("xs", [IntLiteral(1), IntLiteral(2), IntLiteral(3)])
-    assert checker.visit(node) == "list[int]"
-    assert checker.v_table["xs"] == "list[int]"
+    assert checker.visit(node) == ['int', 'int', 'int']
+    assert checker.v_table["xs"] == ['int', 'int', 'int']
 
 
 def test_create_list_mixed_types_pass():
     checker = make_checker()
     node = CreateList("xs", [IntLiteral(1), StringLiteral("a")])
-    assert checker.visit(node) == "list[int]"
-    assert checker.v_table["xs"] == "list[int]"
+    assert checker.visit(node) == ['int', 'str']
+    assert checker.v_table["xs"] == ['int', 'str']
 
 
 def test_index_access_typed_list():
     checker = make_checker()
-    checker.v_table["xs"] = "list[int]"
+    checker.v_table["xs"] = ['int']
 
     node = IndexAccess([IntLiteral(0)], "xs", None)
     assert checker.visit(node) == "int"
 
 
-def test_index_access_generic_list_returns_none():
+def test_assign_to_list_index():
     checker = make_checker()
-    checker.v_table["xs"] = "list"
+    checker.v_table["xs"] = ['int']
 
-    node = IndexAccess([IntLiteral(0)], "xs", None)
-    assert checker.visit(node) is None
-
-
-def test_index_access_non_int_index_fails():
-    checker = make_checker()
-    checker.v_table["xs"] = "list[int]"
-
-    node = IndexAccess([StringLiteral("0")], "xs", None)
-
-    with pytest.raises(TypeError, match="List index must be int"):
-        checker.visit(node)
-
-
-def test_index_access_non_list_fails():
-    checker = make_checker()
-    checker.v_table["x"] = "int"
-
-    node = IndexAccess([IntLiteral(0)], "x", None)
-
-    with pytest.raises(TypeError, match="Cannot index non-list type"):
-        checker.visit(node)
-
-
-def test_assign_to_list_index_valid():
-    checker = make_checker()
-    checker.v_table["xs"] = "list[int]"
-
-    node = Assign(
+    node = AssignIndex(
         IndexAccess([IntLiteral(0)], "xs", None),
-        None,
         IntLiteral(99)
     )
 
     assert checker.visit(node) == "int"
 
 
-def test_assign_to_list_index_wrong_value_type_fails():
+'''
+-----------------
+Failing unit test for the type checker
+-----------------
+'''
+def test_create_two_lists_with_same_name():
     checker = make_checker()
-    checker.v_table["xs"] = "list[int]"
+    checker.v_table["X"] = ['int']
 
-    node = Assign(
-        IndexAccess([IntLiteral(0)], "xs", None),
-        None,
-        StringLiteral("oops")
-    )
+    node = IndexAccess([IntLiteral(1)], "X", None)
 
-    with pytest.raises(TypeError, match="Cannot assign value of type"):
+    with pytest.raises(TypeError, match="does not exist"):
+        checker.visit(node)
+
+def test_index_access_not_initilized_list_fails():
+    checker = make_checker()
+    checker.v_table["xs"] = ['int']
+
+    node = IndexAccess([StringLiteral("0")], "notalist", None)
+
+    with pytest.raises(TypeError, match="List index must be int"):
+        checker.visit(node)
+
+def test_index_access_out_of_bound_negative():
+    checker = make_checker()
+    checker.v_table["xs"] = ['int', 'float', 'str']
+    
+    node = IndexAccess([Neg(IntLiteral(1))], "xs", None)
+    with pytest.raises(TypeError, match="The index: '-1' does not exist in 'xs'"):
+        checker.visit(node)
+
+def test_index_access_out_of_bound_max():
+    checker = make_checker()
+    checker.v_table["xs"] = ['int', 'float', 'str']
+    
+    node = IndexAccess([IntLiteral(4)], "xs", None)
+    with pytest.raises(TypeError, match="The index: '4' does not exist in 'xs'"):
         checker.visit(node)

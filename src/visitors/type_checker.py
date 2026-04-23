@@ -128,51 +128,6 @@ class TypeCheckerVisitor(Visitor):
         return value_type
 
     def visit_assign(self, node):
-        # Check if assigning to a list index
-        if type(node.name).__name__ == "IndexAccess":
-            # Find the type of the collection
-            current_type = self.visit(Var(node.name.target, node.name.base))
-
-            elem_type = None
-
-            # Find the type of the index
-            for idx_expr in node.name.indexing:
-                index_type = self.visit(idx_expr)
-                if index_type != "int":
-                    raise TypeError(
-                        self.code,
-                        node,
-                        f"List index must be int, got {index_type}"
-                    )
-
-                # Make sure the target is a list
-                if not isinstance(current_type, str) or not current_type.startswith("list"):
-                    raise TypeError(
-                        self.code,
-                        node,
-                        f"Cannot index non-list type '{current_type}'"
-                    )
-
-                # Find the element type inside the list
-                if current_type == "list":
-                    elem_type = None
-                    current_type = None
-                else:
-                    elem_type = current_type[5:-1]  # list[int] -> int
-                    current_type = elem_type
-
-            # Find the type of the assigned value
-            value_type = self.visit(node.value)
-
-            # If the list has a known element type, enforce it
-            if elem_type is not None and value_type != elem_type:
-                raise TypeError(
-                    self.code,
-                    node,
-                    f"Cannot assign value of type '{value_type}' to list element of type '{elem_type}'"
-                )
-            return value_type
-
         # Check if it got inheritance
         if node.base:
             # Check if the parent exist
@@ -209,6 +164,22 @@ class TypeCheckerVisitor(Visitor):
         value_type = self.visit(node.value)
         self.v_table[node.name] = value_type
         return value_type
+
+    def visit_assign_index(self, node):
+        # Check if target node exist
+        self.visit(node.target)
+
+        # Get the list and index
+        target_list = self.v_table[node.target.target]
+        if len(target_list) == 0:
+            target_list.append(self.visit(node.value))
+            return self.visit(node.value)
+        
+        index = node.target.indexing[0].value
+        
+        # Save type in the list
+        target_list[index] = self.visit(node.value)
+        return self.visit(node.value)
 
     def visit_return(self, node):
         return self.visit(node.value)
@@ -566,19 +537,18 @@ class TypeCheckerVisitor(Visitor):
 
     def visit_create_list(self, node):
         self.validate_game_name(node, "list")
-        
-        # List name must be unique
+
         if node.name in self.v_table:
             raise TypeError(
                 self.code,
                 node,
-                f"The variable: '{node.name}' already exists"
+                f"The list: '{node.name}' already exists"
             )
 
         # Empty list gets generic list type
         if node.listing is None:
-            self.v_table[node.name] = "list"
-            return "list"
+            self.v_table[node.name] = []
+            return []
 
         element_types = []
 
@@ -587,46 +557,46 @@ class TypeCheckerVisitor(Visitor):
             t = self.visit(item)
             element_types.append(t)
 
-        # enforce same type
-        # if len(set(element_types)) > 1:
-        #     raise TypeError(
-        #         self.code,
-        #         node,
-        #         f"List '{node.name}' has mixed types: {element_types}"
-        #     )
-
-        # Creates typed list, for example list[int]
-        list_type = f"list[{element_types[0]}]" if element_types else "list"
-
-        self.v_table[node.name] = list_type
-        return list_type
+        self.v_table[node.name] = element_types
+        return element_types
 
 
     def visit_index_access(self, node):
-        current_type = self.visit(Var(node.target, node.base))
+        index_type = self.visit(node.indexing[0])
+        if index_type != "int":
+            raise TypeError(
+                self.code,
+                node,
+                f"List index must be int, got {index_type}"
+            )
+        
+        if node.target not in self.v_table:
+            raise TypeError(
+                self.code,
+                node,
+                f"The list: '{node.traget}'does not exist"
+            )
+        
+        target_list = self.v_table[node.target]
+        if not isinstance(target_list, list):
+            raise TypeError(
+                self.code,
+                node,
+                f"The variable: '{node.target}' in not a list"
+            )
 
-        for idx_expr in node.indexing:
-            index_type = self.visit(idx_expr)
-            if index_type != "int":
-                raise TypeError(
-                    self.code,
-                    node,
-                    f"List index must be int, got {index_type}"
-                )
+        index = node.indexing[0].value
+        if not isinstance(index, int):
+            index = -index.value
 
-            if not isinstance(current_type, str) or not current_type.startswith("list"):
-                raise TypeError(
-                    self.code,
-                    node,
-                    f"Cannot index non-list type '{current_type}'"
-                )
-
-            if current_type == "list":
-                current_type = None
-            else:
-                current_type = current_type[5:-1]   # list[int] -> int
-
-        return current_type
+        if 0 <= index and index <= len(target_list) - 1:
+            return target_list[index]
+        else:
+            raise TypeError(
+                self.code,
+                node,
+                f"The index: '{index}' does not exist in '{node.target}'"
+            )
 
 
     def visit_forrange(self, node):
@@ -659,30 +629,28 @@ class TypeCheckerVisitor(Visitor):
             raise TypeError(
                 self.code,
                 node,
-                f"The variable: '{node.collection}' does not exist"
+                f"The list: '{node.collection}' does not exist"
             )
 
         collection_type = self.v_table[node.collection]
 
         # Only lists can be used in foreach
-        if not isinstance(collection_type, str) or not collection_type.startswith("list"):
+        if not isinstance(collection_type, list):
             raise TypeError(
                 self.code,
                 node,f"Cannot iterate over non-list type '{collection_type}'"
             )
-        # Finds the type of one element inside the list
-        if collection_type == "list":
-            elem_type = None
-        else:
-            elem_type = collection_type[5:-1]  # list[int] → int
-
-        # Saves old scope and creates loop variable
+        
+        # Saves old scope
         old = self.v_table.copy()
-        self.v_table[node.name] = elem_type
-
+        
         # Checks all statements inside loop body once
-        for stmt in node.body:
-            self.visit(stmt)
+        for item in collection_type:
+            old = self.v_table.copy()
+            self.v_table[node.name] = item
+            for stmt in node.body:
+                self.visit(stmt)
+            self.v_table = old
 
         # Restores previous scope
         self.v_table = old

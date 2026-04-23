@@ -26,7 +26,7 @@ start: stmt*
 // STATEMENTS
 create_stmt: "create" ID var_tail NEWLINE -> create_v
     | "create" ID struct_tail -> create_s
-    | "create" ID "is" list_tail -> create_l
+    | "create" ID "is" list_tail NEWLINE-> create_l
 
 var_tail: ("is" expr)?
 
@@ -39,13 +39,13 @@ struct_field: ID NEWLINE
     | ID "is" expr NEWLINE
     | ID "is" "listing:" list_items? NEWLINE
 
-list_tail: "listing:" list_items? NEWLINE
+list_tail: "listing:" list_items?
 list_items: list_item ("," list_item)*
 
 assign_stmt: ID inheritance "is" expr NEWLINE -> assign_v
-    | ID inheritance "is" list_tail -> assign_l
+    | ID inheritance "is" list_tail NEWLINE -> assign_l
 
-assign_index_stmt: index_access "is" list_item NEWLINE -> assign_index
+assign_index_stmt: index_access "is" list_item NEWLINE-> assign_index
 index_access: indexing ID inheritance
 indexing: ("index" expr "of")*
 
@@ -124,8 +124,7 @@ inheritance: ("from" ID)?
 more_stmt: stmt+
 mul_stmt: stmt*
 pos_stmt: stmt?
-// remember to insert expr in list_item
-list_item: INTEGER | FLOAT | STRING | ID 
+list_item: expr | list_tail
 
 // IMPORTS & IGNORE
 NEWLINE: (/\r?\n[ \t]*/)

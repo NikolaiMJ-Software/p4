@@ -29,3 +29,6 @@ class TypeError(Error):
 
 class RuntimeError(Error):
     pass
+
+class InterpreterError(Error):
+    pass

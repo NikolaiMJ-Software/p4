@@ -1,6 +1,7 @@
 from src.visitors.base_visitor import Visitor
 from src.ast.nodes import *
 from ..runtime.game_state import GameStateManager
+from src.errors import InterpreterError
 import random
 
 class ReturnException(Exception): # exception raised by return() to stop function call
@@ -10,12 +11,9 @@ class ReturnException(Exception): # exception raised by return() to stop functio
 class BreakException(Exception): # Exceptuon raised be "stop" (break function) to stop loops
     pass
 
-class ValueException(Exception): # exception raised if values are illegal
-    def __init__(self, value):
-        self.value = value
-
 class InterpreterVisitor(Visitor):
-    def __init__(self, slot=1):
+    def __init__(self, code, slot=1):
+        self.code = code
         self.v_tables = [{}] # list of variables split into scope levels
         self.f_table = {} # list of defined functions
         self.game_state_manager = GameStateManager(slot) # safe state manager, where slot equals save file
@@ -60,8 +58,6 @@ class InterpreterVisitor(Visitor):
 
         except KeyboardInterrupt:
             print("\nProgram interrupted. Saving game state...")
-        except ValueException as exception:
-            print("\nProgram stopped due to execution exception:",exception.value)
         finally:
             self.save_game_state()
 
@@ -93,7 +89,7 @@ class InterpreterVisitor(Visitor):
             self.v_tables[-1][node.name] = {**parent, **fields}
         
     def visit_create_list(self, node):
-        listing = [self.visit(item) for item in node.listing] if node.listing else []
+        listing = [self.visit(item) for item in node.value] if node.value else []
         self.v_tables[-1][node.name] = listing
         
     def visit_assign(self, node):
@@ -112,20 +108,40 @@ class InterpreterVisitor(Visitor):
         else: # if list is in struct
             list_base = self.lookup(node.target.base)
             if node.target.target not in list_base:
-                raise ValueException(f"Field '{node.target.target}' not found in struct '{node.target.base}'")
+                raise InterpreterError(
+                    self.code,
+                    node,
+                    f"Field '{node.target.target}' not found in struct '{node.target.base}'"
+                )
             lst = list_base[node.target.target]
         if not isinstance(lst, list): # check found field is a list
-            raise ValueException(f"Cannot index into non-list with value: {lst}")
+            raise InterpreterError(
+                    self.code,
+                    node,
+                    f"Cannot index into non-list with value: {lst}"
+                )
         for index in reversed(node.target.indexing[:-1]): # shrink list untill you have desired layer
             index = self.visit(index)
             if index < 0 or index >= len(lst): # check that index is within list size
-                raise ValueException(f"Index {index} out of bounds (size {len(lst)})")
+                raise InterpreterError(
+                    self.code,
+                    node,
+                    f"Index {index} out of bounds (size {len(lst)})"
+            )
             lst = lst[index]
             if not isinstance(lst, list):
-                raise ValueException(f"Cannot index into non-list with value: {lst}")
+                raise InterpreterError(
+                    self.code,
+                    node,
+                    f"Cannot index into non-list with value: {lst}"
+                )
         index = self.visit(node.target.indexing[0])
         if index < 0 or index >= len(lst): # check that index is within list size
-            raise ValueException(f"Index {index} out of bounds (size {len(lst)})")
+            raise InterpreterError(
+                self.code,
+                node,
+                f"Index {index} out of bounds (size {len(lst)})"
+            )
         lst[index] = value
 
     def visit_if(self, node):
@@ -304,7 +320,11 @@ class InterpreterVisitor(Visitor):
         left = self.visit(node.left)
         right = self.visit(node.right)
         if right == 0:
-            raise ValueException("division by 0")
+            raise InterpreterError(
+                self.code,
+                node,
+                f"division by 0"
+            )
         return left / right
     
     def visit_pow(self, node):
@@ -334,7 +354,11 @@ class InterpreterVisitor(Visitor):
         if node.base:
             struct = self.lookup(node.base)
             if node.name not in struct:
-                raise ValueException(f"Field '{node.name}' not found in struct '{node.base}'")
+                raise InterpreterError(
+                    self.code,
+                    node,
+                    f"Field '{node.name}' not found in struct '{node.base}'"
+                )
             return struct.get(node.name, None)
         return self.lookup(node.name)
     
@@ -356,11 +380,23 @@ class InterpreterVisitor(Visitor):
     
     def visit_index_access(self, node):
         if node.base == None: # If not from parent, look up value
-            list = self.lookup(node.target)
+            lst = self.lookup(node.target)
         else: # If has a parent, look up parent, and then find the target value
-            list_base = self.lookup(node.base)
-            list = list_base[node.target]
+            lst_base = self.lookup(node.base)
+            if node.target not in lst_base:
+                raise InterpreterError(
+                    self.code,
+                    node,
+                    f"Field '{node.target}' not found in struct '{node.base}'"
+                )
+            lst = lst_base[node.target]
         for index in reversed(node.indexing):
+            if not isinstance(lst, list):
+                raise InterpreterError(
+                    self.code,
+                    node,
+                    f"Cannot index into non-list with value: {lst}"
+                )
             index = self.visit(index) # convert from Literal-Class to primal value
-            list = list[index]
-        return list
+            lst = lst[index]
+        return lst

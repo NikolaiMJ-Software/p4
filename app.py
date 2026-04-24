@@ -3,7 +3,7 @@ import traceback
 from src.ast import builder
 from src.visitors import type_checker, interpreter
 from src.parser import parse, ParseError
-from src.errors import Error, TypeError, RuntimeError 
+from src.errors import Error, TypeError, RuntimeError, InterpreterError
 
 # Reading the code file
 def load_source(path):
@@ -64,7 +64,7 @@ if __name__ == "__main__":
             checker.visit(node)
 
         print("\n---------INTERPRETATION--------\n")
-        interp = interpreter.InterpreterVisitor(slot=2)
+        interp = interpreter.InterpreterVisitor(code, slot=2)
         interp.run(ast)
 
     except ParseError as e:
@@ -79,6 +79,11 @@ if __name__ == "__main__":
 
     except RuntimeError as e:
         print(f"[Runtime Error] {e}")
+        print(f"Line {e.line}, Col {e.column}")
+        print(e.context)
+    
+    except InterpreterError as e:
+        print(f"[Interpreter Error] {e}")
         print(f"Line {e.line}, Col {e.column}")
         print(e.context)
 

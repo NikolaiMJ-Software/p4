@@ -29,10 +29,14 @@ def test_create_list_mixed_types_pass():
 
 def test_index_access_typed_list():
     checker = make_checker()
-    checker.v_table["xs"] = ['int']
+    checker.v_table["xs"] = ['int', 'float', 'str']
 
-    node = IndexAccess([IntLiteral(0)], "xs", None)
-    assert checker.visit(node) == "int"
+    index_0 = IndexAccess([IntLiteral(0)], "xs", None)
+    index_1 = IndexAccess([IntLiteral(1)], "xs", None)
+    index_2 = IndexAccess([IntLiteral(2)], "xs", None)
+    assert checker.visit(index_0) == "int"
+    assert checker.visit(index_1) == "float"
+    assert checker.visit(index_2) == "str"
 
 
 def test_assign_to_list_index():

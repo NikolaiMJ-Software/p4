@@ -95,3 +95,10 @@ def test_it_fail_index_access_non_list():
 index_access_non_list_code = """create X is 5
 index 1 of X is 5
 """
+
+def test_it_fail_index_access_none_exisiting_list():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(index_access_none_init_list_code)
+    assert "The list: 'X' does not exist" in str(exc_info.value)
+index_access_none_init_list_code = """index 1 of X is 5
+"""

@@ -173,16 +173,16 @@ class TypeCheckerVisitor(Visitor):
         self.visit(node.target)
 
         # Get the list and index
-        target_list = self.v_table[node.target.target]
-        if len(target_list) == 0:
-            target_list.append(self.visit(node.value))
-            return self.visit(node.value)
+        target = node.target
+        v_table = self.v_table[target.base] if target.base else self.v_table
         
-        index = node.target.indexing[0].value
+        target_list = v_table[target.target]
+        index = target.indexing[0].value
         
         # Save type in the list
-        target_list[index] = self.visit(node.value)
-        return self.visit(node.value)
+        var_type = self.visit(node.value)
+        target_list[index] = var_type
+        return var_type
 
     def visit_return(self, node):
         return self.visit(node.value)
@@ -549,14 +549,14 @@ class TypeCheckerVisitor(Visitor):
             )
 
         # Empty list gets generic list type
-        if node.listing is None:
+        if node.value is None:
             self.v_table[node.name] = []
             return []
 
         element_types = []
 
         # Finds type of each list element
-        for item in node.listing:
+        for item in node.value:
             t = self.visit(item)
             element_types.append(t)
 
@@ -565,6 +565,7 @@ class TypeCheckerVisitor(Visitor):
 
 
     def visit_index_access(self, node):
+        # Make sure the index is a 'int'
         index_type = self.visit(node.indexing[0])
         if index_type != "int":
             raise TypeError(
@@ -573,14 +574,28 @@ class TypeCheckerVisitor(Visitor):
                 f"List index must be int, got {index_type}"
             )
         
-        if node.target not in self.v_table:
+        # Check if the list is in a struct
+        v_table = self.v_table
+        if node.base:
+            if node.base not in self.v_table:
+                raise TypeError(
+                    self.code,
+                    node,
+                    f"The struct: '{node.base}' is not defined"
+                )
+            else:
+                v_table = self.v_table[node.base]
+
+        # Check if the list exist in v_table
+        if node.target not in v_table:
             raise TypeError(
                 self.code,
                 node,
-                f"The list: '{node.traget}'does not exist"
+                f"The list: '{node.target}' does not exist"
             )
         
-        target_list = self.v_table[node.target]
+        # Make sure it's a list
+        target_list = v_table[node.target]
         if not isinstance(target_list, list):
             raise TypeError(
                 self.code,
@@ -588,10 +603,12 @@ class TypeCheckerVisitor(Visitor):
                 f"The variable: '{node.target}' in not a list"
             )
 
+        # Make sure the index is eather positive or negative
         index = node.indexing[0].value
         if not isinstance(index, int):
             index = -index.value
 
+        # Check if the index are out of bound
         if 0 <= index and index <= len(target_list) - 1:
             return target_list[index]
         else:
@@ -670,13 +687,17 @@ class TypeCheckerVisitor(Visitor):
             )
     
     def visit_output(self, node):
+        # Go thru each output value
         for each in node.value:
-            if isinstance(each, Var) and each.name not in self.v_table:
-                raise TypeError(
-                    self.code,
-                    node,
-                    f"The variable: '{each.name}' does not exist"
-                )
+            if isinstance(each, Var):
+                # Find the correct table (from a struct or not)
+                table = self.v_table[each.base] if each.base else self.v_table
+                if each.name not in table:
+                    raise TypeError(
+                        self.code,
+                        node,
+                        f"The variable: '{each.name}' does not exist"
+                    )
     
     def visit_create_struct(self, node):
         self.validate_game_name(node, "struct")

@@ -20,6 +20,18 @@ create Warrior from Character with:
     
 """
 
+def test_it_pass_struct_with_list_as_var():
+    result = type_check_test(insert_and_get_var)
+    print(result)
+    assert [None, 'int','str', ['str', 'int', 'str']] == result
+insert_and_get_var = """create Person with:
+    Health is 100
+    Items is listing: 1.0, 4, "K"
+Health from Person
+index 0 of Items from Person is "new"
+Items from Person
+"""
+
 def test_it_pass_struct_overwrite():
     overwrite = type_check_test(overwrite_parrent_var_code)
     assert [None, None, None, None, None] == overwrite

@@ -48,11 +48,11 @@ class CreateStruct(ASTNode):
     def __repr__(self):
         return f"Create_s({self.name},{self.base},{self.fields})"
 class CreateList(ASTNode):
-    def __init__(self, name, listing):
+    def __init__(self, name, value):
         self.name = name
-        self.listing = listing
+        self.value = value
     def __repr__(self):
-        return f"Create_l({self.name},{self.listing})"
+        return f"Create_l({self.name},{self.value})"
 class Assign(ASTNode):
     def __init__(self, name, base, value):
         self.name = name

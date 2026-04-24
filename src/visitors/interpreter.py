@@ -231,7 +231,12 @@ class InterpreterVisitor(Visitor):
         
     def visit_output(self, node):
         values = [self.visit(v) for v in node.value]
-        print(*values)
+        processed = [] # storage for processed strings
+        for v in values:
+            if isinstance(v, str):
+                v = v.replace("\\n", "\n")  # convert \n into actual NEWLINE
+            processed.append(v)
+        print(*processed)
 
 
 

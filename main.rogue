@@ -9,6 +9,9 @@ create Class
 create Answer
 create Weapon_roll
 
+
+output "cake" + "idk"
+
 define Play:
     call Start_game
 

@@ -35,8 +35,8 @@ class ASTBuilder(Transformer):
 
     def create_l(self, tree):
         name = tree.children[0]
-        listing = tree.children[1] if len(tree.children) > 1 else None
-        return self._pos(CreateList(name, listing), tree)
+        value = tree.children[1] if len(tree.children) > 1 else None
+        return self._pos(CreateList(name, value), tree)
 
     # tails
     def var_tail(self, tree):
@@ -54,7 +54,12 @@ class ASTBuilder(Transformer):
 
     def struct_field(self, tree):
         name = tree.children[0]
-        value = tree.children[1] if len(tree.children) > 1 else None
+        if len(tree.children) == 1: # if variable does not have value
+            return self._pos(CreateVariable(name, None), tree)
+        if isinstance(tree.children[1], list): # if variable has list value
+            listing = tree.children[1]
+            return self._pos(CreateList(name, listing), tree)
+        value = tree.children[1] # otherwise, its variable with standard value
         return self._pos(CreateVariable(name, value), tree)
 
     # list specifics

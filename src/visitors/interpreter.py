@@ -105,18 +105,28 @@ class InterpreterVisitor(Visitor):
         scope = self.find_scope(node.name)
         scope[node.name] = value
 
-    def visit_assign_index(self, node): # need error message for no listing found
+    def visit_assign_index(self, node):
         value = self.visit(node.value)
-        if node.target.base == None:
-            list = self.lookup(node.target.target)
-        else:
+        if node.target.base == None: # if list is not in struct
+            lst = self.lookup(node.target.target)
+        else: # if list is in struct
             list_base = self.lookup(node.target.base)
-            list = list_base[node.target.target]
-        for index in reversed(node.target.indexing[:-1]):
-            index = self.visit(index) # convert from Literal-Class to primal value
-            list = list[index]
-        val = self.visit(node.target.indexing[0])
-        list[val] = value
+            if node.target.target not in list_base:
+                raise ValueException(f"Field '{node.target.target}' not found in struct '{node.target.base}'")
+            lst = list_base[node.target.target]
+        if not isinstance(lst, list): # check found field is a list
+            raise ValueException(f"Cannot index into non-list with value: {lst}")
+        for index in reversed(node.target.indexing[:-1]): # shrink list untill you have desired layer
+            index = self.visit(index)
+            if index < 0 or index >= len(lst): # check that index is within list size
+                raise ValueException(f"Index {index} out of bounds (size {len(lst)})")
+            lst = lst[index]
+            if not isinstance(lst, list):
+                raise ValueException(f"Cannot index into non-list with value: {lst}")
+        index = self.visit(node.target.indexing[0])
+        if index < 0 or index >= len(lst): # check that index is within list size
+            raise ValueException(f"Index {index} out of bounds (size {len(lst)})")
+        lst[index] = value
 
     def visit_if(self, node):
         if self.visit(node.cond): # original if-statement
@@ -318,6 +328,8 @@ class InterpreterVisitor(Visitor):
     def visit_var(self, node):
         if node.base:
             struct = self.lookup(node.base)
+            if node.name not in struct:
+                raise ValueException(f"Field '{node.name}' not found in struct '{node.base}'")
             return struct.get(node.name, None)
         return self.lookup(node.name)
     

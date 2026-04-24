@@ -3,50 +3,98 @@ create Game with:
     Health
     Weapon
     Weapon_damage
+    Game_status is 0
 
 create Class
+create Answer
+create Weapon_roll
 
 define Play:
+    call Start_game
+
+define Start_game:
     while true do:
-        output "choose class, between: Warrior, Wizard or Slave"
+        output "Are you ready to start your quest? (Yes/No)"
+        input in Answer
+        if Answer equal "yes" or Answer equal "Yes" do:
+            if Game_status from Game equal 0 do:
+                call Class_picker
+                Game_status from Game is 1
+                output "Your class is:", Class from Game
+                call Game_play
+            else do:
+                while true do:
+                    output "Do you want to continue your last game? (Yes/No)"
+                    input in Answer
+                    if Answer equal "yes" or Answer equal "Yes" do:
+                        call Game_play
+                        stop
+                    else if Answer equal "no" or Answer equal "No" do:
+                        call Class_picker
+                        Game_status from Game is 1
+                        output "Your class is:", Class from Game
+                        output "Your Weapon is:", Weapon from Game, "with weapon damage:", Weapon_damage from Game
+                        call Game_play
+                        stop
+                    else do:
+                        output "Invalid answer, please write Yes or No."
+            stop
+        else if Answer equal "no" or Answer equal "No" do:
+            output "Come back another time"
+            stop
+        else do:
+            output "Invalid answer, please write Yes or No."
+
+
+define Class_picker:
+    while true do:
+        output "Choose class: Warrior, Wizard or Slave"
         input in Class
-        Class from Game is Class
-        if Class from Game equal "Warrior" do:
+        if Class equal "Warrior" or Class equal "warrior" do:
+            Class from Game is "Warrior"
             Health from Game is between 20 and 25
-            Weapon from Game is between 1 and 3
-            if Weapon from Game equal 1 do:
+            Weapon_roll is between 1 and 3
+            if Weapon_roll equal 1 do:
                 Weapon from Game is "rusty sword"
                 Weapon_damage from Game is 5
-            else if Weapon from Game equal 2 do:
+            else if Weapon_roll equal 2 do:
                 Weapon from Game is "sword"
                 Weapon_damage from Game is 10
-            else if Weapon from Game equal 3 do:
+            else do:
                 Weapon from Game is "legendary sword"
                 Weapon_damage from Game is 100
             stop
-        else if Class from Game equal "Wizard" do:
+        else if Class equal "Wizard" or Class equal "wizard" do:
+            Class from Game is "Wizard"
             Health from Game is between 5 and 15
-            Weapon from Game is between 1 and 3
-            if Weapon from Game equal 1 do:
-                Weapon from Game is "Magic Missle"
+            Weapon_roll is between 1 and 3
+            if Weapon_roll equal 1 do:
+                Weapon from Game is "Magic Missile"
                 Weapon_damage from Game is 10
-            else if Weapon from Game equal 2 do:
+            else if Weapon_roll equal 2 do:
                 Weapon from Game is "Fire Ball"
                 Weapon_damage from Game is 25
-            else if Weapon from Game equal 3 do:
+            else do:
                 Weapon from Game is "Delete"
                 Weapon_damage from Game is "infinite"
             stop
-        else if Class from Game equal "Slave" do:
+        else if Class equal "Slave" or Class equal "slave" do:
+            Class from Game is "Slave"
             Health from Game is between 1 and 2
-            Weapon from Game is between 1 and 3
-            if Weapon from Game equal 1 do:
+            Weapon_roll is between 1 and 3
+            if Weapon_roll equal 1 do:
                 Weapon from Game is "fists"
                 Weapon_damage from Game is 1
-            else if Weapon from Game equal 2 do:
+            else if Weapon_roll equal 2 do:
                 Weapon from Game is "stick"
                 Weapon_damage from Game is 2
-            else if Weapon from Game equal 3 do:
+            else do:
                 Weapon from Game is "rusty knife"
                 Weapon_damage from Game is 3
             stop
+        else do:
+            output "Invalid class, try again."
+
+
+define Game_play:
+    output "To be made"

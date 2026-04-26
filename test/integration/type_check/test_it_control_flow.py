@@ -106,6 +106,30 @@ while_boolean_expression_code = """while true and false do:
     create X is 1
 """
 
+def test_it_pass_dowhile_use_and_change_global_var_in_body():
+    result = type_check_test(dowhile_global_var_code)
+    assert ['int', None, 'float'] == result
+dowhile_global_var_code = """create Y is 5
+do:
+    create X is 1
+    Y is Y - X
+    if Y equal 3 do:
+        Y is 2.5
+while Y greater than 2
+create Z is Y
+"""
+
+def test_it_pass_while_use_and_change_global_var_in_body():
+    result = type_check_test(while_global_var_code)
+    assert ['int', None, 'float'] == result
+while_global_var_code = """create Y is 5
+while Y greater than 2 do:
+    create X is 1
+    Y is Y - X
+    if Y equal 3 do:
+        Y is 2.5
+create Z is Y
+"""
 
 '''
 -----------------

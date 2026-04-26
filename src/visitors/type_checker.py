@@ -542,24 +542,26 @@ class TypeCheckerVisitor(Visitor):
             )
         # saves current scope
         old = self.v_table.copy()
+        self.v_table = {"__parent__": self.v_table}
 
         # Checks all statements inside loop body
         for stmt in node.body:
             self.visit(stmt)
 
         #restore previous scope
-        self.v_table = old
+        self.v_table = {**old, **self.v_table["__parent__"]}
 
         return None
 
     def visit_dowhile(self, node):
         # Saves current scope
         old = self.v_table.copy()
+        self.v_table = {"__parent__": self.v_table}
         # Checks body
         for stmt in node.body:
             self.visit(stmt)
         # Restore previous scope
-        self.v_table = old
+        self.v_table = {**old, **self.v_table["__parent__"]}
 
         # check condition
         cond_type = self.visit(node.cond)
@@ -667,6 +669,7 @@ class TypeCheckerVisitor(Visitor):
 
         # Saves old scope and creates loop variable
         old = self.v_table.copy()
+        self.v_table = {"__parent__": self.v_table}
         self.v_table[node.name] = "int"
 
         # Checks all statements inside loop body once
@@ -674,7 +677,7 @@ class TypeCheckerVisitor(Visitor):
             self.visit(stmt)
 
         # Restore previous scope
-        self.v_table = old
+        self.v_table = {**old, **self.v_table["__parent__"]}
         return None
 
     def visit_foreach(self, node):
@@ -697,17 +700,18 @@ class TypeCheckerVisitor(Visitor):
         
         # Saves old scope
         old = self.v_table.copy()
+        self.v_table = {"__parent__": self.v_table}
         
         # Checks all statements inside loop body once
         for item in collection_type:
-            old = self.v_table.copy()
+            old_table = self.v_table.copy()
             self.v_table[node.name] = item
             for stmt in node.body:
                 self.visit(stmt)
-            self.v_table = old
+            self.v_table = old_table
 
         # Restores previous scope
-        self.v_table = old
+        self.v_table = {**old, **self.v_table["__parent__"]}
         return None
         
     def visit_input(self, node):

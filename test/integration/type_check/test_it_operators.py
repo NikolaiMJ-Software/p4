@@ -247,6 +247,20 @@ chance_in_code = """chance 30 in 100
 """
 
 
+def test_it_pass_chance_float_percent():
+    result = type_check_test(chance_float_percent_code)
+    assert ["bool"] == result
+chance_float_percent_code = """chance 30.5%
+"""
+
+
+def test_it_pass_chance_float_in():
+    result = type_check_test(chance_float_in_code)
+    assert ["bool"] == result
+chance_float_in_code = """chance 30.5 in 100.0
+"""
+
+
 def test_it_pass_operator_in_variable_creation():
     result = type_check_test(operator_in_variable_creation_code)
     assert ["float"] == result
@@ -324,6 +338,30 @@ def test_it_fail_add_string_int():
     assert "Expected numeric types" in str(exc_info.value)
 add_string_int_code = '''"a" + 2
 '''
+
+
+def test_it_fail_add_bool_int():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(add_bool_int_code)
+    assert "Expected numeric types" in str(exc_info.value)
+add_bool_int_code = """true + 1
+"""
+
+
+def test_it_fail_sub_bool_int():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(sub_bool_int_code)
+    assert "Expected numeric types" in str(exc_info.value)
+sub_bool_int_code = """true - 1
+"""
+
+
+def test_it_fail_mul_bool_int():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(mul_bool_int_code)
+    assert "Expected numeric types" in str(exc_info.value)
+mul_bool_int_code = """true * 1
+"""
 
 
 def test_it_fail_neg_string():
@@ -444,6 +482,22 @@ def test_it_fail_chance_bool_int():
     assert "chance requires numeric types" in str(exc_info.value)
 chance_bool_int_code = """chance true in 100
 """
+
+
+def test_it_fail_chance_string_percent():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(chance_string_percent_code)
+    assert "chance requires numeric types" in str(exc_info.value)
+chance_string_percent_code = '''chance "30"%
+'''
+
+
+def test_it_fail_chance_int_string():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(chance_int_string_code)
+    assert "chance requires numeric types" in str(exc_info.value)
+chance_int_string_code = '''chance 30 in "100"
+'''
 
 # -------------------------
 # Input / Output

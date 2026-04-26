@@ -21,23 +21,45 @@ else do:
 """
 
 
-def test_it_pass_if_creates_variable():
-    result = type_check_test(if_creates_variable_code)
-    assert [None, "int"] == result
-if_creates_variable_code = """if true do:
-    create X is 1
+def test_it_pass_if_can_use_outer_variable():
+    result = type_check_test(if_can_use_outer_variable_code)
+    assert ["int", None] == result
+if_can_use_outer_variable_code = """create X is 5
+if true do:
+    X
+"""
+
+
+def test_it_pass_else_can_use_outer_variable():
+    result = type_check_test(else_can_use_outer_variable_code)
+    assert ["int", None] == result
+else_can_use_outer_variable_code = """create X is 5
+if false do:
+    create Y is 1
+else do:
+    X
+"""
+
+
+def test_it_pass_if_updates_outer_variable_type():
+    result = type_check_test(if_updates_outer_variable_type_code)
+    assert ["int", None, "float"] == result
+if_updates_outer_variable_type_code = """create X is 5
+if true do:
+    X is 1.5
 X
 """
 
 
-def test_it_pass_if_else_creates_variable():
-    result = type_check_test(if_else_creates_variable_code)
-    assert [None, "int"] == result
-if_else_creates_variable_code = """if false do:
-    create X is 1
+def test_it_pass_else_updates_outer_variable_type():
+    result = type_check_test(else_updates_outer_variable_type_code)
+    assert ["int", None, "float"] == result
+else_updates_outer_variable_type_code = """create X is 5
+if false do:
+    create Y is 1
 else do:
-    create Y is 2
-Y
+    X is 1.5
+X
 """
 
 
@@ -90,6 +112,28 @@ while_boolean_expression_code = """while true and false do:
 Failing integration tests for control flow
 -----------------
 '''
+
+def test_it_fail_if_created_variable_does_not_leak():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(if_created_variable_does_not_leak_code)
+    assert "does not exist" in str(exc_info.value)
+if_created_variable_does_not_leak_code = """if true do:
+    create X is 1
+X
+"""
+
+
+def test_it_fail_else_created_variable_does_not_leak():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(else_created_variable_does_not_leak_code)
+    assert "does not exist" in str(exc_info.value)
+else_created_variable_does_not_leak_code = """if false do:
+    create X is 1
+else do:
+    create Y is 2
+Y
+"""
+
 
 def test_it_fail_if_invalid_condition():
     with pytest.raises(TypeError) as exc_info:

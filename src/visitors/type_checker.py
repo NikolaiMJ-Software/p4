@@ -492,13 +492,23 @@ class TypeCheckerVisitor(Visitor):
             )
 
         # Checks statements inside if body
+        parent = self.v_table
+        self.v_table = {"__parent__": parent}
+
         for stmt in node.body:
             self.visit(stmt)
 
+        self.v_table = parent
+
         # Checks statements inside else body
         if node.elses:
+            parent = self.v_table
+            self.v_table = {"__parent__": parent}
+
             for stmt in node.elses:
                 self.visit(stmt)
+
+            self.v_table = parent
 
         # Checks all elif branches
         if node.elifs:
@@ -510,8 +520,15 @@ class TypeCheckerVisitor(Visitor):
                         node,
                         f"elif condition must be bool, got {cond_type}"
                     )
+
+                parent = self.v_table
+                self.v_table = {"__parent__": parent}
+
                 for stmt in body:
                     self.visit(stmt)
+
+                self.v_table = parent
+
         return None
 
     def visit_while(self, node):

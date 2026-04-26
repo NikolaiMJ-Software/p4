@@ -51,6 +51,30 @@ X
 """
 
 
+def test_it_pass_if_else_updates_parent_variable_to_string():
+    result = type_check_test(if_else_updates_parent_variable_to_string_code)
+    assert ["int", None, "float"] == result
+if_else_updates_parent_variable_to_string_code = """create X is 5
+if true do:
+    X is "h"
+else do:
+    X is 5.5
+create Y is X
+"""
+
+
+def test_it_pass_if_else_updates_parent_variable_to_float():
+    result = type_check_test(if_else_updates_parent_variable_to_float_code)
+    assert ["int", None, "float"] == result
+if_else_updates_parent_variable_to_float_code = """create X is 5
+if false do:
+    X is "h"
+else do:
+    X is 5.5
+create Y is X
+"""
+
+
 def test_it_pass_else_updates_outer_variable_type():
     result = type_check_test(else_updates_outer_variable_type_code)
     assert ["int", None, "float"] == result

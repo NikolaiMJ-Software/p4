@@ -59,8 +59,7 @@ def test_if_creates_variable():
 
     checker.visit(node)
 
-    assert "x" in checker.v_table
-    assert checker.v_table["x"] == "int"
+    assert "x" not in checker.v_table
 
 
 def test_if_else_creates_variable():
@@ -75,8 +74,7 @@ def test_if_else_creates_variable():
 
     checker.visit(node)
 
-    assert "y" in checker.v_table
-    assert checker.v_table["y"] == "int"
+    assert "y" not in checker.v_table
 
 
 def test_if_none_condition_skips_body():

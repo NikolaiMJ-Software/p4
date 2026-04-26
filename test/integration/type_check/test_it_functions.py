@@ -90,6 +90,16 @@ define Double with A:
 call Double with call AddOne with 2
 """
 
+def test_it_pass_get_global_var():
+    result = type_check_test(function_gets_global_var)
+    assert ['int', None, 'float'] == result
+function_gets_global_var = """create X is 5
+define Fun1:
+    X is X - 0.5
+    return X
+call Fun1
+"""
+
 
 '''
 -----------------

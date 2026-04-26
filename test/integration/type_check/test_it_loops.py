@@ -51,6 +51,23 @@ for each Item in Xs do:
     create Y is Item * 2
 """
 
+def test_it_pass_foreach_using_global_var_in_body():
+    result = type_check_test(foreach_with_math_code)
+    assert [['int', 'int', 'int'], None] == result
+foreach_with_math_code = """create X is 5.5
+create Xs is listing: 1, 2, 3
+for each Item in Xs do:
+    create Y is Item * X
+"""
+
+def test_it_pass_forrange_using_global_var_in_body():
+    result = type_check_test(foreach_with_math_code)
+    assert [['int', 'int', 'int'], None] == result
+foreach_with_math_code = """create Xs is listing: 1, 2, 3
+for each Item in Xs do:
+    create Y is Item * 2
+"""
+
 
 '''
 -----------------

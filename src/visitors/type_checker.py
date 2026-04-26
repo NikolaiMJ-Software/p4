@@ -8,7 +8,16 @@ class TypeCheckerVisitor(Visitor):
         self.code = code
         self.v_table = {}
         self.f_table = {}
-        
+    
+    def lookup_var(self, name):
+        scope = self.v_table
+
+        while scope:
+            if name in scope:
+                return scope[name]
+            scope = scope.get("__parent__")
+        return False
+
     def is_numeric(self, t):
         return t in ["int", "float"]
 
@@ -26,16 +35,17 @@ class TypeCheckerVisitor(Visitor):
 
     def visit_var(self, node):
         if node.base is None:
-            if node.name not in self.v_table:
+            var_type = self.lookup_var(node.name)
+            if var_type is False:
                 raise TypeError(
                     self.code,
                     node,
                     f"The variable: '{node.name}' does not exist"
                 )
-            return self.v_table[node.name]
+            return var_type
 
         # Error, if the parent (base) is not defined
-        if node.base not in self.v_table:
+        if self.lookup_var(node.base) is False:
             raise TypeError(
                 self.code,
                 node,
@@ -113,7 +123,7 @@ class TypeCheckerVisitor(Visitor):
         self.validate_game_name(node, "variable")
         
         # Make sure no duplicate of variabels
-        if node.name in self.v_table:
+        if self.lookup_var(node.name) != False:
             raise TypeError(
                 self.code,
                 node,
@@ -134,7 +144,7 @@ class TypeCheckerVisitor(Visitor):
         # Check if it got inheritance
         if node.base:
             # Check if the parent exist
-            if node.base not in self.v_table:
+            if self.lookup_var(node.base) is False:
                 raise TypeError(
                     self.code,
                     node,
@@ -156,7 +166,7 @@ class TypeCheckerVisitor(Visitor):
             return value_type
         
         # Check if the name exist
-        if node.name not in self.v_table:   
+        if self.lookup_var(node.name) is False:
             raise TypeError(
                 self.code,
                 node,
@@ -165,7 +175,10 @@ class TypeCheckerVisitor(Visitor):
         
         # Save in v_table and return the type
         value_type = self.visit(node.value)
-        self.v_table[node.name] = value_type
+        table = self.v_table
+        while node.name not in table:
+            table = table.get("__parent__")
+        table[node.name] = value_type
         return value_type
 
     def visit_assign_index(self, node):
@@ -231,8 +244,12 @@ class TypeCheckerVisitor(Visitor):
             local_vars[p] = self.visit(arg)
         
         # Temperary switch scope
-        old = self.v_table
-        self.v_table = local_vars
+        new_scope = {
+            "__parent__": self.v_table,
+            **local_vars
+        }
+        old = self.v_table.copy()
+        self.v_table = new_scope
 
         # Typecheck the function
         return_type = None
@@ -242,7 +259,7 @@ class TypeCheckerVisitor(Visitor):
                 return_type = t
 
         # Restore old scope
-        self.v_table = old
+        self.v_table = {**old, **self.v_table["__parent__"]}
 
         return return_type
     
@@ -541,7 +558,7 @@ class TypeCheckerVisitor(Visitor):
     def visit_create_list(self, node):
         self.validate_game_name(node, "list")
 
-        if node.name in self.v_table:
+        if self.lookup_var(node.name) != False:
             raise TypeError(
                 self.code,
                 node,
@@ -577,7 +594,7 @@ class TypeCheckerVisitor(Visitor):
         # Check if the list is in a struct
         v_table = self.v_table
         if node.base:
-            if node.base not in self.v_table:
+            if self.lookup_var(node.base) is False:
                 raise TypeError(
                     self.code,
                     node,
@@ -645,7 +662,7 @@ class TypeCheckerVisitor(Visitor):
 
     def visit_foreach(self, node):
         # List to iterate over must exist
-        if node.collection not in self.v_table:
+        if self.lookup_var(node.collection) is False:
             raise TypeError(
                 self.code,
                 node,
@@ -678,8 +695,9 @@ class TypeCheckerVisitor(Visitor):
         
     def visit_input(self, node):
         # Make sure the value are define before writing to it
-        if node.name in self.v_table:
-            return self.v_table[node.name]
+        var_type = self.lookup_var(node.name)
+        if var_type != False:
+            return var_type
         raise TypeError(
                 self.code,
                 node,
@@ -703,14 +721,14 @@ class TypeCheckerVisitor(Visitor):
         self.validate_game_name(node, "struct")
         
         # Error, if the 'name' already exist
-        if node.name in self.v_table:
+        if self.lookup_var(node.name) != False:
             raise TypeError(
                 self.code,
                 node,
                 f"The struct: '{node.name}' already exists"
             )
         
-        elif node.base in self.v_table:
+        elif self.lookup_var(node.base) != False:
             # Copy the parrent (base)
             merged = self.v_table[node.base].copy()
 

@@ -231,3 +231,19 @@ def test_it_fail_if_body_uses_invalid_operation():
 if_body_invalid_operation_code = '''if true do:
     create X is "a" + 1
 '''
+
+
+def test_it_fail_if_else_parent_variable_conflicting_type_used_in_add():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(if_else_parent_variable_conflicting_type_used_in_add_code)
+    assert "Expected numeric types" in str(exc_info.value)
+
+if_else_parent_variable_conflicting_type_used_in_add_code = '''create Y is 5
+create Z is 0
+create X is chance 50%
+if X do:
+    Z is 69
+else do:
+    Z is "hej"
+create T is Y + Z
+'''

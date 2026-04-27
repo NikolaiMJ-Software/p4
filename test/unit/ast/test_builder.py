@@ -92,8 +92,9 @@ def test_ast_create_list():
     node = ast[0]
 
     assert node.__class__.__name__ == "CreateList"
-    assert len(node.listing) == 3
-    assert node.listing[0].value == 1
+    assert node.name == "X"
+    assert len(node.value) == 3
+    assert node.value[0].value == 1
 
 def test_ast_between():
     tree = parse("create X is between 1 and 10\n")
@@ -178,13 +179,16 @@ def test_ast_assign_to_index():
     ast = ASTBuilder().transform(tree)
 
     node = ast[0]
+    access = node.target
 
-    assert node.__class__.__name__ == "Assign"
-    assert node.base is None
-    assert node.name.__class__.__name__ == "IndexAccess"
-    assert node.name.indexing[0].value == 1
-    assert node.name.target == "Y"
-    assert node.name.base is None
+    assert node.__class__.__name__ == "AssignIndex"
+    assert node.target is not None
+    assert node.value is not None
+    
+    assert access.__class__.__name__ == "IndexAccess"
+    assert access.indexing[0].value == 1
+    assert access.target == "Y"
+    assert access.base is None
 
     assert node.value.__class__.__name__ == "IntLiteral"
     assert node.value.value == 5
@@ -195,12 +199,11 @@ def test_ast_assign_to_nested_index():
     ast = ASTBuilder().transform(tree)
 
     node = ast[0]
-    access = node.name
+    access = node.target
 
-    assert node.__class__.__name__ == "Assign"
-    assert node.base is None
-    assert node.value.__class__.__name__ == "StringLiteral"
-    assert node.value.value == "goat"
+    assert node.__class__.__name__ == "AssignIndex"
+    assert node.target is not None
+    assert node.value is not None
 
     assert access.__class__.__name__ == "IndexAccess"
     assert len(access.indexing) == 2

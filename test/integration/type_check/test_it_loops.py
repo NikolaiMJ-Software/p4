@@ -27,7 +27,7 @@ forrange_expression_bounds_code = """for each I from 1 + 1 to 5 * 2 do:
 
 def test_it_pass_foreach_valid():
     result = type_check_test(foreach_valid_code)
-    assert ["list[int]", None] == result
+    assert [['int', 'int', 'int'], None] == result
 foreach_valid_code = """create Xs is listing: 1, 2, 3
 for each Item in Xs do:
     create Y is Item + 1
@@ -36,7 +36,7 @@ for each Item in Xs do:
 
 def test_it_pass_foreach_generic_list():
     result = type_check_test(foreach_generic_list_code)
-    assert ["list", None] == result
+    assert [[], None] == result
 foreach_generic_list_code = """create Xs is listing:
 for each Item in Xs do:
     create Y
@@ -45,10 +45,34 @@ for each Item in Xs do:
 
 def test_it_pass_foreach_with_indexed_list_element_use():
     result = type_check_test(foreach_with_math_code)
-    assert ["list[int]", None] == result
+    assert [['int', 'int', 'int'], None] == result
 foreach_with_math_code = """create Xs is listing: 1, 2, 3
 for each Item in Xs do:
     create Y is Item * 2
+"""
+
+def test_it_pass_foreach_use_and_change_global_var_in_body():
+    result = type_check_test(foreach_golbal_var_code)
+    print(result)
+    assert ['int', ['int', 'int', 'int'], None, 'float'] == result
+foreach_golbal_var_code = """create X is 5
+create Xs is listing: 1, 2, 3
+for each Item in Xs do:
+    create Y is 0.5
+    X is X - Y
+create Z is X
+"""
+
+def test_it_pass_forrange_use_and_change_global_var_in_body():
+    result = type_check_test(forrange_global_var_code)
+    print(result)
+    assert ['float', None, 'str'] == result
+forrange_global_var_code = """create Y is 0.5
+for each I from 1 to 5 do:
+    create X is I + 1
+    if X greater than 2 do:
+        Y is "h"
+create Z is Y
 """
 
 

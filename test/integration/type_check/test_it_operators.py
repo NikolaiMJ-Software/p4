@@ -65,6 +65,41 @@ add_string_string_code = '''"a" + "b"
 '''
 
 
+def test_it_pass_neg_int():
+    result = type_check_test(neg_int_code)
+    assert ["int"] == result
+neg_int_code = """-2
+"""
+
+
+def test_it_pass_neg_float():
+    result = type_check_test(neg_float_code)
+    assert ["float"] == result
+neg_float_code = """-2.5
+"""
+
+
+def test_it_pass_double_neg_int():
+    result = type_check_test(double_neg_int_code)
+    assert ["int"] == result
+double_neg_int_code = """--2
+"""
+
+
+def test_it_pass_neg_in_addition():
+    result = type_check_test(neg_in_addition_code)
+    assert ["int"] == result
+neg_in_addition_code = """2 + -3
+"""
+
+
+def test_it_pass_neg_in_variable_creation():
+    result = type_check_test(neg_in_variable_creation_code)
+    assert ["float"] == result
+neg_in_variable_creation_code = """create X is -2.5
+"""
+
+
 def test_it_pass_mul_int_int():
     result = type_check_test(mul_int_int_code)
     assert ["int"] == result
@@ -212,6 +247,20 @@ chance_in_code = """chance 30 in 100
 """
 
 
+def test_it_pass_chance_float_percent():
+    result = type_check_test(chance_float_percent_code)
+    assert ["bool"] == result
+chance_float_percent_code = """chance 30.5%
+"""
+
+
+def test_it_pass_chance_float_in():
+    result = type_check_test(chance_float_in_code)
+    assert ["bool"] == result
+chance_float_in_code = """chance 30.5 in 100.0
+"""
+
+
 def test_it_pass_operator_in_variable_creation():
     result = type_check_test(operator_in_variable_creation_code)
     assert ["float"] == result
@@ -234,6 +283,48 @@ boolean_in_if_code = """if true and false do:
     create X is 5
 """
 
+# -------------------------
+# Input / Output
+# -------------------------
+def test_it_pass_input():
+    res = type_check_test(create_var_and_input_in_it)
+    assert [None, None] == res
+create_var_and_input_in_it = """create X
+input in X
+"""
+
+def test_it_pass_output():
+    res = type_check_test(create_var_and_output_it)
+    assert [None, None] == res
+create_var_and_output_it = """create X
+output X
+"""
+
+# -------------------------
+# Expression / Break
+# -------------------------
+def test_it_pass_expression_variable():
+    result = type_check_test(expression_variable_code)
+    assert ["int", "int"] == result
+expression_variable_code = """create X is 5
+X
+"""
+
+
+def test_it_pass_expression_call():
+    result = type_check_test(expression_call_code)
+    assert [None, "int"] == result
+expression_call_code = """define AddOne with A:
+    return A + 1
+call AddOne with 2
+"""
+
+def test_it_pass_break_in_while():
+    result = type_check_test(break_in_while_code)
+    assert [None] == result
+break_in_while_code = """while true do:
+    stop
+"""
 
 '''
 -----------------
@@ -247,6 +338,46 @@ def test_it_fail_add_string_int():
     assert "Expected numeric types" in str(exc_info.value)
 add_string_int_code = '''"a" + 2
 '''
+
+
+def test_it_fail_add_bool_int():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(add_bool_int_code)
+    assert "Expected numeric types" in str(exc_info.value)
+add_bool_int_code = """true + 1
+"""
+
+
+def test_it_fail_sub_bool_int():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(sub_bool_int_code)
+    assert "Expected numeric types" in str(exc_info.value)
+sub_bool_int_code = """true - 1
+"""
+
+
+def test_it_fail_mul_bool_int():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(mul_bool_int_code)
+    assert "Expected numeric types" in str(exc_info.value)
+mul_bool_int_code = """true * 1
+"""
+
+
+def test_it_fail_neg_string():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(neg_string_code)
+    assert "NEG requires numeric type" in str(exc_info.value)
+neg_string_code = '''-"a"
+'''
+
+
+def test_it_fail_neg_bool():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(neg_bool_code)
+    assert "NEG requires numeric type" in str(exc_info.value)
+neg_bool_code = """-true
+"""
 
 
 def test_it_fail_mul_string_int():
@@ -350,4 +481,47 @@ def test_it_fail_chance_bool_int():
         type_check_test(chance_bool_int_code)
     assert "chance requires numeric types" in str(exc_info.value)
 chance_bool_int_code = """chance true in 100
+"""
+
+
+def test_it_fail_chance_string_percent():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(chance_string_percent_code)
+    assert "chance requires numeric types" in str(exc_info.value)
+chance_string_percent_code = '''chance "30"%
+'''
+
+
+def test_it_fail_chance_int_string():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(chance_int_string_code)
+    assert "chance requires numeric types" in str(exc_info.value)
+chance_int_string_code = '''chance 30 in "100"
+'''
+
+# -------------------------
+# Input / Output
+# -------------------------
+def test_it_fail_input():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(input_in_var)
+    assert "does not exist" in str(exc_info.value)
+input_in_var = """input in X
+"""
+
+def test_it_fail_output():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(output_var)
+    assert "does not exist" in str(exc_info.value)
+output_var = """output X
+"""
+
+# -------------------------
+# Expression / Break
+# -------------------------
+def test_it_fail_expression_missing_variable():
+    with pytest.raises(TypeError) as exc_info:
+        type_check_test(expression_missing_variable_code)
+    assert "does not exist" in str(exc_info.value)
+expression_missing_variable_code = """X
 """

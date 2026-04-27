@@ -14,35 +14,31 @@ class BreakException(Exception): # Exceptuon raised be "stop" (break function) t
 class InterpreterVisitor(Visitor):
     def __init__(self, code, slot=1):
         self.code = code
-        self.v_tables = [{}] # list of variables split into scope levels
+        self.v_table = {} # list of variables split into scope levels
         self.f_table = {} # list of defined functions
         self.game_state_manager = GameStateManager(slot) # safe state manager, where slot equals save file
     
     
     
     # SCOPE HANDLING
-    def lookup(self, name): # goes through scopes to find variable
-        for v_table in reversed(self.v_tables):
-            if name in v_table:
-                return v_table[name]
-        return None
-    
-    def find_scope(self, name): # goes through scopes to find scope level of variable
-        for scope in reversed(self.v_tables):
-            if name in scope:
-                return scope
-        return None
+    def lookup_var(self, name):
+        scope = self.v_table
 
+        while scope:
+            if name in scope:
+                return scope[name]
+            scope = scope.get("__parent__")
+        return False
 
 
     # GAME STATE HANDLING
     def load_game_state(self):
         loaded_game = self.game_state_manager.load()
-        if loaded_game is not None and "Game" in self.v_tables[0]:
-            self.v_tables[0]["Game"] = loaded_game
+        if loaded_game is not None and "Game" in self.v_table:
+            self.v_table["Game"] = loaded_game
     
     def save_game_state(self):
-        game = self.v_tables[0].get("Game")
+        game = self.v_table.get("Game")
         if game is not None:
             self.game_state_manager.save(game)
     
@@ -78,35 +74,37 @@ class InterpreterVisitor(Visitor):
     # STATEMENTS
     def visit_create_variable(self, node):
         value = self.visit(node.value) if node.value else "UNINITIALIZED"
-        self.v_tables[-1][node.name] = value
+        self.v_table[node.name] = value
         
     def visit_create_struct(self, node):
-        parent = self.lookup(node.base)
+        parent = self.lookup_var(node.base)
         fields = {field.name: self.visit(field.value) if field.value else "UNINITIALIZED" for field in node.fields}
-        if parent == None:
-            self.v_tables[-1][node.name] = fields
+        if parent is False:
+            self.v_table[node.name] = fields
         else:
-            self.v_tables[-1][node.name] = {**parent, **fields}
+            self.v_table[node.name] = {**parent, **fields}
         
     def visit_create_list(self, node):
         listing = [self.visit(item) for item in node.value] if node.value else []
-        self.v_tables[-1][node.name] = listing
+        self.v_table[node.name] = listing
         
     def visit_assign(self, node):
         value = self.visit(node.value)
         if node.base: # handles inheritance
-            struct = self.lookup(node.base)
+            struct = self.lookup_var(node.base)
             struct[node.name] = value
             return
-        scope = self.find_scope(node.name)
-        scope[node.name] = value
+        table = self.v_table
+        while node.name not in table:
+            table = table.get("__parent__")
+        table[node.name] = value
 
     def visit_assign_index(self, node):
         value = self.visit(node.value)
         if node.target.base == None: # if list is not in struct
-            lst = self.lookup(node.target.target)
+            lst = self.lookup_var(node.target.target)
         else: # if list is in struct
-            list_base = self.lookup(node.target.base)
+            list_base = self.lookup_var(node.target.base)
             if node.target.target not in list_base:
                 raise InterpreterError(
                     self.code,
@@ -145,34 +143,41 @@ class InterpreterVisitor(Visitor):
         lst[index] = value
 
     def visit_if(self, node):
+        old = self.v_table.copy()
+        
         if self.visit(node.cond): # original if-statement
-            self.v_tables.append({}) # start scope
+            self.v_table = {"__parent__": self.v_table} # start scope
             for stmt in node.body:
                 self.visit(stmt)
-            self.v_tables.pop() # end scope
+            self.v_table = {**old, **self.v_table["__parent__"]} # end scope
             return
         for elifs in node.elifs: # loop all else-ifs
             if self.visit(elifs[0]): # else-if condition
-                self.v_tables.append({}) # start scope
+                self.v_table = {"__parent__": self.v_table} # start scope
                 for stmt in elifs[1]:
                     self.visit(stmt)
-                self.v_tables.pop() # end scope
+                self.v_table = {**old, **self.v_table["__parent__"]} # end scope
                 return
         if node.elses: # else
-            self.v_tables.append({}) # start scope
+            self.v_table = {"__parent__": self.v_table} # start scope
             for stmt in node.elses:
                 self.visit(stmt)
-            self.v_tables.pop() # end scope
+            self.v_table = {**old, **self.v_table["__parent__"]} # end scope
                 
     def visit_while(self, node):
+        old = self.v_table.copy()
+        self.v_table = {"__parent__": self.v_table}
         while self.visit(node.cond):
             try:
                 for stmt in node.body:
                     self.visit(stmt)
             except BreakException: # break statement
                 break
+        self.v_table = {**old, **self.v_table["__parent__"]}
                 
     def visit_dowhile(self, node):
+        old = self.v_table.copy()
+        self.v_table = {"__parent__": self.v_table}
         while True:
             try:
                 for stmt in node.body:
@@ -181,6 +186,7 @@ class InterpreterVisitor(Visitor):
                 break
             if not self.visit(node.cond):
                 break
+        self.v_table = {**old, **self.v_table["__parent__"]}
             
     def visit_forrange(self, node):
         start = self.visit(node.start)
@@ -189,41 +195,41 @@ class InterpreterVisitor(Visitor):
         if end < start:
             end,start = start,end
             reverse = True
-        if not reverse:
-            for i in range(start, end+1):
-                self.v_tables.append({}) # start scope
-                self.v_tables[-1][node.name] = i
-                try:
-                    for stmt in node.body:
-                        self.visit(stmt)
-                except BreakException: # break statment
-                    break
-                finally:
-                    self.v_tables.pop() # end scope
-        if reverse:
-            for i in reversed(range(start, end+1)):
-                self.v_tables.append({}) # start scope
-                self.v_tables[-1][node.name] = i
-                try:
-                    for stmt in node.body:
-                        self.visit(stmt)
-                except BreakException: # break statment
-                    break
-                finally:
-                    self.v_tables.pop() # end scope
-    
-    def visit_foreach(self, node):
-        collection = self.lookup(node.collection)
-        for item in collection:
-            self.v_tables.append({}) # start scope
-            self.v_tables[-1][node.name] = item
+        
+        old = self.v_table.copy()
+        self.v_table = {"__parent__": self.v_table}
+        
+        start_stop_range = range(start, end+1) if not reverse else reversed(range(start, end+1))
+        for i in start_stop_range:
+            old_table = self.v_table.copy() # start scope
+            self.v_table[node.name] = i
             try:
                 for stmt in node.body:
                     self.visit(stmt)
             except BreakException: # break statment
                 break
             finally:
-                self.v_tables.pop() # end scope
+                self.v_table = old_table # end scope
+        
+        self.v_table = {**old, **self.v_table["__parent__"]}
+    
+    def visit_foreach(self, node):
+        old = self.v_table.copy()
+        self.v_table = {"__parent__": self.v_table}
+        
+        collection = self.lookup_var(node.collection)
+        for item in collection:
+            old_table = self.v_table.copy() # start scope
+            self.v_table[node.name] = item
+            try:
+                for stmt in node.body:
+                    self.visit(stmt)
+            except BreakException: # break statment
+                break
+            finally:
+                self.v_table = old_table # end scope
+        
+        self.v_table = {**old, **self.v_table["__parent__"]}
     
     def visit_define(self, node):
         self.f_table[node.name] = {
@@ -242,8 +248,7 @@ class InterpreterVisitor(Visitor):
         self.visit(node.value)
         
     def visit_input(self, node):
-        scope = self.find_scope(node.name)
-        scope[node.name] = input()
+        self.v_table[node.name] = input()
         
     def visit_output(self, node):
         values = [self.visit(v) for v in node.value]
@@ -352,7 +357,7 @@ class InterpreterVisitor(Visitor):
     
     def visit_var(self, node):
         if node.base:
-            struct = self.lookup(node.base)
+            struct = self.lookup_var(node.base)
             if node.name not in struct:
                 raise InterpreterError(
                     self.code,
@@ -360,29 +365,41 @@ class InterpreterVisitor(Visitor):
                     f"Field '{node.name}' not found in struct '{node.base}'"
                 )
             return struct.get(node.name, None)
-        return self.lookup(node.name)
+        return self.lookup_var(node.name)
     
     def visit_call(self, node):
         function = self.f_table[node.name]
         params = function["params"]
         body = function["body"]
         args = node.args or []
-        self.v_tables.append({}) # start scope
+        
+        
+        local_vars = {}
         for param, arg in zip(params, args):
-            self.v_tables[-1][param] = self.visit(arg) # tie defined function values to those described on call
+            local_vars[param] = self.visit(arg) # tie defined function values to those described on call
+                    
+        # Temperary switch scope
+        new_scope = {
+            "__parent__": self.v_table,
+            **local_vars
+        }
+        old = self.v_table.copy()
+        self.v_table = new_scope
+        
         try:
             for stmt in body:
                 self.visit(stmt)
         except ReturnException as r: # end function if return statement met
-            self.v_tables.pop() # end scope
+            self.v_table = {**old, **self.v_table["__parent__"]}
             return r.value
-        self.v_tables.pop() # end scope
+
+        self.v_table = {**old, **self.v_table["__parent__"]}
     
     def visit_index_access(self, node):
         if node.base == None: # If not from parent, look up value
-            lst = self.lookup(node.target)
+            lst = self.lookup_var(node.target)
         else: # If has a parent, look up parent, and then find the target value
-            lst_base = self.lookup(node.base)
+            lst_base = self.lookup_var(node.base)
             if node.target not in lst_base:
                 raise InterpreterError(
                     self.code,

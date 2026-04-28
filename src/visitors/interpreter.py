@@ -32,24 +32,6 @@ class InterpreterVisitor(Visitor):
     
     
     # SCOPE HANDLING
-    def lookup(self, name): # goes through scopes to find variable
-        for v_table in reversed(self.v_tables):
-            if name in v_table:
-                return v_table[name]
-        return None
-    
-    def find_scope(self, name): # goes through scopes to find scope level of variable
-        for scope in reversed(self.v_tables):
-            if name in scope:
-                return scope
-        return None
-    def runtime_to_type(self, value):
-        if value == "UNINITIALIZED":
-            return None
-
-        if isinstance(value, RuntimeValue):
-            return value.type
-    
     def lookup_var(self, name):
         scope = self.v_table
 
@@ -59,6 +41,13 @@ class InterpreterVisitor(Visitor):
             scope = scope.get("__parent__")
         return False
 
+    def runtime_to_type(self, value):
+        if value == "UNINITIALIZED":
+            return None
+
+        if isinstance(value, RuntimeValue):
+            return value.type
+
         if isinstance(value, list):
             return [self.runtime_to_type(item) for item in value]
 
@@ -67,7 +56,6 @@ class InterpreterVisitor(Visitor):
                 name: self.runtime_to_type(field_value)
                 for name, field_value in value.items()
             }
-
         return None
 
     def sync_type_checker(self):
@@ -330,6 +318,7 @@ class InterpreterVisitor(Visitor):
         values = [self.visit(v) for v in node.value]
         processed = [] # storage for processed strings
         for v in values:
+            v = self.unwrap(v)
             if isinstance(v, str):
                 v = v.replace("\\n", "\n")  # convert \n into actual NEWLINE
             processed.append(v)
@@ -398,10 +387,6 @@ class InterpreterVisitor(Visitor):
             self.unwrap(left) + self.unwrap(right)
         )
     
-    def visit_mul(self, node):
-        left = self.visit(node.left)
-        right = self.visit(node.right)
-        return left * right
 
     def visit_mul(self, node):
         result_type = self.check_expression_type(node)

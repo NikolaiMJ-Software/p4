@@ -12,7 +12,7 @@ class BreakException(Exception): # Exceptuon raised be "stop" (break function) t
     pass
 
 class InterpreterVisitor(Visitor):
-    def __init__(self, code, slot=1):
+    def __init__(self, code="", slot=1):
         self.code = code
         self.v_tables = [{}] # list of variables split into scope levels
         self.f_table = {} # list of defined functions
@@ -107,41 +107,12 @@ class InterpreterVisitor(Visitor):
             lst = self.lookup(node.target.target)
         else: # if list is in struct
             list_base = self.lookup(node.target.base)
-            if node.target.target not in list_base:
-                raise InterpreterError(
-                    self.code,
-                    node,
-                    f"Field '{node.target.target}' not found in struct '{node.target.base}'"
-                )
             lst = list_base[node.target.target]
-        if not isinstance(lst, list): # check found field is a list
-            raise InterpreterError(
-                    self.code,
-                    node,
-                    f"Cannot index into non-list with value: {lst}"
-                )
-        for index in reversed(node.target.indexing[:-1]): # shrink list untill you have desired layer
+        indices = list(reversed(node.target.indexing))
+        for index in indices[:-1]: # shrink list untill you have desired layer
             index = self.visit(index)
-            if index < 0 or index >= len(lst): # check that index is within list size
-                raise InterpreterError(
-                    self.code,
-                    node,
-                    f"Index {index} out of bounds (size {len(lst)})"
-            )
             lst = lst[index]
-            if not isinstance(lst, list):
-                raise InterpreterError(
-                    self.code,
-                    node,
-                    f"Cannot index into non-list with value: {lst}"
-                )
-        index = self.visit(node.target.indexing[0])
-        if index < 0 or index >= len(lst): # check that index is within list size
-            raise InterpreterError(
-                self.code,
-                node,
-                f"Index {index} out of bounds (size {len(lst)})"
-            )
+        index = self.visit(indices[-1])
         lst[index] = value
 
     def visit_if(self, node):
@@ -151,13 +122,14 @@ class InterpreterVisitor(Visitor):
                 self.visit(stmt)
             self.v_tables.pop() # end scope
             return
-        for elifs in node.elifs: # loop all else-ifs
-            if self.visit(elifs[0]): # else-if condition
-                self.v_tables.append({}) # start scope
-                for stmt in elifs[1]:
-                    self.visit(stmt)
-                self.v_tables.pop() # end scope
-                return
+        if node.elifs:
+            for elifs in node.elifs: # loop all else-ifs
+                if self.visit(elifs[0]): # else-if condition
+                    self.v_tables.append({}) # start scope
+                    for stmt in elifs[1]:
+                        self.visit(stmt)
+                    self.v_tables.pop() # end scope
+                    return
         if node.elses: # else
             self.v_tables.append({}) # start scope
             for stmt in node.elses:
@@ -165,52 +137,48 @@ class InterpreterVisitor(Visitor):
             self.v_tables.pop() # end scope
                 
     def visit_while(self, node):
+        self.v_tables.append({}) # start scope
         while self.visit(node.cond):
             try:
                 for stmt in node.body:
                     self.visit(stmt)
             except BreakException: # break statement
+                self.v_tables.pop() # end scope
                 break
+        self.v_tables.pop() # end scope
                 
     def visit_dowhile(self, node):
+        self.v_tables.append({}) # start scope
         while True:
             try:
                 for stmt in node.body:
                     self.visit(stmt)
             except BreakException: # break statement
+                self.v_tables.pop() # end scope
                 break
             if not self.visit(node.cond):
+                self.v_tables.pop() # end scope
                 break
             
     def visit_forrange(self, node):
         start = self.visit(node.start)
         end = self.visit(node.end)
-        reverse = False
+        lst = []
         if end < start:
             end,start = start,end
-            reverse = True
-        if not reverse:
-            for i in range(start, end+1):
-                self.v_tables.append({}) # start scope
-                self.v_tables[-1][node.name] = i
-                try:
-                    for stmt in node.body:
-                        self.visit(stmt)
-                except BreakException: # break statment
-                    break
-                finally:
-                    self.v_tables.pop() # end scope
-        if reverse:
-            for i in reversed(range(start, end+1)):
-                self.v_tables.append({}) # start scope
-                self.v_tables[-1][node.name] = i
-                try:
-                    for stmt in node.body:
-                        self.visit(stmt)
-                except BreakException: # break statment
-                    break
-                finally:
-                    self.v_tables.pop() # end scope
+            lst = reversed(range(start, end+1))
+        else:
+            lst = range(start, end+1)
+        for i in lst:
+            self.v_tables.append({}) # start scope
+            self.v_tables[-1][node.name] = i
+            try:
+                for stmt in node.body:
+                    self.visit(stmt)
+            except BreakException: # break statment
+                break
+            finally:
+                self.v_tables.pop() # end scope
     
     def visit_foreach(self, node):
         collection = self.lookup(node.collection)
@@ -353,12 +321,6 @@ class InterpreterVisitor(Visitor):
     def visit_var(self, node):
         if node.base:
             struct = self.lookup(node.base)
-            if node.name not in struct:
-                raise InterpreterError(
-                    self.code,
-                    node,
-                    f"Field '{node.name}' not found in struct '{node.base}'"
-                )
             return struct.get(node.name, None)
         return self.lookup(node.name)
     
@@ -383,20 +345,8 @@ class InterpreterVisitor(Visitor):
             lst = self.lookup(node.target)
         else: # If has a parent, look up parent, and then find the target value
             lst_base = self.lookup(node.base)
-            if node.target not in lst_base:
-                raise InterpreterError(
-                    self.code,
-                    node,
-                    f"Field '{node.target}' not found in struct '{node.base}'"
-                )
             lst = lst_base[node.target]
         for index in reversed(node.indexing):
-            if not isinstance(lst, list):
-                raise InterpreterError(
-                    self.code,
-                    node,
-                    f"Cannot index into non-list with value: {lst}"
-                )
             index = self.visit(index) # convert from Literal-Class to primal value
             lst = lst[index]
         return lst

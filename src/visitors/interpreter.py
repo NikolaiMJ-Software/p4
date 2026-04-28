@@ -37,7 +37,7 @@ class InterpreterVisitor(Visitor):
 
         while scope:
             if name in scope:
-                return scope[name]
+                return self.unwrap(scope[name])
             scope = scope.get("__parent__")
         return False
 
@@ -398,25 +398,49 @@ class InterpreterVisitor(Visitor):
             result_type,
             self.unwrap(left) * self.unwrap(right)
         )
+
     def visit_div(self, node):
+        result_type = self.check_expression_type(node)
+
         left = self.visit(node.left)
         right = self.visit(node.right)
-        if right == 0:
+
+        right_value = self.unwrap(right)
+
+        if right_value == 0:
             raise InterpreterError(
                 self.code,
                 node,
-                f"division by 0"
+                "division by 0"
             )
-        return left / right
+
+        return RuntimeValue(
+            result_type,
+            self.unwrap(left) / right_value
+        )
     
     def visit_pow(self, node):
+        result_type = self.check_expression_type(node)
+
         left = self.visit(node.left)
         right = self.visit(node.right)
-        return left ** right
+
+        return RuntimeValue(
+            result_type,
+            self.unwrap(left) ** self.unwrap(right)
+        )
+
     
     def visit_neg(self, node):
-        return -self.visit(node.value)
-    
+        result_type = self.check_expression_type(node)
+
+        value = self.visit(node.value)
+
+        return RuntimeValue(
+            result_type,
+            -self.unwrap(value)
+        )
+
     def visit_between(self, node):
         left = self.visit(node.left)
         right = self.visit(node.right)

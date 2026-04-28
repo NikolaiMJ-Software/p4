@@ -1,12 +1,22 @@
 from src.visitors.base_visitor import Visitor
 from src.ast.nodes import *
 from ..runtime.game_state import GameStateManager
+from src.visitors.type_checker import *
 from src.errors import InterpreterError
+from src.errors import TypeError as TypeCheckError
 import random
 
 class ReturnException(Exception): # exception raised by return() to stop function call
     def __init__(self, value):
         self.value = value
+
+class RuntimeValue:
+    def __init__(self, type_name, value):
+        self.type = type_name
+        self.value = value
+
+    def __repr__(self):
+        return f"{self.type}({self.value})"
 
 class BreakException(Exception): # Exceptuon raised be "stop" (break function) to stop loops
     pass
@@ -17,6 +27,7 @@ class InterpreterVisitor(Visitor):
         self.v_tables = [{}] # list of variables split into scope levels
         self.f_table = {} # list of defined functions
         self.game_state_manager = GameStateManager(slot) # safe state manager, where slot equals save file
+        self.type_checker = TypeCheckerVisitor(self.code)
     
     
     
@@ -32,8 +43,51 @@ class InterpreterVisitor(Visitor):
             if name in scope:
                 return scope
         return None
+    def runtime_to_type(self, value):
+        if value == "UNINITIALIZED":
+            return None
 
+        if isinstance(value, RuntimeValue):
+            return value.type
 
+        if isinstance(value, list):
+            return [self.runtime_to_type(item) for item in value]
+
+        if isinstance(value, dict):
+            return {
+                name: self.runtime_to_type(field_value)
+                for name, field_value in value.items()
+            }
+
+        return None
+
+    def sync_type_checker(self):
+        type_table = {}
+
+        for scope in self.v_tables:
+            for name, value in scope.items():
+                type_table[name] = self.runtime_to_type(value)
+
+        self.type_checker.v_table = type_table
+        self.type_checker.f_table = self.f_table
+
+    def unwrap(self, value): #unwraps runtime value to just value
+        if isinstance(value, RuntimeValue):
+            return value.value
+        return value
+    
+
+    def check_expression_type(self, node):
+        self.sync_type_checker()
+
+        try:
+            return self.type_checker.visit(node)
+        except TypeCheckError as e:
+            raise InterpreterError(
+                self.code,
+                node,
+                str(e)
+            )
 
     # GAME STATE HANDLING
     def load_game_state(self):
@@ -65,18 +119,23 @@ class InterpreterVisitor(Visitor):
 
     # LITERALS
     def visit_int_literal(self, node):
-        return node.value
+        return RuntimeValue("int", node.value)
+
     def visit_float_literal(self, node):
-        return node.value
+        return RuntimeValue("float", node.value)
+
     def visit_string_literal(self, node):
-        return node.value
+        return RuntimeValue("str", node.value)
+
     def visit_bool_literal(self, node):
-        return node.value
+        return RuntimeValue("bool", node.value)
+    
     
     
     
     # STATEMENTS
     def visit_create_variable(self, node):
+        self.check_expression_type(node)
         value = self.visit(node.value) if node.value else "UNINITIALIZED"
         self.v_tables[-1][node.name] = value
         
@@ -307,15 +366,31 @@ class InterpreterVisitor(Visitor):
         return left <= right
     
     def visit_add(self, node):
+        result_type = self.check_expression_type(node)
+
         left = self.visit(node.left)
         right = self.visit(node.right)
-        return left + right
+
+        return RuntimeValue(
+            result_type,
+            self.unwrap(left) + self.unwrap(right)
+        )
     
     def visit_mul(self, node):
         left = self.visit(node.left)
         right = self.visit(node.right)
         return left * right
-    
+
+    def visit_mul(self, node):
+        result_type = self.check_expression_type(node)
+
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+
+        return RuntimeValue(
+            result_type,
+            self.unwrap(left) * self.unwrap(right)
+        )
     def visit_div(self, node):
         left = self.visit(node.left)
         right = self.visit(node.right)

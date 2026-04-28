@@ -60,7 +60,7 @@ python -m pytest
 
 Run a specific test file:
 ```bash
-python -m pytest src/Testing/{test_dir_and_name}
+python -m pytest test/{test_dir_and_name}
 ```
 
 # Contributing

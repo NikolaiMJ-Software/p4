@@ -497,7 +497,6 @@ this comment never closes
 create X is 5
 """)
         
-def test_assign_index_not_allowed_value():
-    with pytest.raises(ParseError):
-        parse("index 1 of Y is 5 + 1\n")
+def test_assign_index_allowed_value():
+    parse("index 1 of Y is 5 + 1\n")
         

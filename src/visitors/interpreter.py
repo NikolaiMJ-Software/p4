@@ -379,35 +379,33 @@ class InterpreterVisitor(Visitor):
     def visit_add(self, node):
         result_type = self.check_expression_type(node)
 
-        left = self.visit(node.left)
-        right = self.visit(node.right)
+        left = self.unwrap(self.visit(node.left))
+        right = self.unwrap(self.visit(node.right))
 
         return RuntimeValue(
             result_type,
-            self.unwrap(left) + self.unwrap(right)
+            left + right
         )
     
 
     def visit_mul(self, node):
         result_type = self.check_expression_type(node)
 
-        left = self.visit(node.left)
-        right = self.visit(node.right)
+        left = self.unwrap(self.visit(node.left))
+        right = self.unwrap(self.visit(node.right))
 
         return RuntimeValue(
             result_type,
-            self.unwrap(left) * self.unwrap(right)
+            left * right
         )
 
     def visit_div(self, node):
         result_type = self.check_expression_type(node)
 
-        left = self.visit(node.left)
-        right = self.visit(node.right)
+        left = self.unwrap(self.visit(node.left))
+        right = self.unwrap(self.visit(node.right))
 
-        right_value = self.unwrap(right)
-
-        if right_value == 0:
+        if right == 0:
             raise InterpreterError(
                 self.code,
                 node,
@@ -416,18 +414,18 @@ class InterpreterVisitor(Visitor):
 
         return RuntimeValue(
             result_type,
-            self.unwrap(left) / right_value
+            left / right
         )
     
     def visit_pow(self, node):
         result_type = self.check_expression_type(node)
 
-        left = self.visit(node.left)
-        right = self.visit(node.right)
+        left = self.unwrap(self.visit(node.left))
+        right = self.unwrap(self.visit(node.right))
 
         return RuntimeValue(
             result_type,
-            self.unwrap(left) ** self.unwrap(right)
+            left ** right
         )
 
     

@@ -240,90 +240,146 @@ class InterpreterVisitor(Visitor):
         self.v_table = {**old, **self.v_table["__parent__"]}
                 
     def visit_dowhile(self, node):
-        old = self.v_table.copy()
-        self.v_table = {"__parent__": self.v_table}
-        while True:
-            try:
-                for stmt in node.body:
-                    self.visit(stmt)
-            except BreakException: # break statement
-                break
-            if not self.visit(node.cond):
-                break
-        self.v_table = {**old, **self.v_table["__parent__"]}
+        self.check_expression_type(node)
+
+        # Save outer scope and create do-while scope
+        old = self.v_table
+        self.v_table = {"__parent__": old}
+        try:
+            while True:
+                try:
+                    # Run each statement inside do-while body
+                    for stmt in node.body:
+                        self.visit(stmt)
+
+                except BreakException:
+                    # Stop loop if break is used
+                    break
+
+                # Check condition after body has run
+                if not self.unwrap(self.visit(node.cond)):
+                    break
+
+        finally:
+            # Restore outer scope after do-while is done
+            self.v_table = old
             
     def visit_forrange(self, node):
-        start = self.visit(node.start)
-        end = self.visit(node.end)
+        self.check_expression_type(node)
+
+        start = self.unwrap(self.visit(node.start))
+        end = self.unwrap(self.visit(node.end))
+
         reverse = False
         if end < start:
-            end,start = start,end
+            end, start = start, end
             reverse = True
-        
-        old = self.v_table.copy()
-        self.v_table = {"__parent__": self.v_table}
-        
-        start_stop_range = range(start, end+1) if not reverse else reversed(range(start, end+1))
-        for i in start_stop_range:
-            old_table = self.v_table.copy() # start scope
-            self.v_table[node.name] = i
-            try:
-                for stmt in node.body:
-                    self.visit(stmt)
-            except BreakException: # break statment
-                break
-            finally:
-                self.v_table = old_table # end scope
-        
-        self.v_table = {**old, **self.v_table["__parent__"]}
+
+        # Save outer scope and create for-range scope
+        old = self.v_table
+        self.v_table = {"__parent__": old}
+
+        try:
+            start_stop_range = range(start, end + 1) if not reverse else reversed(range(start, end + 1))
+
+            for i in start_stop_range:
+                # Save loop scope before this iteration
+                old_table = self.v_table.copy()
+                # Set current loop variable as int RuntimeValue
+                self.v_table[node.name] = RuntimeValue("int", i)
+
+                try:
+                    # Run each statement inside for-range body
+                    for stmt in node.body:
+                        self.visit(stmt)
+
+                except BreakException:
+                    # Stop loop if break is used
+                    break
+
+                finally:
+                    # Restore loop scope before next iteration
+                    self.v_table = old_table
+
+        finally:
+            # Restore outer scope after for-range is done
+            self.v_table = old
     
     def visit_foreach(self, node):
-        old = self.v_table.copy()
-        self.v_table = {"__parent__": self.v_table}
-        
+        self.check_expression_type(node)
+
+        # Find the list we want to loop over
         collection = self.lookup_var(node.collection)
-        for item in collection:
-            old_table = self.v_table.copy() # start scope
-            self.v_table[node.name] = item
-            try:
-                for stmt in node.body:
-                    self.visit(stmt)
-            except BreakException: # break statment
-                break
-            finally:
-                self.v_table = old_table # end scope
-        
-        self.v_table = {**old, **self.v_table["__parent__"]}
+        if collection is False:
+            raise InterpreterError(
+                self.code,
+                node,
+                f"The list: '{node.collection}' does not exist"
+            )
+
+        # Save outer scope and create foreach scope
+        old = self.v_table
+        self.v_table = {"__parent__": old}
+
+        try:
+            # Go through each item in the list
+            for item in collection:
+                # Save loop scope before this iteration
+                old_table = self.v_table.copy()
+
+                # Set current loop variable
+                self.v_table[node.name] = item
+
+                try:
+                    # Run each statement inside foreach body
+                    for stmt in node.body:
+                        self.visit(stmt)
+
+                except BreakException:
+                    # Stop loop if break is used
+                    break
+
+                finally:
+                    # Restore loop scope before next iteration
+                    self.v_table = old_table
+
+        finally:
+            # Restore outer scope after foreach is done
+            self.v_table = old
     
     def visit_define(self, node):
         self.f_table[node.name] = {
             "params" : node.params,
             "body" : node.body
         }
-        
+    
     def visit_return(self, node):
         value = self.visit(node.value)
         raise ReturnException(value)
 
     def visit_break(self, node):
         raise BreakException()
-    
+
     def visit_expression(self, node):
-        self.visit(node.value)
-        
+        return self.visit(node.value)
+
     def visit_input(self, node):
-        self.v_table[node.name] = input()
-        
+        user_value = input()
+        self.v_table[node.name] = RuntimeValue("str", user_value)
+
     def visit_output(self, node):
         values = [self.visit(v) for v in node.value]
         processed = [] # storage for processed strings
+
         for v in values:
             v = self.unwrap(v)
+
             if isinstance(v, str):
                 v = v.replace("\\n", "\n")  # convert \n into actual NEWLINE
-            processed.append(v)
-        print(*processed)
 
+            processed.append(v)
+
+        print(*processed)
 
 
     # EXPRESSIONS

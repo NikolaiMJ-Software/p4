@@ -55,7 +55,20 @@ def test_add():
         checker.visit(Add(StringLiteral("a"), IntLiteral(2)))
 
 
-# we need to take another look at "-"
+def test_neg():
+    checker = make_checker()
+
+    assert checker.visit(Neg(IntLiteral(2))) == "int"
+    assert checker.visit(Neg(FloatLiteral(2.5))) == "float"
+    assert checker.visit(Neg(Neg(IntLiteral(2)))) == "int"
+    assert checker.visit(Neg(Neg(FloatLiteral(2.5)))) == "float"
+
+    with pytest.raises(TypeError, match="NEG requires numeric type"):
+        checker.visit(Neg(StringLiteral("hello")))
+
+    with pytest.raises(TypeError, match="NEG requires numeric type"):
+        checker.visit(Neg(BoolLiteral(True)))
+
 
 def test_mul():
     checker = make_checker()
@@ -200,3 +213,52 @@ def test_chance():
 
     with pytest.raises(TypeError, match="chance requires numeric types"):
         checker.visit(Chance(BoolLiteral(True), IntLiteral(100)))
+        
+# -------------------------
+# Input / Output
+# -------------------------
+def test_input():
+    checker = make_checker()
+    
+    # X not initilized
+    with pytest.raises(TypeError, match="does not exist"):
+        checker.visit(Input("X"))
+    
+    # X are initilized
+    nodes = [CreateVariable("X", None),Input("X")]
+    for node in nodes:
+        checker.visit(node)
+
+def test_output():
+    checker = make_checker()
+    # X not initilized
+    with pytest.raises(TypeError, match="does not exist"):
+        checker.visit(Output([StringLiteral("Hello"), Var("X", None), IntLiteral(5)]))
+    
+    # X are initilized
+    nodes = [CreateVariable("X", None),Output([StringLiteral("Hello"), Var("X", None)])]
+    for node in nodes:
+        checker.visit(node)
+
+# -------------------------
+# Expression / Break
+# -------------------------
+def test_expression():
+    checker = make_checker()
+
+    assert checker.visit(Expression(IntLiteral(2))) == "int"
+    assert checker.visit(Expression(FloatLiteral(2.5))) == "float"
+    assert checker.visit(Expression(StringLiteral("hello"))) == "str"
+    assert checker.visit(Expression(BoolLiteral(True))) == "bool"
+    assert checker.visit(Expression(Add(IntLiteral(2), IntLiteral(3)))) == "int"
+
+    checker.visit(CreateVariable("X", IntLiteral(5)))
+    assert checker.visit(Expression(Var("X", None))) == "int"
+
+    with pytest.raises(TypeError, match="does not exist"):
+        checker.visit(Expression(Var("Y", None)))
+
+def test_break():
+    checker = make_checker()
+
+    assert checker.visit(Break()) is None

@@ -37,14 +37,13 @@ def test_forrange_invalid_bounds():
 
 def test_foreach_valid():
     checker = make_checker()
-    checker.v_table["xs"] = "list[int]"
+    checker.v_table["xs"] = ['int', 'int', 'float']
 
     node = Foreach(
         "item",
         "xs",
         [CreateVariable("y", Add(Var("item", None), IntLiteral(1)))]
     )
-
     assert checker.visit(node) is None
     assert "item" not in checker.v_table
     assert "y" not in checker.v_table

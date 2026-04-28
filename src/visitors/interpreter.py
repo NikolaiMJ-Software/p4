@@ -32,6 +32,24 @@ class InterpreterVisitor(Visitor):
     
     
     # SCOPE HANDLING
+    def lookup(self, name): # goes through scopes to find variable
+        for v_table in reversed(self.v_tables):
+            if name in v_table:
+                return v_table[name]
+        return None
+    
+    def find_scope(self, name): # goes through scopes to find scope level of variable
+        for scope in reversed(self.v_tables):
+            if name in scope:
+                return scope
+        return None
+    def runtime_to_type(self, value):
+        if value == "UNINITIALIZED":
+            return None
+
+        if isinstance(value, RuntimeValue):
+            return value.type
+    
     def lookup_var(self, name):
         scope = self.v_table
 
@@ -55,9 +73,13 @@ class InterpreterVisitor(Visitor):
     def sync_type_checker(self):
         type_table = {}
 
-        for scope in self.v_tables:
+        scope = self.v_table
+        while scope:
             for name, value in scope.items():
-                type_table[name] = self.runtime_to_type(value)
+                if name != "__parent__" and name not in type_table:
+                    type_table[name] = self.runtime_to_type(value)
+
+            scope = scope.get("__parent__")
 
         self.type_checker.v_table = type_table
         self.type_checker.f_table = self.f_table

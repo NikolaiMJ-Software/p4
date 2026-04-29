@@ -8,7 +8,7 @@ class TypeCheckerVisitor(Visitor):
         self.code = code
         self.v_table = {}
         self.f_table = {}
-    
+
     def lookup_var(self, name):
         scope = self.v_table
 
@@ -75,7 +75,7 @@ class TypeCheckerVisitor(Visitor):
             return True
         
         return False
-    
+
     def validate_game_name(self, node, type_type):
         #check if we are dealing with and ID game
         if node.name != "Game":
@@ -90,22 +90,22 @@ class TypeCheckerVisitor(Visitor):
 
     def visit_int_literal(self, node):
         return "int"
-    
+
     def visit_string_literal(self, node):
         return "str"
-    
+
     def visit_float_literal(self, node):
         return "float"
-    
+
     def visit_bool_literal(self, node):
         return "bool"
 
     def visit_expression(self, node):
         return self.visit(node.value)
-    
+
     def visit_break(self, node):
         return None
-    
+
     def visit_neg(self, node):
         value_type = self.visit(node.value)
 
@@ -117,7 +117,7 @@ class TypeCheckerVisitor(Visitor):
             )
 
         return value_type
-    
+
     def visit_create_variable(self, node):
         
         self.validate_game_name(node, "variable")
@@ -199,7 +199,7 @@ class TypeCheckerVisitor(Visitor):
 
     def visit_return(self, node):
         return self.visit(node.value)
-    
+
     def visit_define(self, node):
         self.validate_game_name(node, "function")
         
@@ -218,7 +218,7 @@ class TypeCheckerVisitor(Visitor):
         }
 
         return None
-    
+
     def visit_call(self, node):
         # Check if the function are already definend, then get its data
         if node.name not in self.f_table:
@@ -262,7 +262,7 @@ class TypeCheckerVisitor(Visitor):
         self.v_table = {**old, **self.v_table["__parent__"]}
 
         return return_type
-    
+
     def visit_add(self, node):
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
@@ -272,21 +272,21 @@ class TypeCheckerVisitor(Visitor):
 
         # Otherwise, both sides must be numeric
         return self.numeric_result_type(node, left_type, right_type)
-    
+
     def visit_sub(self, node):
         #both sides must be numeric
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
 
         return self.numeric_result_type(node, left_type, right_type)
-    
+
     def visit_mul(self, node):
         #both sides must be numeric
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
 
         return self.numeric_result_type(node, left_type, right_type)
-    
+
     def visit_div(self, node):
         #both sides must be numeric
         left_type = self.visit(node.left)
@@ -301,7 +301,7 @@ class TypeCheckerVisitor(Visitor):
 
         #division always returns float
         return "float"
-    
+
     def visit_pow(self, node):
         #both sides must be numeric
         left_type = self.visit(node.left)
@@ -323,7 +323,7 @@ class TypeCheckerVisitor(Visitor):
             )
 
         return "bool"
-    
+
     def visit_not_equal_expr(self, node):
         # Checks both sides of inequality
         left_type = self.visit(node.left)
@@ -393,7 +393,7 @@ class TypeCheckerVisitor(Visitor):
             )
 
         return "bool"
-    
+
     #boolean operators
 
     def visit_and_expr(self,node):
@@ -724,20 +724,19 @@ class TypeCheckerVisitor(Visitor):
                 node,
                 f"The variable: '{node.name}' does not exist"
             )
-    
+
     def visit_output(self, node):
         # Go thru each output value
         for each in node.value:
             if isinstance(each, Var):
                 # Find the correct table (from a struct or not)
-                table = self.v_table[each.base] if each.base else self.v_table
-                if each.name not in table:
+                if self.lookup_var(each.name) is False:
                     raise TypeError(
                         self.code,
                         node,
                         f"The variable: '{each.name}' does not exist"
                     )
-    
+
     def visit_create_struct(self, node):
         self.validate_game_name(node, "struct")
         

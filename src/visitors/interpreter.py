@@ -1,12 +1,22 @@
 from src.visitors.base_visitor import Visitor
 from src.ast.nodes import *
 from ..runtime.game_state import GameStateManager
+from src.visitors.type_checker import *
 from src.errors import InterpreterError
+from src.errors import TypeError as TypeCheckError
 import random
 
 class ReturnException(Exception): # exception raised by return() to stop function call
     def __init__(self, value):
         self.value = value
+
+class RuntimeValue:
+    def __init__(self, type_name, value):
+        self.type = type_name
+        self.value = value
+
+    def __repr__(self):
+        return f"{self.type}({self.value})"
 
 class BreakException(Exception): # Exceptuon raised be "stop" (break function) to stop loops
     pass
@@ -14,35 +24,74 @@ class BreakException(Exception): # Exceptuon raised be "stop" (break function) t
 class InterpreterVisitor(Visitor):
     def __init__(self, code="", slot=1):
         self.code = code
-        self.v_tables = [{}] # list of variables split into scope levels
+        self.v_table = {} # list of variables split into scope levels
         self.f_table = {} # list of defined functions
         self.game_state_manager = GameStateManager(slot) # safe state manager, where slot equals save file
+        self.type_checker = TypeCheckerVisitor(self.code)
     
     
     
     # SCOPE HANDLING
-    def lookup(self, name): # goes through scopes to find variable
-        for v_table in reversed(self.v_tables):
-            if name in v_table:
-                return v_table[name]
-        return None
-    
-    def find_scope(self, name): # goes through scopes to find scope level of variable
-        for scope in reversed(self.v_tables):
+    def lookup_var(self, name):
+        scope = self.v_table
+
+        while scope:
             if name in scope:
-                return scope
+                return self.unwrap(scope[name])
+            scope = scope.get("__parent__")
+        return False
+
+    def runtime_to_type(self, value):
+        if value == "UNINITIALIZED":
+            return None
+
+        if isinstance(value, RuntimeValue):
+            return value.type
+
+        if isinstance(value, list):
+            return [self.runtime_to_type(item) for item in value]
+
+        if isinstance(value, dict):
+            return {
+                name: self.runtime_to_type(field_value)
+                for name, field_value in value.items()
+            }
         return None
 
+    def sync_type_checker(self):
+        type_table = {}
+
+        scope = self.v_table
+        while scope:
+            for name, value in scope.items():
+                if name != "__parent__" and name not in type_table:
+                    type_table[name] = self.runtime_to_type(value)
+
+            scope = scope.get("__parent__")
+
+        self.type_checker.v_table = type_table
+        self.type_checker.f_table = self.f_table
+
+    def unwrap(self, value): #unwraps runtime value to just value
+        if isinstance(value, RuntimeValue):
+            return value.value
+        return value
+    
+
+    def check_expression_type(self, node):
+        self.sync_type_checker()
+
+        return self.type_checker.visit(node)
 
 
     # GAME STATE HANDLING
     def load_game_state(self):
         loaded_game = self.game_state_manager.load()
-        if loaded_game is not None and "Game" in self.v_tables[0]:
-            self.v_tables[0]["Game"] = loaded_game
+        if loaded_game is not None and "Game" in self.v_table:
+            self.v_table["Game"] = loaded_game
     
     def save_game_state(self):
-        game = self.v_tables[0].get("Game")
+        game = self.v_table.get("Game")
         if game is not None:
             self.game_state_manager.save(game)
     
@@ -65,288 +114,544 @@ class InterpreterVisitor(Visitor):
 
     # LITERALS
     def visit_int_literal(self, node):
-        return node.value
+        return RuntimeValue("int", node.value)
+
     def visit_float_literal(self, node):
-        return node.value
+        return RuntimeValue("float", node.value)
+
     def visit_string_literal(self, node):
-        return node.value
+        return RuntimeValue("str", node.value)
+
     def visit_bool_literal(self, node):
-        return node.value
+        return RuntimeValue("bool", node.value)
+    
     
     
     
     # STATEMENTS
     def visit_create_variable(self, node):
+        self.check_expression_type(node)
         value = self.visit(node.value) if node.value else "UNINITIALIZED"
-        self.v_tables[-1][node.name] = value
+        self.v_table[node.name] = value
         
     def visit_create_struct(self, node):
-        parent = self.lookup(node.base)
+        self.check_expression_type(node)
+        parent = self.lookup_var(node.base)
+        fields = {}
         fields = {field.name: self.visit(field.value) if field.value else "UNINITIALIZED" for field in node.fields}
-        if parent == None:
-            self.v_tables[-1][node.name] = fields
+
+        if parent is False:
+            self.v_table[node.name] = fields
         else:
-            self.v_tables[-1][node.name] = {**parent, **fields}
+            self.v_table[node.name] = {**parent, **fields}
         
     def visit_create_list(self, node):
+        self.check_expression_type(node)
         listing = [self.visit(item) for item in node.value] if node.value else []
-        self.v_tables[-1][node.name] = listing
+        self.v_table[node.name] = listing
         
     def visit_assign(self, node):
+        self.check_expression_type(node)
         value = self.visit(node.value)
         if node.base: # handles inheritance
-            struct = self.lookup(node.base)
+            struct = self.lookup_var(node.base)
             struct[node.name] = value
             return
-        scope = self.find_scope(node.name)
-        scope[node.name] = value
+        table = self.v_table
+        while node.name not in table:
+            table = table.get("__parent__")
+        table[node.name] = value
 
     def visit_assign_index(self, node):
+        self.check_expression_type(node)
         value = self.visit(node.value)
-        if node.target.base == None: # if list is not in struct
-            lst = self.lookup(node.target.target)
-        else: # if list is in struct
-            list_base = self.lookup(node.target.base)
-            lst = list_base[node.target.target]
-        indices = list(reversed(node.target.indexing))
-        for index in indices[:-1]: # shrink list untill you have desired layer
-            index = self.visit(index)
-            lst = lst[index]
-        index = self.visit(indices[-1])
+        index = self.unwrap(self.visit(node.target.indexing[0]))
+        lst = self.lookup_var(node.target.target) if node.target.base is None else self.lookup_var(node.target.base)[node.target.target]
         lst[index] = value
 
     def visit_if(self, node):
-        if self.visit(node.cond): # original if-statement
-            self.v_tables.append({}) # start scope
-            for stmt in node.body:
-                self.visit(stmt)
-            self.v_tables.pop() # end scope
-            return
-        if node.elifs:
-            for elifs in node.elifs: # loop all else-ifs
-                if self.visit(elifs[0]): # else-if condition
-                    self.v_tables.append({}) # start scope
-                    for stmt in elifs[1]:
-                        self.visit(stmt)
-                    self.v_tables.pop() # end scope
-                    return
-        if node.elses: # else
-            self.v_tables.append({}) # start scope
-            for stmt in node.elses:
-                self.visit(stmt)
-            self.v_tables.pop() # end scope
-                
-    def visit_while(self, node):
-        self.v_tables.append({}) # start scope
-        while self.visit(node.cond):
+        self.check_expression_type(node.cond)
+
+        if self.unwrap(self.visit(node.cond)):
+            # Save outer scope and create if scope
+            old = self.v_table
+            self.v_table = {"__parent__": old}
             try:
+                # Run each statement inside if body
                 for stmt in node.body:
                     self.visit(stmt)
-            except BreakException: # break statement
-                self.v_tables.pop() # end scope
-                break
-        self.v_tables.pop() # end scope
+            finally:
+                # Restore outer scope after if body
+                self.v_table = old
+            return
+
+        # Check all else-if branches
+        for cond, body in node.elifs:
+            # Type check else-if condition
+            self.check_expression_type(cond)
+
+            if self.unwrap(self.visit(cond)):
+                # Save outer scope and create else-if scope
+                old = self.v_table
+                self.v_table = {"__parent__": old}
+
+                try:
+                    # Run each statement inside else-if body
+                    for stmt in body:
+                        self.visit(stmt)
+                finally:
+                    # Restore outer scope after else-if body
+                    self.v_table = old
+                return
+
+        # Run else branch if no previous condition matched
+        if node.elses:
+            # Save outer scope and create else scope
+            old = self.v_table
+            self.v_table = {"__parent__": old}
+            try:
+                # Run each statement inside else body
+                for stmt in node.elses:
+                    self.visit(stmt)
+            finally:
+                # Restore outer scope after else body
+                self.v_table = old
+
+    def visit_while(self, node):
+        # Save outer scope
+        old = self.v_table
+        try:
+            while True:
+                # Type check condition only
+                self.check_expression_type(node.cond)
+
+                if not self.unwrap(self.visit(node.cond)):
+                    break
+
+                # Create fresh scope for this iteration
+                self.v_table = {"__parent__": old}
+
+                try:
+                    # Run each statement inside while body
+                    for stmt in node.body:
+                        self.visit(stmt)
+
+                except BreakException:
+                    # Stop loop if break is used
+                    break
+
+                finally:
+                    # Remove loop body scope before next iteration
+                    self.v_table = old
+
+        finally:
+            # Restore outer scope after while is done
+            self.v_table = old
                 
     def visit_dowhile(self, node):
-        self.v_tables.append({}) # start scope
-        while True:
-            try:
-                for stmt in node.body:
-                    self.visit(stmt)
-            except BreakException: # break statement
-                self.v_tables.pop() # end scope
-                break
-            if not self.visit(node.cond):
-                self.v_tables.pop() # end scope
-                break
+        old = self.v_table
+        try:
+            while True:
+                # Create fresh body scope for this iteration
+                self.v_table = {"__parent__": old}
+
+                try:
+                    # Run each statement inside do-while body
+                    for stmt in node.body:
+                        self.visit(stmt)
+
+                except BreakException:
+                    # Stop loop if break is used
+                    break
+
+                finally:
+                    # Remove body scope before checking condition / next iteration
+                    self.v_table = old
+
+                # Type check condition only
+                self.check_expression_type(node.cond)
+
+                # Check condition after body has run
+                if not self.unwrap(self.visit(node.cond)):
+                    break
+
+        finally:
+            # Restore outer scope after do-while is done
+            self.v_table = old
             
     def visit_forrange(self, node):
-        start = self.visit(node.start)
-        end = self.visit(node.end)
-        lst = []
+        self.check_expression_type(node)
+
+        start = self.unwrap(self.visit(node.start))
+        end = self.unwrap(self.visit(node.end))
+
+        reverse = False
         if end < start:
-            end,start = start,end
-            lst = reversed(range(start, end+1))
-        else:
-            lst = range(start, end+1)
-        for i in lst:
-            self.v_tables.append({}) # start scope
-            self.v_tables[-1][node.name] = i
-            try:
-                for stmt in node.body:
-                    self.visit(stmt)
-            except BreakException: # break statment
-                break
-            finally:
-                self.v_tables.pop() # end scope
+            end, start = start, end
+            reverse = True
+
+        # Save outer scope and create for-range scope
+        old = self.v_table
+        self.v_table = {"__parent__": old}
+
+        try:
+            start_stop_range = range(start, end + 1) if not reverse else reversed(range(start, end + 1))
+
+            for i in start_stop_range:
+                # Save loop scope before this iteration
+                old_table = self.v_table.copy()
+                # Set current loop variable as int RuntimeValue
+                self.v_table[node.name] = RuntimeValue("int", i)
+
+                try:
+                    # Run each statement inside for-range body
+                    for stmt in node.body:
+                        self.visit(stmt)
+
+                except BreakException:
+                    # Stop loop if break is used
+                    break
+
+                finally:
+                    # Restore loop scope before next iteration
+                    self.v_table = old_table
+
+        finally:
+            # Restore outer scope after for-range is done
+            self.v_table = old
     
     def visit_foreach(self, node):
-        collection = self.lookup(node.collection)
-        for item in collection:
-            self.v_tables.append({}) # start scope
-            self.v_tables[-1][node.name] = item
-            try:
-                for stmt in node.body:
-                    self.visit(stmt)
-            except BreakException: # break statment
-                break
-            finally:
-                self.v_tables.pop() # end scope
+        self.check_expression_type(node)
+
+        # Find the list we want to loop over
+        collection = self.lookup_var(node.collection)
+        if collection is False:
+            raise InterpreterError(
+                self.code,
+                node,
+                f"The list: '{node.collection}' does not exist"
+            )
+
+        # Save outer scope and create foreach scope
+        old = self.v_table
+        self.v_table = {"__parent__": old}
+
+        try:
+            # Go through each item in the list
+            for item in collection:
+                # Save loop scope before this iteration
+                old_table = self.v_table.copy()
+
+                # Set current loop variable
+                self.v_table[node.name] = item
+
+                try:
+                    # Run each statement inside foreach body
+                    for stmt in node.body:
+                        self.visit(stmt)
+
+                except BreakException:
+                    # Stop loop if break is used
+                    break
+
+                finally:
+                    # Restore loop scope before next iteration
+                    self.v_table = old_table
+
+        finally:
+            # Restore outer scope after foreach is done
+            self.v_table = old
     
     def visit_define(self, node):
+        result_type = self.check_expression_type(node)
         self.f_table[node.name] = {
             "params" : node.params,
             "body" : node.body
         }
-        
+    
     def visit_return(self, node):
+        result_type = self.check_expression_type(node)
         value = self.visit(node.value)
         raise ReturnException(value)
 
     def visit_break(self, node):
+        result_type = self.check_expression_type(node)
         raise BreakException()
-    
+
     def visit_expression(self, node):
-        self.visit(node.value)
-        
+        result_type = self.check_expression_type(node)
+        return self.visit(node.value)
+
     def visit_input(self, node):
-        scope = self.find_scope(node.name)
-        scope[node.name] = input()
-        
+        result_type = self.check_expression_type(node)
+        user_value = input()
+        self.v_table[node.name] = RuntimeValue("str", user_value)
+
     def visit_output(self, node):
+        self.check_expression_type(node)
         values = [self.visit(v) for v in node.value]
         processed = [] # storage for processed strings
         for v in values:
+            v = self.unwrap(v)
+            
+            # Unwrap each element in a list
+            if isinstance(v, list):
+                v_list = []
+                for val in v:
+                    v_list.append(self.unwrap(val))
+                v = v_list
+            
             if isinstance(v, str):
                 v = v.replace("\\n", "\n")  # convert \n into actual NEWLINE
-            processed.append(v)
-        print(*processed)
 
+            processed.append(v)
+
+        print(*processed)
 
 
     # EXPRESSIONS
     def visit_or_expr(self, node):
-        left = self.visit(node.left)
-        right = self.visit(node.right)
-        return left or right
-    
+        result_type = self.check_expression_type(node)
+
+        left = self.unwrap(self.visit(node.left))
+        right = self.unwrap(self.visit(node.right))
+
+        return RuntimeValue(
+            result_type,
+            left or right
+        )
+
     def visit_and_expr(self, node):
-        left = self.visit(node.left)
-        right = self.visit(node.right)
-        return left and right
-    
+        result_type = self.check_expression_type(node)
+
+        left = self.unwrap(self.visit(node.left))
+        right = self.unwrap(self.visit(node.right))
+
+        return RuntimeValue(
+            result_type,
+            left and right
+        )
+
     def visit_xor_expr(self, node):
-        left = self.visit(node.left)
-        right = self.visit(node.right)
-        return (left and not right) or (not left and right)
-    
+        result_type = self.check_expression_type(node)
+
+        left = self.unwrap(self.visit(node.left))
+        right = self.unwrap(self.visit(node.right))
+
+        return RuntimeValue(
+            result_type,
+            (left and not right) or (not left and right)
+        )
+
     def visit_not_expr(self, node):
-        value = self.visit(node.cond)
-        return not value
-    
+        result_type = self.check_expression_type(node)
+
+        value = self.unwrap(self.visit(node.cond))
+
+        return RuntimeValue(
+            result_type,
+            not value
+        )
+
     def visit_equal_expr(self, node):
-        left = self.visit(node.left)
-        right = self.visit(node.right)
-        return left == right
-    
+        result_type = self.check_expression_type(node)
+
+        left = self.unwrap(self.visit(node.left))
+        right = self.unwrap(self.visit(node.right))
+
+        return RuntimeValue(
+            result_type,
+            left == right
+        )
+
     def visit_not_equal_expr(self, node):
-        left = self.visit(node.left)
-        right = self.visit(node.right)
-        return left != right
-    
+        result_type = self.check_expression_type(node)
+
+        left = self.unwrap(self.visit(node.left))
+        right = self.unwrap(self.visit(node.right))
+
+        return RuntimeValue(
+            result_type,
+            left != right
+        )
+
     def visit_greater_expr(self, node):
-        left = self.visit(node.left)
-        right = self.visit(node.right)
-        return left > right
-    
+        result_type = self.check_expression_type(node)
+
+        left = self.unwrap(self.visit(node.left))
+        right = self.unwrap(self.visit(node.right))
+
+        return RuntimeValue(
+            result_type,
+            left > right
+        )
+
     def visit_less_expr(self, node):
-        left = self.visit(node.left)
-        right = self.visit(node.right)
-        return left < right
-    
+        result_type = self.check_expression_type(node)
+
+        left = self.unwrap(self.visit(node.left))
+        right = self.unwrap(self.visit(node.right))
+
+        return RuntimeValue(
+            result_type,
+            left < right
+        )
+
     def visit_greater_equal_expr(self, node):
-        left = self.visit(node.left)
-        right = self.visit(node.right)
-        return left >= right
-    
+        result_type = self.check_expression_type(node)
+
+        left = self.unwrap(self.visit(node.left))
+        right = self.unwrap(self.visit(node.right))
+
+        return RuntimeValue(
+            result_type,
+            left >= right
+        )
+
     def visit_less_equal_expr(self, node):
-        left = self.visit(node.left)
-        right = self.visit(node.right)
-        return left <= right
+        result_type = self.check_expression_type(node)
+
+        left = self.unwrap(self.visit(node.left))
+        right = self.unwrap(self.visit(node.right))
+
+        return RuntimeValue(
+            result_type,
+            left <= right
+        )
     
     def visit_add(self, node):
-        left = self.visit(node.left)
-        right = self.visit(node.right)
-        return left + right
+        result_type = self.check_expression_type(node)
+        left = self.unwrap(self.visit(node.left))
+        right = self.unwrap(self.visit(node.right))
+        return RuntimeValue(
+            result_type,
+            left + right
+        )
     
+
     def visit_mul(self, node):
-        left = self.visit(node.left)
-        right = self.visit(node.right)
-        return left * right
-    
+        result_type = self.check_expression_type(node)
+
+        left = self.unwrap(self.visit(node.left))
+        right = self.unwrap(self.visit(node.right))
+
+        return RuntimeValue(
+            result_type,
+            left * right
+        )
+
     def visit_div(self, node):
-        left = self.visit(node.left)
-        right = self.visit(node.right)
+        result_type = self.check_expression_type(node)
+
+        left = self.unwrap(self.visit(node.left))
+        right = self.unwrap(self.visit(node.right))
+
         if right == 0:
             raise InterpreterError(
                 self.code,
                 node,
-                f"division by 0"
+                "division by 0"
             )
-        return left / right
+
+        return RuntimeValue(
+            result_type,
+            left / right
+        )
     
     def visit_pow(self, node):
-        left = self.visit(node.left)
-        right = self.visit(node.right)
-        return left ** right
+        result_type = self.check_expression_type(node)
+
+        left = self.unwrap(self.visit(node.left))
+        right = self.unwrap(self.visit(node.right))
+
+        return RuntimeValue(
+            result_type,
+            left ** right
+        )
+
     
     def visit_neg(self, node):
-        return -self.visit(node.value)
-    
+        result_type = self.check_expression_type(node)
+
+        value = self.visit(node.value)
+
+        return RuntimeValue(
+            result_type,
+            -self.unwrap(value)
+        )
+
     def visit_between(self, node):
-        left = self.visit(node.left)
-        right = self.visit(node.right)
+        result_type = self.check_expression_type(node)
+        left = self.unwrap(self.visit(node.left))
+        right = self.unwrap(self.visit(node.right))
+        
+        result_value = left # if both are equal
         if left < right: # if first value smallest
-            return random.randrange(left, right+1)
+            result_value = random.randrange(left, right+1)
         elif left > right: # if second value smallest
-            return random.randrange(right, left+1)
-        else: # if both are equal
-            return left
+            result_value = random.randrange(right, left+1)
+        
+        return RuntimeValue(
+            result_type,
+            result_value
+        )
     
     def visit_chance(self, node):
-        left = self.visit(node.left)
-        right = self.visit(node.right)
-        return random.randrange(0, right) < left
+        result_type = self.check_expression_type(node)
+        left = self.unwrap(self.visit(node.left))
+        right = self.unwrap(self.visit(node.right))
+        
+        return RuntimeValue(
+            result_type,
+            random.randrange(0, right) < left
+        )
     
     def visit_var(self, node):
-        if node.base:
-            struct = self.lookup(node.base)
-            return struct.get(node.name, None)
-        return self.lookup(node.name)
+            self.check_expression_type(node)
+            if node.base:
+                struct = self.lookup_var(node.base)
+                struct = self.unwrap(struct)
+                return struct[node.name]
+
+            return self.lookup_var(node.name)
     
     def visit_call(self, node):
+        result_type = self.check_expression_type(node)
         function = self.f_table[node.name]
         params = function["params"]
         body = function["body"]
         args = node.args or []
-        self.v_tables.append({}) # start scope
+        
+        local_vars = {}
         for param, arg in zip(params, args):
-            self.v_tables[-1][param] = self.visit(arg) # tie defined function values to those described on call
+            local_vars[param] = self.visit(arg) # tie defined function values to those described on call
+                    
+        # Temperary switch scope
+        new_scope = {
+            "__parent__": self.v_table,
+            **local_vars
+        }
+        old = self.v_table.copy()
+        self.v_table = new_scope
+        
         try:
             for stmt in body:
                 self.visit(stmt)
         except ReturnException as r: # end function if return statement met
-            self.v_tables.pop() # end scope
-            return r.value
-        self.v_tables.pop() # end scope
+            self.v_table = {**old, **self.v_table["__parent__"]}
+            return RuntimeValue(result_type, r.value)
+
+        self.v_table = {**old, **self.v_table["__parent__"]}
     
     def visit_index_access(self, node):
+        self.check_expression_type(node) # typecheck
         if node.base == None: # If not from parent, look up value
-            lst = self.lookup(node.target)
+            lst = self.lookup_var(node.target)
         else: # If has a parent, look up parent, and then find the target value
-            lst_base = self.lookup(node.base)
+            lst_base = self.lookup_var(node.base)
             lst = lst_base[node.target]
+
         for index in reversed(node.indexing):
-            index = self.visit(index) # convert from Literal-Class to primal value
+            index = self.unwrap(self.visit(index)) # convert from Literal-Class to primal value
             lst = lst[index]
         return lst

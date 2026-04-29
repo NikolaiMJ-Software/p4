@@ -391,7 +391,6 @@ class InterpreterVisitor(Visitor):
         result_type = self.check_expression_type(node)
         values = [self.visit(v) for v in node.value]
         processed = [] # storage for processed strings
-
         for v in values:
             v = self.unwrap(v)
 
@@ -601,21 +600,37 @@ class InterpreterVisitor(Visitor):
         )
     
     def visit_var(self, node):
-        result_type = self.check_expression_type(node)
-        result_value = self.lookup_var(node.name)
+        self.check_expression_type(node)
         if node.base:
             struct = self.lookup_var(node.base)
+
+            if struct is False:
+                raise InterpreterError(
+                    self.code,
+                    node,
+                    f"The struct: '{node.base}' does not exist"
+                )
+
+            struct = self.unwrap(struct)
+
             if node.name not in struct:
                 raise InterpreterError(
                     self.code,
                     node,
                     f"Field '{node.name}' not found in struct '{node.base}'"
                 )
-            result_value = struct.get(node.name, None)
-        return RuntimeValue(
-            result_type,
-            result_value
-        )
+
+            return struct[node.name]
+
+        result_value = self.lookup_var(node.name)
+        if result_value is False:
+            raise InterpreterError(
+                self.code,
+                node,
+                f"The variable: '{node.name}' does not exist"
+            )
+
+        return result_value
     
     def visit_call(self, node):
         result_type = self.check_expression_type(node)

@@ -1,7 +1,7 @@
 import pytest
 from src.visitors.type_checker import *
 from src.ast.nodes import *
-from test.integration.type_check.setup_type_checker import type_check_test
+from setup_type_checker import type_check_test
 
 '''
 -----------------

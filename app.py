@@ -58,10 +58,10 @@ if __name__ == "__main__":
         for stmt in ast:
             print_ast(stmt)
 
-        print("\n---------TYPE CHECK--------\n")
-        checker = type_checker.TypeCheckerVisitor(code)
-        for node in ast:
-            checker.visit(node)
+        #print("\n---------TYPE CHECK--------\n")
+        #checker = type_checker.TypeCheckerVisitor(code)
+        #for node in ast:
+        #    checker.visit(node)
 
         print("\n---------INTERPRETATION--------\n")
         interp = interpreter.InterpreterVisitor(code, slot=2)

@@ -22,7 +22,7 @@ class BreakException(Exception): # Exceptuon raised be "stop" (break function) t
     pass
 
 class InterpreterVisitor(Visitor):
-    def __init__(self, code, slot=1):
+    def __init__(self, code="", slot=1):
         self.code = code
         self.v_table = {} # list of variables split into scope levels
         self.f_table = {} # list of defined functions
@@ -666,37 +666,13 @@ class InterpreterVisitor(Visitor):
         )
     
     def visit_var(self, node):
-        self.check_expression_type(node)
-        if node.base:
-            struct = self.lookup_var(node.base)
+            self.check_expression_type(node)
+            if node.base:
+                struct = self.lookup_var(node.base)
+                struct = self.unwrap(struct)
+                return struct[node.name]
 
-            if struct is False:
-                raise InterpreterError(
-                    self.code,
-                    node,
-                    f"The struct: '{node.base}' does not exist"
-                )
-
-            struct = self.unwrap(struct)
-
-            if node.name not in struct:
-                raise InterpreterError(
-                    self.code,
-                    node,
-                    f"Field '{node.name}' not found in struct '{node.base}'"
-                )
-
-            return struct[node.name]
-
-        result_value = self.lookup_var(node.name)
-        if result_value is False:
-            raise InterpreterError(
-                self.code,
-                node,
-                f"The variable: '{node.name}' does not exist"
-            )
-
-        return result_value
+            return self.lookup_var(node.name)
     
     def visit_call(self, node):
         self.sync_type_checker() # Sync current runtime types without checking the whole function body
@@ -750,20 +726,9 @@ class InterpreterVisitor(Visitor):
             lst = self.lookup_var(node.target)
         else: # If has a parent, look up parent, and then find the target value
             lst_base = self.lookup_var(node.base)
-            if node.target not in lst_base:
-                raise InterpreterError(
-                    self.code,
-                    node,
-                    f"Field '{node.target}' not found in struct '{node.base}'"
-                )
             lst = lst_base[node.target]
+
         for index in reversed(node.indexing):
-            if not isinstance(lst, list):
-                raise InterpreterError(
-                    self.code,
-                    node,
-                    f"Cannot index into non-list with value: {lst}"
-                )
             index = self.unwrap(self.visit(index)) # convert from Literal-Class to primal value
             lst = lst[index]
         return lst

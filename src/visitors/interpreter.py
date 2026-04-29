@@ -135,18 +135,23 @@ class InterpreterVisitor(Visitor):
         self.v_table[node.name] = value
         
     def visit_create_struct(self, node):
+        self.check_expression_type(node)
         parent = self.lookup_var(node.base)
+        fields = {}
         fields = {field.name: self.visit(field.value) if field.value else "UNINITIALIZED" for field in node.fields}
+
         if parent is False:
             self.v_table[node.name] = fields
         else:
             self.v_table[node.name] = {**parent, **fields}
         
     def visit_create_list(self, node):
+        self.check_expression_type(node)
         listing = [self.visit(item) for item in node.value] if node.value else []
         self.v_table[node.name] = listing
         
     def visit_assign(self, node):
+        self.check_expression_type(node)
         value = self.visit(node.value)
         if node.base: # handles inheritance
             struct = self.lookup_var(node.base)
@@ -158,46 +163,10 @@ class InterpreterVisitor(Visitor):
         table[node.name] = value
 
     def visit_assign_index(self, node):
-        value = self.visit(node.value)
-        if node.target.base == None: # if list is not in struct
-            lst = self.lookup_var(node.target.target)
-        else: # if list is in struct
-            list_base = self.lookup_var(node.target.base)
-            if node.target.target not in list_base:
-                raise InterpreterError(
-                    self.code,
-                    node,
-                    f"Field '{node.target.target}' not found in struct '{node.target.base}'"
-                )
-            lst = list_base[node.target.target]
-        if not isinstance(lst, list): # check found field is a list
-            raise InterpreterError(
-                    self.code,
-                    node,
-                    f"Cannot index into non-list with value: {lst}"
-                )
-        for index in reversed(node.target.indexing[:-1]): # shrink list untill you have desired layer
-            index = self.visit(index)
-            if index < 0 or index >= len(lst): # check that index is within list size
-                raise InterpreterError(
-                    self.code,
-                    node,
-                    f"Index {index} out of bounds (size {len(lst)})"
-            )
-            lst = lst[index]
-            if not isinstance(lst, list):
-                raise InterpreterError(
-                    self.code,
-                    node,
-                    f"Cannot index into non-list with value: {lst}"
-                )
-        index = self.visit(node.target.indexing[0])
-        if index < 0 or index >= len(lst): # check that index is within list size
-            raise InterpreterError(
-                self.code,
-                node,
-                f"Index {index} out of bounds (size {len(lst)})"
-            )
+        self.check_expression_type(node)
+        value = self.unwrap(self.visit(node.value))
+        index = self.unwrap(self.visit(node.target.indexing[0]))
+        lst = self.lookup_var(node.target.target) if node.target.base is None else self.lookup_var(node.target.base)[node.target.target]
         lst[index] = value
 
     def visit_if(self, node):
@@ -540,10 +509,8 @@ class InterpreterVisitor(Visitor):
     
     def visit_add(self, node):
         result_type = self.check_expression_type(node)
-
         left = self.unwrap(self.visit(node.left))
         right = self.unwrap(self.visit(node.right))
-
         return RuntimeValue(
             result_type,
             left + right
@@ -602,21 +569,34 @@ class InterpreterVisitor(Visitor):
         )
 
     def visit_between(self, node):
-        left = self.visit(node.left)
-        right = self.visit(node.right)
+        result_type = self.check_expression_type(node)
+        left = self.unwrap(self.visit(node.left))
+        right = self.unwrap(self.visit(node.right))
+        
+        result_value = left # if both are equal
         if left < right: # if first value smallest
-            return random.randrange(left, right+1)
+            result_value = random.randrange(left, right+1)
         elif left > right: # if second value smallest
-            return random.randrange(right, left+1)
-        else: # if both are equal
-            return left
+            result_value = random.randrange(right, left+1)
+        
+        return RuntimeValue(
+            result_type,
+            result_value
+        )
     
     def visit_chance(self, node):
-        left = self.visit(node.left)
-        right = self.visit(node.right)
-        return random.randrange(0, right) < left
+        result_type = self.check_expression_type(node)
+        left = self.unwrap(self.visit(node.left))
+        right = self.unwrap(self.visit(node.right))
+        
+        return RuntimeValue(
+            result_type,
+            random.randrange(0, right) < left
+        )
     
     def visit_var(self, node):
+        result_type = self.check_expression_type(node)
+        result_value = self.lookup_var(node.name)
         if node.base:
             struct = self.lookup_var(node.base)
             if node.name not in struct:
@@ -625,15 +605,18 @@ class InterpreterVisitor(Visitor):
                     node,
                     f"Field '{node.name}' not found in struct '{node.base}'"
                 )
-            return struct.get(node.name, None)
-        return self.lookup_var(node.name)
+            result_value = struct.get(node.name, None)
+        return RuntimeValue(
+            result_type,
+            result_value
+        )
     
     def visit_call(self, node):
+        result_type = self.check_expression_type(node)
         function = self.f_table[node.name]
         params = function["params"]
         body = function["body"]
         args = node.args or []
-        
         
         local_vars = {}
         for param, arg in zip(params, args):
@@ -652,11 +635,12 @@ class InterpreterVisitor(Visitor):
                 self.visit(stmt)
         except ReturnException as r: # end function if return statement met
             self.v_table = {**old, **self.v_table["__parent__"]}
-            return r.value
+            return RuntimeValue(result_type, r.value)
 
         self.v_table = {**old, **self.v_table["__parent__"]}
     
     def visit_index_access(self, node):
+        self.check_expression_type(node) # typecheck
         if node.base == None: # If not from parent, look up value
             lst = self.lookup_var(node.target)
         else: # If has a parent, look up parent, and then find the target value
@@ -675,6 +659,6 @@ class InterpreterVisitor(Visitor):
                     node,
                     f"Cannot index into non-list with value: {lst}"
                 )
-            index = self.visit(index) # convert from Literal-Class to primal value
+            index = self.unwrap(self.visit(index)) # convert from Literal-Class to primal value
             lst = lst[index]
         return lst

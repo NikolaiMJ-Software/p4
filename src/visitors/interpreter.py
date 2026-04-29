@@ -81,14 +81,8 @@ class InterpreterVisitor(Visitor):
     def check_expression_type(self, node):
         self.sync_type_checker()
 
-        try:
-            return self.type_checker.visit(node)
-        except TypeCheckError as e:
-            raise InterpreterError(
-                self.code,
-                node,
-                str(e)
-            )
+        return self.type_checker.visit(node)
+
 
     # GAME STATE HANDLING
     def load_game_state(self):
@@ -207,46 +201,91 @@ class InterpreterVisitor(Visitor):
         lst[index] = value
 
     def visit_if(self, node):
-        old = self.v_table.copy()
-        
-        if self.visit(node.cond): # original if-statement
-            self.v_table = {"__parent__": self.v_table} # start scope
-            for stmt in node.body:
-                self.visit(stmt)
-            self.v_table = {**old, **self.v_table["__parent__"]} # end scope
-            return
-        for elifs in node.elifs: # loop all else-ifs
-            if self.visit(elifs[0]): # else-if condition
-                self.v_table = {"__parent__": self.v_table} # start scope
-                for stmt in elifs[1]:
-                    self.visit(stmt)
-                self.v_table = {**old, **self.v_table["__parent__"]} # end scope
-                return
-        if node.elses: # else
-            self.v_table = {"__parent__": self.v_table} # start scope
-            for stmt in node.elses:
-                self.visit(stmt)
-            self.v_table = {**old, **self.v_table["__parent__"]} # end scope
-                
-    def visit_while(self, node):
-        old = self.v_table.copy()
-        self.v_table = {"__parent__": self.v_table}
-        while self.visit(node.cond):
+        self.check_expression_type(node.cond)
+
+        if self.unwrap(self.visit(node.cond)):
+            # Save outer scope and create if scope
+            old = self.v_table
+            self.v_table = {"__parent__": old}
             try:
+                # Run each statement inside if body
                 for stmt in node.body:
                     self.visit(stmt)
-            except BreakException: # break statement
-                break
-        self.v_table = {**old, **self.v_table["__parent__"]}
-                
-    def visit_dowhile(self, node):
-        self.check_expression_type(node)
+            finally:
+                # Restore outer scope after if body
+                self.v_table = old
+            return
 
-        # Save outer scope and create do-while scope
+        # Check all else-if branches
+        for cond, body in node.elifs:
+            # Type check else-if condition
+            self.check_expression_type(cond)
+
+            if self.unwrap(self.visit(cond)):
+                # Save outer scope and create else-if scope
+                old = self.v_table
+                self.v_table = {"__parent__": old}
+
+                try:
+                    # Run each statement inside else-if body
+                    for stmt in body:
+                        self.visit(stmt)
+                finally:
+                    # Restore outer scope after else-if body
+                    self.v_table = old
+                return
+
+        # Run else branch if no previous condition matched
+        if node.elses:
+            # Save outer scope and create else scope
+            old = self.v_table
+            self.v_table = {"__parent__": old}
+            try:
+                # Run each statement inside else body
+                for stmt in node.elses:
+                    self.visit(stmt)
+            finally:
+                # Restore outer scope after else body
+                self.v_table = old
+
+    def visit_while(self, node):
+        # Save outer scope
         old = self.v_table
-        self.v_table = {"__parent__": old}
         try:
             while True:
+                # Type check condition only
+                self.check_expression_type(node.cond)
+
+                if not self.unwrap(self.visit(node.cond)):
+                    break
+
+                # Create fresh scope for this iteration
+                self.v_table = {"__parent__": old}
+
+                try:
+                    # Run each statement inside while body
+                    for stmt in node.body:
+                        self.visit(stmt)
+
+                except BreakException:
+                    # Stop loop if break is used
+                    break
+
+                finally:
+                    # Remove loop body scope before next iteration
+                    self.v_table = old
+
+        finally:
+            # Restore outer scope after while is done
+            self.v_table = old
+                
+    def visit_dowhile(self, node):
+        old = self.v_table
+        try:
+            while True:
+                # Create fresh body scope for this iteration
+                self.v_table = {"__parent__": old}
+
                 try:
                     # Run each statement inside do-while body
                     for stmt in node.body:
@@ -255,6 +294,13 @@ class InterpreterVisitor(Visitor):
                 except BreakException:
                     # Stop loop if break is used
                     break
+
+                finally:
+                    # Remove body scope before checking condition / next iteration
+                    self.v_table = old
+
+                # Type check condition only
+                self.check_expression_type(node.cond)
 
                 # Check condition after body has run
                 if not self.unwrap(self.visit(node.cond)):

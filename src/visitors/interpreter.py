@@ -77,6 +77,56 @@ class InterpreterVisitor(Visitor):
             return value.value
         return value
     
+    def to_json_value(self, value): # Convert runtime values before saving them as JSON
+        if isinstance(value, RuntimeValue):
+            # Save only the actual value, not the runtime wrapper
+            return self.to_json_value(value.value)
+
+        if isinstance(value, list):
+            # Convert all values inside lists
+            return [self.to_json_value(item) for item in value]
+
+        if isinstance(value, dict):
+            # Convert struct fields and skip parent since they are only used during interpretation and arent a part of the actual saved game state
+            return {
+                key: self.to_json_value(val)
+                for key, val in value.items()
+                if key != "__parent__"
+            }
+
+        if value == "UNINITIALIZED":
+            return None
+
+        return value
+
+    def from_json_value(self, value):
+        # Convert saved JSON values back into runtime values
+
+        if value is None:
+            return "UNINITIALIZED"
+
+        if isinstance(value, bool):
+            return RuntimeValue("bool", value)
+
+        if isinstance(value, int):
+            return RuntimeValue("int", value)
+
+        if isinstance(value, float):
+            return RuntimeValue("float", value)
+
+        if isinstance(value, str):
+            return RuntimeValue("str", value)
+
+        if isinstance(value, list):
+            return [self.from_json_value(item) for item in value]
+
+        if isinstance(value, dict):
+            return {
+                key: self.from_json_value(val)
+                for key, val in value.items()
+            }
+
+        return value
 
     def check_expression_type(self, node):
         self.sync_type_checker()
@@ -88,14 +138,18 @@ class InterpreterVisitor(Visitor):
     def load_game_state(self):
         loaded_game = self.game_state_manager.load()
         if loaded_game is not None and "Game" in self.v_table:
-            self.v_table["Game"] = loaded_game
+            # Convert saved JSON values back into runtime values before loading them into Game
+            self.v_table["Game"] = self.from_json_value(loaded_game)
     
     def save_game_state(self):
         game = self.v_table.get("Game")
         if game is not None:
-            self.game_state_manager.save(game)
-    
+            # Convert runtime values before writing to JSON
+            self.game_state_manager.save(self.to_json_value(game))
+
     def run(self, ast, args=None):
+        should_save = True # Used to prevent saving after runtime or type errors
+
         try:
             for stmt in ast:
                 self.visit(stmt)
@@ -107,8 +161,14 @@ class InterpreterVisitor(Visitor):
 
         except KeyboardInterrupt:
             print("\nProgram interrupted. Saving game state...")
+
+        except (InterpreterError, TypeCheckError):
+            should_save = False  # Do not save if the program stopped because of an error
+            raise
+
         finally:
-            self.save_game_state()
+            if should_save: # Only save if the program ended safely or was manually interrupted
+                self.save_game_state()
 
 
 
@@ -379,7 +439,6 @@ class InterpreterVisitor(Visitor):
         raise BreakException()
 
     def visit_expression(self, node):
-        result_type = self.check_expression_type(node)
         return self.visit(node.value)
 
     def visit_input(self, node):
@@ -640,32 +699,50 @@ class InterpreterVisitor(Visitor):
         return result_value
     
     def visit_call(self, node):
-        result_type = self.check_expression_type(node)
+        self.sync_type_checker() # Sync current runtime types without checking the whole function body
+
+        if node.name not in self.f_table:
+            # Check function existence before running it
+            raise InterpreterError(
+                self.code,
+                node,
+                f"The function: '{node.name}' does not exist"
+            )
+
         function = self.f_table[node.name]
         params = function["params"]
         body = function["body"]
         args = node.args or []
-        
+
+        if len(params) != len(args):
+            # Check argument count before running the function
+            raise TypeCheckError(
+                self.code,
+                node,
+                f"Function '{node.name}' expects {len(params)} args, got {len(args)}"
+            )
+
         local_vars = {}
         for param, arg in zip(params, args):
-            local_vars[param] = self.visit(arg) # tie defined function values to those described on call
-                    
-        # Temperary switch scope
-        new_scope = {
-            "__parent__": self.v_table,
+            local_vars[param] = self.visit(arg)
+
+        old = self.v_table # Save current scope
+        self.v_table = {
+            "__parent__": old,
             **local_vars
         }
-        old = self.v_table.copy()
-        self.v_table = new_scope
-        
+
         try:
             for stmt in body:
                 self.visit(stmt)
-        except ReturnException as r: # end function if return statement met
-            self.v_table = {**old, **self.v_table["__parent__"]}
-            return RuntimeValue(result_type, r.value)
 
-        self.v_table = {**old, **self.v_table["__parent__"]}
+        except ReturnException as r:
+            return r.value # Return the actual runtime value from the function
+
+        finally:
+            self.v_table = old # Always restore scope after the function call
+
+        return None
     
     def visit_index_access(self, node):
         self.check_expression_type(node) # typecheck

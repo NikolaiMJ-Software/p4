@@ -730,8 +730,7 @@ class TypeCheckerVisitor(Visitor):
         for each in node.value:
             if isinstance(each, Var):
                 # Find the correct table (from a struct or not)
-                table = self.v_table[each.base] if each.base else self.v_table
-                if each.name not in table:
+                if self.lookup_var(each.name) is False:
                     raise TypeError(
                         self.code,
                         node,

@@ -363,26 +363,32 @@ class InterpreterVisitor(Visitor):
             self.v_table = old
     
     def visit_define(self, node):
+        result_type = self.check_expression_type(node)
         self.f_table[node.name] = {
             "params" : node.params,
             "body" : node.body
         }
     
     def visit_return(self, node):
+        result_type = self.check_expression_type(node)
         value = self.visit(node.value)
         raise ReturnException(value)
 
     def visit_break(self, node):
+        result_type = self.check_expression_type(node)
         raise BreakException()
 
     def visit_expression(self, node):
+        result_type = self.check_expression_type(node)
         return self.visit(node.value)
 
     def visit_input(self, node):
+        result_type = self.check_expression_type(node)
         user_value = input()
         self.v_table[node.name] = RuntimeValue("str", user_value)
 
     def visit_output(self, node):
+        result_type = self.check_expression_type(node)
         values = [self.visit(v) for v in node.value]
         processed = [] # storage for processed strings
 

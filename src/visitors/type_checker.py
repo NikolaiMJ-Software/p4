@@ -53,7 +53,7 @@ class TypeCheckerVisitor(Visitor):
             )
         
         # Error, if the variable 'name' are not inside of the struct (base)
-        if node.name not in self.v_table[node.base]:
+        if node.name not in self.lookup_var(node.base):
             raise TypeError(
                 self.code,
                 node,
@@ -61,7 +61,7 @@ class TypeCheckerVisitor(Visitor):
             )
         
         # Find and return the type of the 'name'
-        return self.v_table[node.base][node.name]
+        return self.lookup_var(node.base)[node.name]
         
     def comparable_ordered(self, left_type, right_type):
         # for <, >, <=, >=
@@ -119,11 +119,10 @@ class TypeCheckerVisitor(Visitor):
         return value_type
 
     def visit_create_variable(self, node):
-        
         self.validate_game_name(node, "variable")
         
         # Make sure no duplicate of variabels
-        if self.lookup_var(node.name) != False:
+        if node.name in self.v_table:
             raise TypeError(
                 self.code,
                 node,
@@ -577,7 +576,7 @@ class TypeCheckerVisitor(Visitor):
     def visit_create_list(self, node):
         self.validate_game_name(node, "list")
 
-        if self.lookup_var(node.name) != False:
+        if node.name in self.v_table:
             raise TypeError(
                 self.code,
                 node,
@@ -741,7 +740,7 @@ class TypeCheckerVisitor(Visitor):
         self.validate_game_name(node, "struct")
         
         # Error, if the 'name' already exist
-        if self.lookup_var(node.name) != False:
+        if node.name in self.v_table:
             raise TypeError(
                 self.code,
                 node,

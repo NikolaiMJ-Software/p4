@@ -164,7 +164,7 @@ class InterpreterVisitor(Visitor):
 
     def visit_assign_index(self, node):
         self.check_expression_type(node)
-        value = self.unwrap(self.visit(node.value))
+        value = self.visit(node.value)
         index = self.unwrap(self.visit(node.target.indexing[0]))
         lst = self.lookup_var(node.target.target) if node.target.base is None else self.lookup_var(node.target.base)[node.target.target]
         lst[index] = value
@@ -388,12 +388,19 @@ class InterpreterVisitor(Visitor):
         self.v_table[node.name] = RuntimeValue("str", user_value)
 
     def visit_output(self, node):
-        result_type = self.check_expression_type(node)
+        self.check_expression_type(node)
         values = [self.visit(v) for v in node.value]
         processed = [] # storage for processed strings
         for v in values:
             v = self.unwrap(v)
-
+            
+            # Unwrap each element in a list
+            if isinstance(v, list):
+                v_list = []
+                for val in v:
+                    v_list.append(self.unwrap(val))
+                v = v_list
+            
             if isinstance(v, str):
                 v = v.replace("\\n", "\n")  # convert \n into actual NEWLINE
 

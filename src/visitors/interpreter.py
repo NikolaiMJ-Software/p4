@@ -45,19 +45,37 @@ class InterpreterVisitor(Visitor):
 
     # TYPE CHECK INTEGRATION
     def runtime_to_type(self, value):
+        # Convert interpreter values into the type format used by the type checker
         if value == "UNINITIALIZED":
+            return None
+
+        if value is None:
             return None
 
         if isinstance(value, RuntimeValue):
             return value.type
+
+        if isinstance(value, bool):
+            return "bool"
+
+        if isinstance(value, int):
+            return "int"
+
+        if isinstance(value, float):
+            return "float"
+
+        if isinstance(value, str):
+            return "str"
 
         if isinstance(value, list):
             return [self.runtime_to_type(item) for item in value]
 
         if isinstance(value, dict):
             return {
-                name: self.runtime_to_type(field_value) for name, field_value in value.items()
+                name: self.runtime_to_type(field_value)
+                for name, field_value in value.items()
             }
+
         return None
 
     def sync_type_checker(self):

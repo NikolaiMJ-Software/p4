@@ -676,28 +676,11 @@ class InterpreterVisitor(Visitor):
     
     def visit_call(self, node):
         self.sync_type_checker() # Sync current runtime types without checking the whole function body
-
-        if node.name not in self.f_table:
-            # Check function existence before running it
-            raise InterpreterError(
-                self.code,
-                node,
-                f"The function: '{node.name}' does not exist"
-            )
-
         function = self.f_table[node.name]
         params = function["params"]
         body = function["body"]
         args = node.args or []
-
-        if len(params) != len(args):
-            # Check argument count before running the function
-            raise TypeCheckError(
-                self.code,
-                node,
-                f"Function '{node.name}' expects {len(params)} args, got {len(args)}"
-            )
-
+        
         local_vars = {}
         for param, arg in zip(params, args):
             local_vars[param] = self.visit(arg)

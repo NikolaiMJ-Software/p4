@@ -78,6 +78,15 @@ class InterpreterVisitor(Visitor):
         if isinstance(value, RuntimeValue):
             return value.value
         return value
+    
+    def unwrap_list(self, input_list):
+        var_list=[]
+        for var in input_list:
+            if isinstance(var, list):
+                var_list.append(self.unwrap_list(var))
+            else:
+                var_list.append(self.unwrap(var))
+        return var_list
 
     def check_expression_type(self, node):
         self.sync_type_checker()
@@ -452,15 +461,6 @@ class InterpreterVisitor(Visitor):
         result_type = self.check_expression_type(node)
         user_value = input()
         self.v_table[node.name] = RuntimeValue("str", user_value)
-
-    def unwrap_list(self, input_list):
-        var_list=[]
-        for var in input_list:
-            if isinstance(var, list):
-                var_list.append(self.unwrap_list(var))
-            else:
-                var_list.append(self.unwrap(var))
-        return var_list
     
     def visit_output(self, node):
         self.check_expression_type(node)

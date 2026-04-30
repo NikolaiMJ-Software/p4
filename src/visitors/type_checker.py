@@ -151,7 +151,7 @@ class TypeCheckerVisitor(Visitor):
                 )
             
             # Check if the name exist
-            base_type = self.v_table[node.base]
+            base_type = self.lookup_var(node.base)
             if node.name not in base_type:
                 raise TypeError(
                     self.code,
@@ -619,7 +619,7 @@ class TypeCheckerVisitor(Visitor):
                     f"The struct: '{node.base}' is not defined"
                 )
             else:
-                v_table = self.v_table[node.base]
+                v_table = self.lookup_var(node.base)
 
         # Check if the list exist in v_table
         if node.target not in v_table:
@@ -749,7 +749,7 @@ class TypeCheckerVisitor(Visitor):
         
         elif self.lookup_var(node.base) != False:
             # Copy the parrent (base)
-            merged = self.v_table[node.base].copy()
+            merged = self.lookup_var(node.base).copy()
 
             # Afterwards fields (overwrite)
             for f in node.fields:

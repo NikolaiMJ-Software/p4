@@ -228,18 +228,21 @@ class TypeCheckerVisitor(Visitor):
             )
 
         func = self.f_table[node.name]
+        
+        params = func["params"] or []
+        args = node.args or []
 
         # validate argument counts
-        if len(func["params"]) != len(node.args):
+        if len(params) != len(args):
             raise TypeError(
                 self.code,
                 node,
-                f"Function '{node.name}' expects {len(func['params'])} args, got {len(node.args)}"
+                f"Function '{node.name}' expects {len(params)} args, got {len(args)}"
             )
         
         # Update the local variable types
         local_vars = {}
-        for p, arg in zip(func["params"], node.args):
+        for p, arg in zip(params, args):
             local_vars[p] = self.visit(arg)
         
         # Temperary switch scope

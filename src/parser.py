@@ -167,6 +167,8 @@ class ParseError(Exception):
 # raising our own wrapped errors while parsing
 def parse(code):
     try:
+        if not code.endswith("\n"):
+            code += "\n"
         return parser.parse(code)
     except UnexpectedInput as e:
         raise ParseError( # raise error with line + column + context from caught exception

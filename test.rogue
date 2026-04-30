@@ -1,0 +1,10 @@
+define X with Y, V:
+    create Z is Y + V
+    return Z
+
+create Number1 is 10
+create Number2 is 25
+
+output Number1 + Number2
+
+call X with Number1, Number2

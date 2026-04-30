@@ -453,6 +453,15 @@ class InterpreterVisitor(Visitor):
         user_value = input()
         self.v_table[node.name] = RuntimeValue("str", user_value)
 
+    def unwrap_list(self, input_list):
+        var_list=[]
+        for var in input_list:
+            if isinstance(var, list):
+                var_list.append(self.unwrap_list(var))
+            else:
+                var_list.append(self.unwrap(var))
+        return var_list
+    
     def visit_output(self, node):
         self.check_expression_type(node)
         values = [self.visit(v) for v in node.value]
@@ -462,10 +471,7 @@ class InterpreterVisitor(Visitor):
             
             # Unwrap each element in a list
             if isinstance(v, list):
-                v_list = []
-                for val in v:
-                    v_list.append(self.unwrap(val))
-                v = v_list
+                v = self.unwrap_list(v)
             
             if isinstance(v, str):
                 v = v.replace("\\n", "\n")  # convert \n into actual NEWLINE
@@ -473,7 +479,6 @@ class InterpreterVisitor(Visitor):
             processed.append(v)
 
         print(*processed)
-
 
     # EXPRESSIONS
     def visit_or_expr(self, node):

@@ -11,7 +11,7 @@ def test_create_variable():
     node = CreateVariable("X")
     checker.visit(node)
     
-    assert checker.v_tables == [{"X":"UNINITIALIZED"}]
+    assert checker.v_table == {"X":"UNINITIALIZED"}
 
 def test_create_variable_withvalue():
     checker = make_checker()
@@ -19,25 +19,24 @@ def test_create_variable_withvalue():
     node = CreateVariable("X", IntLiteral(1))
     checker.visit(node)
     
-    assert checker.v_tables == [{"X":1}]
+    assert str(checker.v_table) == str({"X":RuntimeValue("int",1)})
 
 def test_create_struct():
     checker = make_checker()
     
     node = CreateStruct("X", [None,[CreateVariable("Y"), CreateVariable("Z", IntLiteral(1))]])
     checker.visit(node)
-    
-    print(checker.v_tables)
-    assert checker.v_tables == [{"X":{"Y":"UNINITIALIZED","Z":1}}]
+
+    assert str(checker.v_table) == str({"X":{"Y":"UNINITIALIZED","Z":RuntimeValue("int",1)}})
 
 def test_create_struct_withbase():
     checker = make_checker()
     
-    checker.v_tables = [{"A":{"B":1,"C":2}}]
+    checker.v_table = {"A":{"B":RuntimeValue("int",1),"C":RuntimeValue("int",2)}}
     node = CreateStruct("X", ["A",[CreateVariable("Y"), CreateVariable("Z", IntLiteral(1))]])
     checker.visit(node)
     
-    assert checker.v_tables == [{"A":{"B":1,"C":2}, "X":{"B":1,"C":2,"Y":"UNINITIALIZED","Z":1}}]
+    assert str(checker.v_table) == str({"A":{"B":RuntimeValue("int",1),"C":RuntimeValue("int",2)}, "X":{"B":RuntimeValue("int",1),"C":RuntimeValue("int",2),"Y":"UNINITIALIZED","Z":RuntimeValue("int",1)}})
 
 def test_create_list():
     checker = make_checker()
@@ -45,34 +44,34 @@ def test_create_list():
     node = CreateList("X", [BoolLiteral(1), IntLiteral(2), StringLiteral("3")])
     checker.visit(node)
     
-    assert checker.v_tables == [{"X":[True,2,"3"]}]
+    assert str(checker.v_table) == str({"X":[RuntimeValue("bool",1),RuntimeValue("int",2),RuntimeValue("str","3")]})
 
 def test_assign():
     checker = make_checker()
     
-    checker.v_tables = [{"X":1}]
+    checker.v_table = {"X":RuntimeValue("int",1)}
     node = Assign("X", None, IntLiteral(2))
     checker.visit(node)
     
-    assert checker.v_tables == [{"X":2}]
+    assert str(checker.v_table) == str({"X":RuntimeValue("int",2)})
 
 def test_assign_struct():
     checker = make_checker()
     
-    checker.v_tables = [{"X":{"Y":1,"Z":2}}]
+    checker.v_table = {"X":{"Y":RuntimeValue("int",1),"Z":RuntimeValue("int",2)}}
     node = Assign("Z", "X", IntLiteral(3))
     checker.visit(node)
     
-    assert checker.v_tables == [{"X":{"Y":1,"Z":3}}]
+    assert str(checker.v_table) == str({"X":{"Y":RuntimeValue("int",1),"Z":RuntimeValue("int",3)}})
 
 def test_assignindex():
     checker = make_checker()
     
-    checker.v_tables = [{"X":[[1,[2,3,4,5],6,7],8,9]}]
-    node = AssignIndex(IndexAccess([IntLiteral(2), IntLiteral(1), IntLiteral(0)], "X", None), IntLiteral(0))
+    checker.v_table = {"X":[[RuntimeValue("int",1),[RuntimeValue("int",2),RuntimeValue("int",3)],RuntimeValue("int",4)],RuntimeValue("int",5)]}
+    node = AssignIndex(IndexAccess([IntLiteral(1),IntLiteral(99),IntLiteral(1)],"X",None),IntLiteral(0))
     checker.visit(node)
     
-    assert checker.v_tables == [{"X":[[1,[2,3,0,5],6,7],8,9]}]
+    assert str(checker.v_table) == str({"X":[[RuntimeValue("int",1),[RuntimeValue("int",2),RuntimeValue("int",0)],RuntimeValue("int",4)],RuntimeValue("int",5)]})
 
 def test_assignindex_struct():
     checker = make_checker()

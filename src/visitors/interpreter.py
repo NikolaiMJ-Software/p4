@@ -10,7 +10,10 @@ class ReturnException(Exception): # exception raised by return() to stop functio
     def __init__(self, value):
         self.value = value
 
-class RuntimeValue:
+class BreakException(Exception): # exception raised to stop loops
+    pass
+
+class RuntimeValue: # class to store value and type for values sent to typechecker
     def __init__(self, type_name, value):
         self.type = type_name
         self.value = value
@@ -18,15 +21,12 @@ class RuntimeValue:
     def __repr__(self):
         return f"{self.type}({self.value})"
 
-class BreakException(Exception): # Exceptuon raised be "stop" (break function) to stop loops
-    pass
-
 class InterpreterVisitor(Visitor):
     def __init__(self, code="", slot=1):
         self.code = code
         self.v_table = {} # list of variables split into scope levels
         self.f_table = {} # list of defined functions
-        self.game_state_manager = GameStateManager(slot) # safe state manager, where slot equals save file
+        self.game_state_manager = GameStateManager(slot) # save-state manager, where slot equals save-file
         self.type_checker = TypeCheckerVisitor(self.code)
     
     
@@ -40,7 +40,10 @@ class InterpreterVisitor(Visitor):
                 return self.unwrap(scope[name])
             scope = scope.get("__parent__")
         return False
+    
 
+
+    # TYPE CHECK INTEGRATION
     def runtime_to_type(self, value):
         if value == "UNINITIALIZED":
             return None
@@ -53,8 +56,7 @@ class InterpreterVisitor(Visitor):
 
         if isinstance(value, dict):
             return {
-                name: self.runtime_to_type(field_value)
-                for name, field_value in value.items()
+                name: self.runtime_to_type(field_value) for name, field_value in value.items()
             }
         return None
 
@@ -77,11 +79,11 @@ class InterpreterVisitor(Visitor):
             return value.value
         return value
     
-
     def check_expression_type(self, node):
         self.sync_type_checker()
 
         return self.type_checker.visit(node)
+
 
 
     # GAME STATE HANDLING

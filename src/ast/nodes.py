@@ -109,7 +109,7 @@ class Define(ASTNode):
     def __repr__(self):
         return f"Define({self.name},{self.params},{self.body})"
 class Return(ASTNode):
-    def __init__(self, value):
+    def __init__(self, value=IntLiteral(0)):
         self.value = value
     def __repr__(self):
         return f"Return({self.value})"
@@ -247,7 +247,7 @@ class Call(ASTNode):
     def __repr__(self):
         return f"Call({self.name},{self.args})"
 class IndexAccess(ASTNode):
-    def __init__(self, indexing, target, base):
+    def __init__(self, indexing, target, base=None):
         self.indexing = indexing
         self.target = target
         self.base = base

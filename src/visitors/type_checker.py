@@ -451,7 +451,6 @@ class TypeCheckerVisitor(Visitor):
         return "bool"
 
     def visit_between(self, node):
-        # Between requires numeric values
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
 
@@ -461,8 +460,11 @@ class TypeCheckerVisitor(Visitor):
                 node,
                 f"between requires numeric types, got {left_type} and {right_type}"
             )
+        
+        if "float" in (left_type, right_type):
+            return "float"
 
-        return "bool"
+        return "int"
 
     def visit_chance(self, node):
         # Chance requires numeric values
@@ -714,27 +716,28 @@ class TypeCheckerVisitor(Visitor):
         return None
         
     def visit_input(self, node):
-        # Make sure the value are define before writing to it
-        var_type = self.lookup_var(node.name)
-        if var_type != False:
-            return var_type
+        table = self.v_table
+
+        while table:
+            if node.name in table:
+                # Input always stores user input as a string
+                table[node.name] = "str"
+                return "str"
+
+            table = table.get("__parent__")
+
         raise TypeError(
-                self.code,
-                node,
-                f"The variable: '{node.name}' does not exist"
-            )
+            self.code,
+            node,
+            f"The variable: '{node.name}' does not exist"
+        )
 
     def visit_output(self, node):
-        # Go thru each output value
+        # Output has no type, but each printed value must be type checked
         for each in node.value:
-            if isinstance(each, Var):
-                # Find the correct table (from a struct or not)
-                if self.lookup_var(each.name) is False:
-                    raise TypeError(
-                        self.code,
-                        node,
-                        f"The variable: '{each.name}' does not exist"
-                    )
+            self.visit(each)
+
+        return None
 
     def visit_create_struct(self, node):
         self.validate_game_name(node, "struct")

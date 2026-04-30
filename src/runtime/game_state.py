@@ -3,8 +3,9 @@ from pathlib import Path
 
 # Function to save "Game" struct in json files
 class GameStateManager:
-    def __init__(self, slot=1): #Define what save "slot" a file should be saved in, default 1
-        base_dir = Path(__file__).parent # Defines starting path from the runtime folder
+    def __init__(self, slot=1, base_dir=None): #Define what save "slot" a file should be saved in, default 1
+        if base_dir is None: # added to allow tests
+                base_dir = Path(__file__).parent # Defines starting path from the runtime folder
         self.path = base_dir / "save_states" / f"save_slot_{slot}.json" #Creates path to the file, using selected save slot
         self.path.parent.mkdir(parents=True, exist_ok=True) #makes sure file exists, if not create file
 

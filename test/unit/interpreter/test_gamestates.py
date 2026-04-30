@@ -8,14 +8,13 @@ def make_checker():
 def test_gamestate_saveload():
     checker = make_checker()
     
-    checker.load_game_state()
     node = CreateStruct("Game",[None,[CreateVariable("X",IntLiteral(1))]])
     checker.visit(node)
     checker.save_game_state()
-    checker.v_table = {}
+    checker.v_table = {"Game":None}
     checker.load_game_state()
     
-    assert checker.v_table == {"Game":{"X":int(1)}}
+    assert str(checker.v_table) == str({"Game":{"X":RuntimeValue("int",1)}})
 
 def test_run(capsys):
     checker = make_checker()

@@ -78,7 +78,50 @@ class InterpreterVisitor(Visitor):
         if isinstance(value, RuntimeValue):
             return value.value
         return value
+
+    def check_expression_type(self, node):
+        self.sync_type_checker()
+
+        return self.type_checker.visit(node)
+
+
+
+    # GAME STATE HANDLING
+    def load_game_state(self):
+        loaded_game = self.game_state_manager.load()
+        if loaded_game is not None and "Game" in self.v_table:
+            # Convert saved JSON values back into runtime values before loading them into Game
+            self.v_table["Game"] = self.from_json_value(loaded_game)
     
+    def save_game_state(self):
+        game = self.v_table.get("Game")
+        if game is not None:
+            # Convert runtime values before writing to JSON
+            self.game_state_manager.save(self.to_json_value(game))
+
+    def run(self, ast, args=None):
+        should_save = True # Used to prevent saving after runtime or type errors
+
+        try:
+            for stmt in ast:
+                self.visit(stmt)
+
+            self.load_game_state()
+
+            if "Play" in self.f_table:
+                self.visit(Call("Play", args or []))
+
+        except KeyboardInterrupt:
+            print("\nProgram interrupted. Saving game state...")
+
+        except (InterpreterError, TypeCheckError):
+            should_save = False  # Do not save if the program stopped because of an error
+            raise
+
+        finally:
+            if should_save: # Only save if the program ended safely or was manually interrupted
+                self.save_game_state()
+
     def to_json_value(self, value): # Convert runtime values before saving them as JSON
         if isinstance(value, RuntimeValue):
             # Save only the actual value, not the runtime wrapper
@@ -129,50 +172,6 @@ class InterpreterVisitor(Visitor):
             }
 
         return value
-
-    def check_expression_type(self, node):
-        self.sync_type_checker()
-
-        return self.type_checker.visit(node)
-
-
-
-    # GAME STATE HANDLING
-    def load_game_state(self):
-        loaded_game = self.game_state_manager.load()
-        if loaded_game is not None and "Game" in self.v_table:
-            # Convert saved JSON values back into runtime values before loading them into Game
-            self.v_table["Game"] = self.from_json_value(loaded_game)
-    
-    def save_game_state(self):
-        game = self.v_table.get("Game")
-        if game is not None:
-            # Convert runtime values before writing to JSON
-            self.game_state_manager.save(self.to_json_value(game))
-
-    def run(self, ast, args=None):
-        should_save = True # Used to prevent saving after runtime or type errors
-
-        try:
-            for stmt in ast:
-                self.visit(stmt)
-
-            self.load_game_state()
-
-            if "Play" in self.f_table:
-                self.visit(Call("Play", args or []))
-
-        except KeyboardInterrupt:
-            print("\nProgram interrupted. Saving game state...")
-
-        except (InterpreterError, TypeCheckError):
-            should_save = False  # Do not save if the program stopped because of an error
-            raise
-
-        finally:
-            if should_save: # Only save if the program ended safely or was manually interrupted
-                self.save_game_state()
-
 
 
     # LITERALS
@@ -228,9 +227,14 @@ class InterpreterVisitor(Visitor):
     def visit_assign_index(self, node):
         self.check_expression_type(node)
         value = self.visit(node.value)
-        index = self.unwrap(self.visit(node.target.indexing[0]))
-        lst = self.lookup_var(node.target.target) if node.target.base is None else self.lookup_var(node.target.base)[node.target.target]
-        lst[index] = value
+        if node.target.base:
+            lst = self.lookup_var(node.target.base)[node.target.target]
+        else:
+            lst = self.lookup_var(node.target.target)
+        indices = [self.unwrap(self.visit(i)) for i in node.target.indexing][::-1] # reverse list because of our syntax
+        for index in indices[:-1]: # get to last guaranteed list to preserve pointer
+            lst = lst[index]
+        lst[indices[-1]] = value
 
     def visit_if(self, node):
         self.check_expression_type(node.cond)

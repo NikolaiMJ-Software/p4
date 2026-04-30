@@ -59,16 +59,27 @@ def test_assign_struct():
     checker = make_checker()
     
     checker.v_table = {"X":{"Y":RuntimeValue("int",1),"Z":RuntimeValue("int",2)}}
-    node = Assign("Z", "X", IntLiteral(3))
+    node = Assign("Z","X",IntLiteral(3))
     checker.visit(node)
     
     assert str(checker.v_table) == str({"X":{"Y":RuntimeValue("int",1),"Z":RuntimeValue("int",3)}})
 
+def test_assign_parent():
+    checker = make_checker()
+    
+    checker.v_table = {"__parent__":{"X":RuntimeValue("int",1)}}
+    node = Assign("X",None,IntLiteral(2))
+    checker.visit(node)
+    
+    assert str(checker.v_table) == str({"__parent__":{"X":RuntimeValue("int",2)}})
+
 def test_assignindex():
     checker = make_checker()
     
+    # insert list X:[[1,[2,3],4],5]
     checker.v_table = {"X":[[RuntimeValue("int",1),[RuntimeValue("int",2),RuntimeValue("int",3)],RuntimeValue("int",4)],RuntimeValue("int",5)]}
-    node = AssignIndex(IndexAccess([IntLiteral(1),IntLiteral(99),IntLiteral(1)],"X",None),IntLiteral(0))
+    # assign X[0][1][1] = 0    (this would 3 exchanged for 0)
+    node = AssignIndex(IndexAccess([IntLiteral(1),IntLiteral(1),IntLiteral(0)],"X",None),IntLiteral(0))
     checker.visit(node)
     
     assert str(checker.v_table) == str({"X":[[RuntimeValue("int",1),[RuntimeValue("int",2),RuntimeValue("int",0)],RuntimeValue("int",4)],RuntimeValue("int",5)]})
@@ -76,11 +87,11 @@ def test_assignindex():
 def test_assignindex_struct():
     checker = make_checker()
     
-    checker.v_tables = [{"X":{"Y":[[1,[2,3,4,5],6,7],8,9]}}]
-    node = AssignIndex(IndexAccess([IntLiteral(3), IntLiteral(1) ,IntLiteral(0)], "Y", "X"), IntLiteral(0))
+    checker.v_table = {"X":{"Y":[[RuntimeValue("int",1),RuntimeValue("int",2)],RuntimeValue("int",3)]}}
+    node = AssignIndex(IndexAccess([IntLiteral(1),IntLiteral(0)],"Y","X"),IntLiteral(0))
     checker.visit(node)
    
-    assert checker.v_tables == [{"X":{"Y":[[1,[2,3,4,0],6,7],8,9]}}]
+    assert str(checker.v_table) == str({"X":{"Y":[[RuntimeValue("int",1),RuntimeValue("int",0)],RuntimeValue("int",3)]}})
 
 def test_if_base(capsys):
     checker = make_checker()
@@ -127,13 +138,13 @@ def test_if_else(capsys):
 def test_while():
     checker = make_checker()
     
-    checker.v_tables = [{"X":0}]
+    checker.v_table = {"X":RuntimeValue("int",0)}
     node = While(LessExpr(Var("X"), IntLiteral(3)), [
         Assign("X", None, Add(Var("X"), IntLiteral(1)))
     ])
     checker.visit(node)
     
-    assert checker.v_tables == [{"X":3}]
+    assert str(checker.v_table) == str({"X":RuntimeValue("int",3)})
 
 def test_while_break(capsys):
     checker = make_checker()
@@ -152,13 +163,13 @@ def test_while_break(capsys):
 def test_dowhile():
     checker = make_checker()
     
-    checker.v_tables = [{"X":0}]
+    checker.v_table = {"X":RuntimeValue("int",0)}
     node = Dowhile(
         [Assign("X", None, Add(Var("X"), IntLiteral(1)))],
         LessExpr(Var("X"), IntLiteral(3)))
     checker.visit(node)
     
-    assert checker.v_tables == [{"X":3}]
+    assert str(checker.v_table) == str({"X":RuntimeValue("int",3)})
 
 def test_dowhile_break(capsys):
     checker = make_checker()
@@ -212,7 +223,7 @@ def test_forrange_break(capsys):
 def test_foreach(capsys):
     checker = make_checker()
     
-    checker.v_tables = [{"X":[1,2,3]}]
+    checker.v_table = {"X":[RuntimeValue("int",1),RuntimeValue("int",2),RuntimeValue("int",3)]}
     node = Foreach("Y", "X", [
         Output([Var("Y")])
     ])
@@ -224,7 +235,7 @@ def test_foreach(capsys):
 def test_foreach_break(capsys):
     checker = make_checker()
     
-    checker.v_tables = [{"X":[1,2,3]}]
+    checker.v_table = {"X":[RuntimeValue("int",1),RuntimeValue("int",2),RuntimeValue("int",3)]}
     node = Foreach("Y", "X", [
         Output([Var("Y")]),
         Break()
@@ -234,7 +245,7 @@ def test_foreach_break(capsys):
     captured = capsys.readouterr()
     assert captured.out.strip() == "1"
 
-def test_define(): # need to compare string results since python would compare memory otherwise
+def test_define():
     checker = make_checker()
     
     node = Define("X", ["Y"], [
@@ -267,12 +278,12 @@ def test_expression(capsys): # Could test more, but this is the main purpose of 
 def test_input(monkeypatch):
     checker = make_checker()
     
-    checker.v_tables = [{"X":0}]
+    checker.v_table = {"X":RuntimeValue("int",0)}
     monkeypatch.setattr("builtins.input", lambda: 2)
     node = Input("X")
     checker.visit(node)
     
-    assert checker.v_tables == [{"X":2}]
+    assert str(checker.v_table) == str({"X":RuntimeValue("str",2)})
 
 def test_output(capsys):
     checker = make_checker()

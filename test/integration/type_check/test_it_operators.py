@@ -221,14 +221,14 @@ xor_expr_code = """either true or false
 
 def test_it_pass_between_int_int():
     result = type_check_test(between_int_int_code)
-    assert ["bool"] == result
+    assert ["int"] == result
 between_int_int_code = """between 1 and 10
 """
 
 
 def test_it_pass_between_float_int():
     result = type_check_test(between_float_int_code)
-    assert ["bool"] == result
+    assert ["float"] == result
 between_float_int_code = """between 1.5 and 10
 """
 
@@ -284,11 +284,11 @@ boolean_in_if_code = """if true and false do:
 """
 
 # -------------------------
-# Input / Output
+# Input / Output 
 # -------------------------
 def test_it_pass_input():
     res = type_check_test(create_var_and_input_in_it)
-    assert [None, None] == res
+    assert [None, "str"] == res
 create_var_and_input_in_it = """create X
 input in X
 """

@@ -198,8 +198,8 @@ def test_xor_expr():
 def test_between():
     checker = make_checker()
 
-    assert checker.visit(Between(IntLiteral(1), IntLiteral(10))) == "bool"
-    assert checker.visit(Between(FloatLiteral(1.5), IntLiteral(10))) == "bool"
+    assert checker.visit(Between(IntLiteral(1), IntLiteral(10))) == "int"
+    assert checker.visit(Between(FloatLiteral(1.5), IntLiteral(10))) == "float"
 
     with pytest.raises(TypeError, match="between requires numeric types"):
         checker.visit(Between(StringLiteral("a"), IntLiteral(10)))

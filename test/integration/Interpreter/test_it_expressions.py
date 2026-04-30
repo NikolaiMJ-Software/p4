@@ -11,7 +11,7 @@ def test_it_pass_arithmetic_basic():
     # 6^8*(2+1)
     node = Mul(Pow(IntLiteral(6),IntLiteral(2)),Add(IntLiteral(2),IntLiteral(1)))
     
-    assert checker.visit(node) == 108
+    assert str(checker.visit(node)) == str(RuntimeValue("int",108))
 
 def test_it_pass_arithmetic_list_call():
     checker = make_checker()
@@ -20,12 +20,12 @@ def test_it_pass_arithmetic_list_call():
     nodes = [
         CreateVariable("Answer"),
         CreateList("X",[IntLiteral(1),IntLiteral(2),IntLiteral(3)]),
-        Define("Y",[],[Return(IntLiteral(3))]),
+        Define("Y",None,[Return(IntLiteral(3))]),
         Assign("Answer",None,Div(Pow(Add(IntLiteral(2),Neg(Call("Y"))),Mul(IndexAccess([IntLiteral(0)],"X"),IntLiteral(2))),IntLiteral(5)))
         ]
     checker.visit(nodes)
     
-    assert checker.lookup("Answer") == 0.2
+    assert checker.lookup_var("Answer") == float(0.2)
 
 def test_it_pass_arithmetic_var_struct():
     checker = make_checker()
@@ -39,4 +39,4 @@ def test_it_pass_arithmetic_var_struct():
     ]
     checker.visit(nodes)
     
-    assert checker.lookup("Answer") == 417
+    assert checker.lookup_var("Answer") == int(417)

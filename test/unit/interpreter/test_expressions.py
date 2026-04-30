@@ -223,6 +223,16 @@ def test_var_struct():
 def test_call(capsys):
     checker = make_checker()
     
+    checker.f_table = {"X":{"params":None, "body":[Output([StringLiteral("Test")])]}}
+    node = Call("X")
+    checker.visit(node)
+    
+    captured = capsys.readouterr()
+    assert captured.out.strip() == "Test"
+    
+def test_call_witharguments(capsys):
+    checker = make_checker()
+    
     checker.f_table = {"X":{"params":["Y"], "body":[Output([Var("Y")])]}}
     nodes = [
         Call("X", [IntLiteral(1)]),

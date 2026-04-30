@@ -684,7 +684,7 @@ class InterpreterVisitor(Visitor):
     def visit_call(self, node):
         self.sync_type_checker() # Sync current runtime types without checking the whole function body
         function = self.f_table[node.name]
-        params = function["params"]
+        params = function["params"] or []
         body = function["body"]
         args = node.args or []
         

@@ -248,6 +248,16 @@ def test_foreach_break(capsys):
 def test_define():
     checker = make_checker()
     
+    node = Define("X",None,[
+        Output(StringLiteral("Test"))
+    ])
+    checker.visit(node)
+    
+    assert str(checker.f_table) == str({"X":{"params":None,"body":[Output(StringLiteral("Test"))]}})
+    
+def test_define_witharguments():
+    checker = make_checker()
+    
     node = Define("X", ["Y"], [
         Output([Var("Y")])
     ])

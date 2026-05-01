@@ -152,7 +152,10 @@ class ASTBuilder(Transformer):
         return self._pos(Expression(tree.children[0]), tree)
 
     def input_stmt(self, tree):
-        return self._pos(Input(tree.children[0]), tree)
+        indexing = tree.children[0]
+        name = tree.children[1]
+        base = tree.children[2] if len(tree.children) > 2 else None
+        return self._pos(Input(indexing,name,base), tree)
 
     def output_stmt(self, tree):
         return self._pos(Output(tree.children[0]), tree)
@@ -232,7 +235,7 @@ class ASTBuilder(Transformer):
         return self._pos(IndexAccess(indexing, target, base), tree)
 
     def indexing(self, tree):
-        return tree.children
+        return tree.children or []
 
     def index_expr(self, tree):
         return tree.children[0]

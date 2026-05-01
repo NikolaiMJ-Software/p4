@@ -201,6 +201,7 @@ class InterpreterVisitor(Visitor):
         return value
 
 
+
     # LITERALS
     def visit_int_literal(self, node):
         return RuntimeValue("int", node.value)
@@ -476,9 +477,31 @@ class InterpreterVisitor(Visitor):
         return self.visit(node.value)
 
     def visit_input(self, node):
-        result_type = self.check_expression_type(node)
-        user_value = input()
-        self.v_table[node.name] = RuntimeValue("str", user_value)
+        self.check_expression_type(node)
+
+        value = RuntimeValue("str", input())
+        indexing = node.indexing
+        name = node.name
+        base = node.base
+        scope = self.v_table
+
+        # Find the scope whith the variable we want to change
+        if base:
+            while base not in scope:
+                scope = scope.get("__parent__")
+            scope = scope[base]
+        else:
+            while name not in scope:
+                scope = scope.get("__parent__")
+                
+        if indexing: # Handle if the variable is a list
+            scope = scope[name] # can safely enter variable as we know its a list
+            indices = [self.unwrap(self.visit(i)) for i in indexing][::-1] # reverse list because of our syntax
+            for index in indices[:-1]:
+                scope = scope[index]
+            scope[indices[-1]] = value
+        else: # standard case if variable is not a list
+            scope[name] = value
     
     def visit_output(self, node):
         self.check_expression_type(node)
@@ -497,6 +520,8 @@ class InterpreterVisitor(Visitor):
             processed.append(v)
 
         print(*processed)
+
+
 
     # EXPRESSIONS
     def visit_or_expr(self, node):
@@ -658,7 +683,6 @@ class InterpreterVisitor(Visitor):
             left ** right
         )
 
-    
     def visit_neg(self, node):
         result_type = self.check_expression_type(node)
 

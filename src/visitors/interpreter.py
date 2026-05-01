@@ -41,6 +41,14 @@ class InterpreterVisitor(Visitor):
             scope = scope.get("__parent__")
         return False
     
+    def lookup_fun(self, name):
+        scope = self.f_table
+
+        while scope:
+            if name in scope:
+                return self.unwrap(scope[name])
+            scope = scope.get("__parent__")
+        return False
 
 
     # TYPE CHECK INTEGRATION
@@ -80,14 +88,10 @@ class InterpreterVisitor(Visitor):
 
     def sync_type_checker(self):
         type_table = {}
-
         scope = self.v_table
-        while scope:
-            for name, value in scope.items():
-                if name != "__parent__" and name not in type_table:
-                    type_table[name] = self.runtime_to_type(value)
-
-            scope = scope.get("__parent__")
+        
+        for name, value in scope.items():
+            type_table[name] = self.runtime_to_type(value)
 
         self.type_checker.v_table = type_table
         self.type_checker.f_table = self.f_table
@@ -258,7 +262,7 @@ class InterpreterVisitor(Visitor):
             lst = self.lookup_var(node.target.base)[node.target.target]
         else:
             lst = self.lookup_var(node.target.target)
-        indices = [self.unwrap(self.visit(i)) for i in node.target.indexing][::-1] # reverse list because of our syntax
+        indices = [self.unwrap(self.visit(i)) for i in node.target.indexing] # reverse list because of our syntax
         for index in indices[:-1]: # get to last guaranteed list to preserve pointer
             lst = lst[index]
         lst[indices[-1]] = value
@@ -270,6 +274,8 @@ class InterpreterVisitor(Visitor):
             # Save outer scope and create if scope
             old = self.v_table
             self.v_table = {"__parent__": old}
+            old_fun = self.f_table
+            self.f_table = {"__parent__": old_fun}
             try:
                 # Run each statement inside if body
                 for stmt in node.body:
@@ -277,6 +283,7 @@ class InterpreterVisitor(Visitor):
             finally:
                 # Restore outer scope after if body
                 self.v_table = old
+                self.f_table = old_fun
             return
 
         # Check all else-if branches
@@ -288,6 +295,8 @@ class InterpreterVisitor(Visitor):
                 # Save outer scope and create else-if scope
                 old = self.v_table
                 self.v_table = {"__parent__": old}
+                old_fun = self.f_table
+                self.f_table = {"__parent__": old_fun}
 
                 try:
                     # Run each statement inside else-if body
@@ -296,6 +305,7 @@ class InterpreterVisitor(Visitor):
                 finally:
                     # Restore outer scope after else-if body
                     self.v_table = old
+                    self.f_table = old_fun
                 return
 
         # Run else branch if no previous condition matched
@@ -303,6 +313,8 @@ class InterpreterVisitor(Visitor):
             # Save outer scope and create else scope
             old = self.v_table
             self.v_table = {"__parent__": old}
+            old_fun = self.f_table
+            self.f_table = {"__parent__": old_fun}
             try:
                 # Run each statement inside else body
                 for stmt in node.elses:
@@ -310,10 +322,12 @@ class InterpreterVisitor(Visitor):
             finally:
                 # Restore outer scope after else body
                 self.v_table = old
+                self.f_table = old_fun
 
     def visit_while(self, node):
         # Save outer scope
         old = self.v_table
+        old_fun = self.f_table
         try:
             while True:
                 # Type check condition only
@@ -324,6 +338,7 @@ class InterpreterVisitor(Visitor):
 
                 # Create fresh scope for this iteration
                 self.v_table = {"__parent__": old}
+                self.f_table = {"__parent__": old_fun}
 
                 try:
                     # Run each statement inside while body
@@ -337,17 +352,21 @@ class InterpreterVisitor(Visitor):
                 finally:
                     # Remove loop body scope before next iteration
                     self.v_table = old
+                    self.f_table = old_fun
 
         finally:
             # Restore outer scope after while is done
             self.v_table = old
+            self.f_table = old
                 
     def visit_dowhile(self, node):
         old = self.v_table
+        old_fun = self.f_table
         try:
             while True:
                 # Create fresh body scope for this iteration
                 self.v_table = {"__parent__": old}
+                self.f_table = {"__parent__": old_fun}
 
                 try:
                     # Run each statement inside do-while body
@@ -361,6 +380,7 @@ class InterpreterVisitor(Visitor):
                 finally:
                     # Remove body scope before checking condition / next iteration
                     self.v_table = old
+                    self.f_table = old_fun
 
                 # Type check condition only
                 self.check_expression_type(node.cond)
@@ -372,6 +392,7 @@ class InterpreterVisitor(Visitor):
         finally:
             # Restore outer scope after do-while is done
             self.v_table = old
+            self.f_table = old_fun
             
     def visit_forrange(self, node):
         self.check_expression_type(node)
@@ -387,6 +408,8 @@ class InterpreterVisitor(Visitor):
         # Save outer scope and create for-range scope
         old = self.v_table
         self.v_table = {"__parent__": old}
+        old_fun = self.f_table
+        self.f_table = {"__parent__": old_fun}
 
         try:
             start_stop_range = range(start, end + 1) if not reverse else reversed(range(start, end + 1))
@@ -394,6 +417,7 @@ class InterpreterVisitor(Visitor):
             for i in start_stop_range:
                 # Save loop scope before this iteration
                 old_table = self.v_table.copy()
+                old_f_table = self.f_table.copy()
                 # Set current loop variable as int RuntimeValue
                 self.v_table[node.name] = RuntimeValue("int", i)
 
@@ -409,10 +433,12 @@ class InterpreterVisitor(Visitor):
                 finally:
                     # Restore loop scope before next iteration
                     self.v_table = old_table
+                    self.f_table = old_f_table
 
         finally:
             # Restore outer scope after for-range is done
             self.v_table = old
+            self.f_table = old_fun
     
     def visit_foreach(self, node):
         self.check_expression_type(node)
@@ -429,12 +455,15 @@ class InterpreterVisitor(Visitor):
         # Save outer scope and create foreach scope
         old = self.v_table
         self.v_table = {"__parent__": old}
+        old_fun = self.f_table
+        self.f_table = {"__parent__": old_fun}
 
         try:
             # Go through each item in the list
             for item in collection:
                 # Save loop scope before this iteration
                 old_table = self.v_table.copy()
+                old_f_table = self.f_table.copy()
 
                 # Set current loop variable
                 self.v_table[node.name] = item
@@ -451,10 +480,12 @@ class InterpreterVisitor(Visitor):
                 finally:
                     # Restore loop scope before next iteration
                     self.v_table = old_table
+                    self.f_table = old_f_table
 
         finally:
             # Restore outer scope after foreach is done
             self.v_table = old
+            self.f_table = old_fun
     
     def visit_define(self, node):
         result_type = self.check_expression_type(node)
@@ -705,8 +736,8 @@ class InterpreterVisitor(Visitor):
             return self.lookup_var(node.name)
     
     def visit_call(self, node):
-        self.sync_type_checker() # Sync current runtime types without checking the whole function body
-        function = self.f_table[node.name]
+        self.check_expression_type(node) # Sync current runtime types without checking the whole function body
+        function = self.lookup_fun(node.name)
         params = function["params"] or []
         body = function["body"]
         args = node.args or []
@@ -720,7 +751,8 @@ class InterpreterVisitor(Visitor):
             "__parent__": old,
             **local_vars
         }
-
+        old_fun = self.f_table
+        self.f_table = {"__parent__": old_fun}
         try:
             for stmt in body:
                 self.visit(stmt)
@@ -730,6 +762,7 @@ class InterpreterVisitor(Visitor):
 
         finally:
             self.v_table = old # Always restore scope after the function call
+            self.f_table = old_fun
 
         return None
     
@@ -741,7 +774,7 @@ class InterpreterVisitor(Visitor):
             lst_base = self.lookup_var(node.base)
             lst = lst_base[node.target]
 
-        for index in reversed(node.indexing):
+        for index in node.indexing:
             index = self.unwrap(self.visit(index)) # convert from Literal-Class to primal value
             lst = lst[index]
         return lst

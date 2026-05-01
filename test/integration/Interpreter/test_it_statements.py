@@ -121,31 +121,18 @@ def test_forrange_with_if_if_else_else_and_output(capsys):
 
 def test_foreach_from_list_including_input(monkeypatch):
     checker = make_checker()
-
-    inputs = iter(["Bye", "Bye", "Bye"])
-    monkeypatch.setattr("builtins.input", lambda: next(inputs))
-
-    nodes = [
-        CreateList("List", [
-            StringLiteral("Hello"),
-            StringLiteral("Hello"),
-            StringLiteral("Hello")
-        ]),
-        CreateVariable("I", IntLiteral(0)),
-        CreateVariable("InputValue"),
-        Foreach("Element", Var("List"), [
-            Input("InputValue"),
-
-            AssignIndex(
-                IndexAccess([Var("I")], Var("List")),
-                Var("InputValue")
-            ),
-            Assign("I", None, Add(Var("I"), IntLiteral(1)))
+    
+    monkeypatch.setattr("builtins.input", lambda: "Bye")
+    
+    node = [
+        CreateList("List",[StringLiteral("Hello"), StringLiteral("Hello"), StringLiteral("Hello")]),
+        Foreach("Element","List",[
+            Input(IndexAccess([Var("Element")], Var("List")))
         ])
     ]
-
-    checker.visit(nodes)
-
-    assert checker.unwrap_list(checker.lookup_var("List")) == ["Bye", "Bye", "Bye"]
+    
+    checker.visit(node)
+    
+    assert checker.unwrap_list(checker.lookup_var("List")) == ["Bye","Bye","Bye"]
 
 #needs to be done: function creation/call, return, foreach, input

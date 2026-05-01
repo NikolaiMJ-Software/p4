@@ -122,10 +122,12 @@ class Expression(ASTNode):
     def __repr__(self):
         return f"Expr({self.value})"
 class Input(ASTNode):
-    def __init__(self, value):
-        self.name = value
+    def __init__(self, indexing, name, base=None):
+        self.indexing = indexing
+        self.name = name
+        self.base = base
     def __repr__(self):
-        return f"Input({self.name})"
+        return f"Input({self.indexing,self.name,self.base})"
 class Output(ASTNode):
     def __init__(self, value):
         self.value = value

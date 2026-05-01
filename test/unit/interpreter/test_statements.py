@@ -79,7 +79,7 @@ def test_assignindex():
     # insert list X:[[1,[2,3],4],5]
     checker.v_table = {"X":[[RuntimeValue("int",1),[RuntimeValue("int",2),RuntimeValue("int",3)],RuntimeValue("int",4)],RuntimeValue("int",5)]}
     # assign X[0][1][1] = 0    (this would 3 exchanged for 0)
-    node = AssignIndex(IndexAccess([IntLiteral(1),IntLiteral(1),IntLiteral(0)],"X",None),IntLiteral(0))
+    node = AssignIndex(IndexAccess([IntLiteral(0),IntLiteral(1),IntLiteral(1)],"X",None),IntLiteral(0))
     checker.visit(node)
     
     assert str(checker.v_table) == str({"X":[[RuntimeValue("int",1),[RuntimeValue("int",2),RuntimeValue("int",0)],RuntimeValue("int",4)],RuntimeValue("int",5)]})
@@ -88,7 +88,7 @@ def test_assignindex_struct():
     checker = make_checker()
     
     checker.v_table = {"X":{"Y":[[RuntimeValue("int",1),RuntimeValue("int",2)],RuntimeValue("int",3)]}}
-    node = AssignIndex(IndexAccess([IntLiteral(1),IntLiteral(0)],"Y","X"),IntLiteral(0))
+    node = AssignIndex(IndexAccess([IntLiteral(0),IntLiteral(1)],"Y","X"),IntLiteral(0))
     checker.visit(node)
    
     assert str(checker.v_table) == str({"X":{"Y":[[RuntimeValue("int",1),RuntimeValue("int",0)],RuntimeValue("int",3)]}})

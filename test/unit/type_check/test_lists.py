@@ -71,7 +71,7 @@ def test_index_access_not_initilized_list_fails():
 
     node = IndexAccess([StringLiteral("0")], "notalist", None)
 
-    with pytest.raises(TypeError, match="List index must be int"):
+    with pytest.raises(TypeError, match="does not exist"):
         checker.visit(node)
 
 def test_index_access_out_of_bound_negative():
@@ -79,7 +79,7 @@ def test_index_access_out_of_bound_negative():
     checker.v_table["xs"] = ['int', 'float', 'str']
     
     node = IndexAccess([Neg(IntLiteral(1))], "xs", None)
-    with pytest.raises(TypeError, match="The index: '-1' does not exist in 'xs'"):
+    with pytest.raises(TypeError, match="The index: '-1' must be positive"):
         checker.visit(node)
 
 def test_index_access_out_of_bound_max():

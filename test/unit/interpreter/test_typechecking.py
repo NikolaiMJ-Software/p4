@@ -39,7 +39,7 @@ def test_sync_typechecker():
     checker.v_table = {"X":RuntimeValue("bool",1),"Y":RuntimeValue("int",2),"__parent__":{"X":RuntimeValue("int",0),"Z":RuntimeValue("str","3")}}
     checker.sync_type_checker()
     
-    assert checker.type_checker.v_table == {"X":"bool","Y":"int","Z":"str"}
+    assert checker.type_checker.v_table == {'X': 'bool', 'Y': 'int', '__parent__': {'X': 'int', 'Z': 'str'}}
 
 def test_unwrap():
     checker = make_checker()

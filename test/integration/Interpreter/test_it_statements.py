@@ -93,5 +93,59 @@ def test_do_while_loop():
     checker.visit(node)
     
     assert checker.unwrap(checker.lookup_var("X")) == 12
+    
+def test_forrange_with_if_if_else_else_and_output(capsys):
+    checker = make_checker()
+    
+    node = [
+        CreateVariable("X", StringLiteral("Hej!, ")),
+        Forrange("V",IntLiteral(1),IntLiteral(10),[
+            If(EqualExpr(Var("X"),StringLiteral("Hej!, ")),[
+                 Assign("X", None, Add(Var("X"), StringLiteral("med dig!, ")))
+            ],[
+                [EqualExpr(Var("X"), StringLiteral("Hej!, med dig!, ")),[Assign("X", None, Add(Var("X"), StringLiteral("the cake is a lie!")))]]],
+            [
+                Assign("X", None, Add(Var("X"), StringLiteral("!")))
+            ])
+        ]),
+        Output([Var("X")])
+    ]    
+    
+    checker.visit(node)
+    
+    text = capsys.readouterr()
 
-#needs to be done: else if, else, function creation/call, return, forrange, foreach, input, output
+    assert text.out.strip() == "Hej!, med dig!, the cake is a lie!!!!!!!!!"
+    
+    assert checker.unwrap(checker.lookup_var("X")) == "Hej!, med dig!, the cake is a lie!!!!!!!!!"
+
+def test_foreach_from_list_including_input(monkeypatch):
+    checker = make_checker()
+
+    inputs = iter(["Bye", "Bye", "Bye"])
+    monkeypatch.setattr("builtins.input", lambda: next(inputs))
+
+    nodes = [
+        CreateList("List", [
+            StringLiteral("Hello"),
+            StringLiteral("Hello"),
+            StringLiteral("Hello")
+        ]),
+        CreateVariable("I", IntLiteral(0)),
+        CreateVariable("InputValue"),
+        Foreach("Element", Var("List"), [
+            Input("InputValue"),
+
+            AssignIndex(
+                IndexAccess([Var("I")], Var("List")),
+                Var("InputValue")
+            ),
+            Assign("I", None, Add(Var("I"), IntLiteral(1)))
+        ])
+    ]
+
+    checker.visit(nodes)
+
+    assert checker.unwrap_list(checker.lookup_var("List")) == ["Bye", "Bye", "Bye"]
+
+#needs to be done: function creation/call, return, foreach, input

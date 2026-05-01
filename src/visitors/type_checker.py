@@ -17,6 +17,15 @@ class TypeCheckerVisitor(Visitor):
                 return scope[name]
             scope = scope.get("__parent__")
         return False
+    
+    def lookup_fun(self, name):
+        scope = self.f_table
+
+        while scope:
+            if name in scope:
+                return scope[name]
+            scope = scope.get("__parent__")
+        return False
 
     def is_numeric(self, t):
         return t in ["int", "float"]
@@ -184,16 +193,19 @@ class TypeCheckerVisitor(Visitor):
         # Check if target node exist
         self.visit(node.target)
 
-        # Get the list and index
+        # Get the list
         target = node.target
-        v_table = self.v_table[target.base] if target.base else self.v_table
+        v_table = self.lookup_var(target.base)[target.target] if target.base else self.lookup_var(target.target)
+        target_list = v_table
         
-        target_list = v_table[target.target]
-        index = target.indexing[0].value
+        indexes = [i.value for i in target.indexing] # Convert IntLiteral to a list of values
+        # Go to last index in the target list
+        for i in indexes[:-1]:
+            target_list = target_list[i]
         
-        # Save type in the list
+        # Save the new value(s) in the last index of the target list
         var_type = self.visit(node.value)
-        target_list[index] = var_type
+        target_list[indexes[-1]] = var_type
         return var_type
 
     def visit_return(self, node):
@@ -220,14 +232,14 @@ class TypeCheckerVisitor(Visitor):
 
     def visit_call(self, node):
         # Check if the function are already definend, then get its data
-        if node.name not in self.f_table:
+        if self.lookup_fun(node.name) is False:
             raise TypeError(
                 self.code,
                 node,
                 f"The function: '{node.name}' does not exist"
             )
 
-        func = self.f_table[node.name]
+        func = self.lookup_fun(node.name)
         
         params = func["params"] or []
         args = node.args or []
@@ -252,6 +264,8 @@ class TypeCheckerVisitor(Visitor):
         }
         old = self.v_table.copy()
         self.v_table = new_scope
+        old_fun = self.f_table.copy()
+        self.f_table = {"__parent__": old_fun}
 
         # Typecheck the function
         return_type = None
@@ -262,6 +276,7 @@ class TypeCheckerVisitor(Visitor):
 
         # Restore old scope
         self.v_table = {**old, **self.v_table["__parent__"]}
+        self.f_table = old_fun
 
         return return_type
 
@@ -498,21 +513,27 @@ class TypeCheckerVisitor(Visitor):
         # Checks statements inside if body
         parent = self.v_table
         self.v_table = {"__parent__": parent}
+        old_fun = self.f_table
+        self.f_table = {"__parent__": old_fun}
 
         for stmt in node.body:
             self.visit(stmt)
 
         self.v_table = parent
+        self.f_table = old_fun
 
         # Checks statements inside else body
         if node.elses:
             parent = self.v_table
             self.v_table = {"__parent__": parent}
+            old_fun = self.f_table
+            self.f_table = {"__parent__": old_fun}
 
             for stmt in node.elses:
                 self.visit(stmt)
 
             self.v_table = parent
+            self.f_table = old_fun
 
         # Checks all elif branches
         if node.elifs:
@@ -527,11 +548,14 @@ class TypeCheckerVisitor(Visitor):
 
                 parent = self.v_table
                 self.v_table = {"__parent__": parent}
+                old_fun = self.f_table
+                self.f_table = {"__parent__": old_fun}
 
                 for stmt in body:
                     self.visit(stmt)
 
                 self.v_table = parent
+                self.f_table = old_fun
 
         return None
 
@@ -547,6 +571,8 @@ class TypeCheckerVisitor(Visitor):
         # saves current scope
         old = self.v_table.copy()
         self.v_table = {"__parent__": self.v_table}
+        old_fun = self.f_table.copy()
+        self.f_table = {"__parent__": old_fun}
 
         # Checks all statements inside loop body
         for stmt in node.body:
@@ -554,6 +580,7 @@ class TypeCheckerVisitor(Visitor):
 
         #restore previous scope
         self.v_table = {**old, **self.v_table["__parent__"]}
+        self.f_table = old_fun
 
         return None
 
@@ -561,11 +588,14 @@ class TypeCheckerVisitor(Visitor):
         # Saves current scope
         old = self.v_table.copy()
         self.v_table = {"__parent__": self.v_table}
+        old_fun = self.f_table.copy()
+        self.f_table = {"__parent__": old_fun}
         # Checks body
         for stmt in node.body:
             self.visit(stmt)
         # Restore previous scope
         self.v_table = {**old, **self.v_table["__parent__"]}
+        self.f_table = old_fun
 
         # check condition
         cond_type = self.visit(node.cond)
@@ -605,58 +635,68 @@ class TypeCheckerVisitor(Visitor):
 
 
     def visit_index_access(self, node):
-        # Make sure the index is a 'int'
-        index_type = self.visit(node.indexing[0])
-        if index_type != "int":
-            raise TypeError(
-                self.code,
-                node,
-                f"List index must be int, got {index_type}"
-            )
-        
         # Check if the list is in a struct
-        v_table = self.v_table
+        table = None
         if node.base:
-            if self.lookup_var(node.base) is False:
+            table = self.lookup_var(node.base)
+            if table is False:
                 raise TypeError(
                     self.code,
                     node,
                     f"The struct: '{node.base}' is not defined"
                 )
-            else:
-                v_table = self.lookup_var(node.base)
+            table = table[node.target] if node.target in table else False
+        else:
+            table = self.lookup_var(node.target)
 
-        # Check if the list exist in v_table
-        if node.target not in v_table:
+        # Check if the list exist in table
+        if table is False:
             raise TypeError(
                 self.code,
                 node,
                 f"The list: '{node.target}' does not exist"
             )
-        
-        # Make sure it's a list
-        target_list = v_table[node.target]
-        if not isinstance(target_list, list):
-            raise TypeError(
-                self.code,
-                node,
-                f"The variable: '{node.target}' in not a list"
-            )
 
-        # Make sure the index is eather positive or negative
-        index = node.indexing[0].value
-        if not isinstance(index, int):
-            index = -index.value
-
-        # Check if the index are out of bound
-        if 0 <= index and index <= len(target_list) - 1:
-            return target_list[index]
-        else:
-            raise TypeError(
-                self.code,
-                node,
-                f"The index: '{index}' does not exist in '{node.target}'"
-            )
+        # Find the index
+        target_list = table
+        for i in node.indexing:
+            # Make sure it's a list
+            if not isinstance(target_list, list):
+                raise TypeError(
+                    self.code,
+                    node,
+                    f"The target: '{target_list}' is not a list"
+                )
+            
+            # Make sure the index is a 'int'
+            index_type = self.visit(i)
+            if index_type != "int":
+                raise TypeError(
+                    self.code,
+                    node,
+                    f"List index must be int, got {index_type}"
+                )
+            
+            # Check if the index is positive
+            index = i.value
+            if not isinstance(index, int):
+                raise TypeError(
+                    self.code,
+                    node,
+                    f"The index: '{-index.value}' must be positive"
+                )
+                
+            # Check if the index are out of bound
+            if 0 <= index and index <= len(target_list) - 1:
+                target_list = target_list[index]
+            else:
+                raise TypeError(
+                    self.code,
+                    node,
+                    f"The index: '{index}' does not exist in '{node.target}'"
+                )    
+            
+        return target_list
 
 
     def visit_forrange(self, node):
@@ -674,6 +714,8 @@ class TypeCheckerVisitor(Visitor):
         # Saves old scope and creates loop variable
         old = self.v_table.copy()
         self.v_table = {"__parent__": self.v_table}
+        old_fun = self.f_table
+        self.f_table = {"__parent__": old_fun}
         self.v_table[node.name] = "int"
 
         # Checks all statements inside loop body once
@@ -682,6 +724,7 @@ class TypeCheckerVisitor(Visitor):
 
         # Restore previous scope
         self.v_table = {**old, **self.v_table["__parent__"]}
+        self.f_table = old_fun
         return None
 
     def visit_foreach(self, node):
@@ -705,6 +748,8 @@ class TypeCheckerVisitor(Visitor):
         # Saves old scope
         old = self.v_table.copy()
         self.v_table = {"__parent__": self.v_table}
+        old_fun = self.f_table.copy()
+        self.f_table = {"__parent__": old_fun}
         
         # Checks all statements inside loop body once
         for item in collection_type:
@@ -716,6 +761,7 @@ class TypeCheckerVisitor(Visitor):
 
         # Restores previous scope
         self.v_table = {**old, **self.v_table["__parent__"]}
+        self.f_table = old_fun
         return None
         
     def visit_input(self, node):

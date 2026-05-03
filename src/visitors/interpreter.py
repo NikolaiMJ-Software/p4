@@ -51,13 +51,28 @@ class InterpreterVisitor(Visitor):
         if isinstance(value, RuntimeValue):
             return value.type
 
+        if isinstance(value, bool):
+            return "bool"
+
+        if isinstance(value, int):
+            return "int"
+
+        if isinstance(value, float):
+            return "float"
+
+        if isinstance(value, str):
+            return "str"
+
         if isinstance(value, list):
             return [self.runtime_to_type(item) for item in value]
 
         if isinstance(value, dict):
             return {
-                name: self.runtime_to_type(field_value) for name, field_value in value.items()
+                name: self.runtime_to_type(field_value)
+                for name, field_value in value.items()
+                if name != "__parent__"
             }
+
         return None
 
     def sync_type_checker(self):

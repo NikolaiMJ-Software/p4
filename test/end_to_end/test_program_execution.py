@@ -5,6 +5,7 @@ from src.ast import builder
 from src.parser import parse
 from src.visitors.interpreter import InterpreterVisitor
 from src.errors import TypeError as TypeCheckError
+from src.errors import InterpreterError
 
 
 def run_program(code, monkeypatch, capsys, inputs=None, slot=999):
@@ -133,7 +134,7 @@ define Play:
     assert output == ["again", "stopped"]
 
 
-def test_e2e_struct_inheritence(monkeypatch, capsys):
+def test_e2e_struct_inheritance(monkeypatch, capsys):
     code ='''create Character with:
     Health is 100
     Name
@@ -439,3 +440,96 @@ define Play:
     output = run_program(code, monkeypatch, capsys, slot=975)
 
     assert output == ["sword"]
+
+
+def test_e2e_function_return_wrong_type_raises(monkeypatch, capsys):
+    code = '''define BadAdd with A:
+    return A + "text"
+
+define Play:
+    output call BadAdd with 10
+'''
+
+    with pytest.raises(TypeCheckError):
+        run_program(code, monkeypatch, capsys, slot=974)
+
+
+def test_e2e_function_parameter_does_not_leak(monkeypatch, capsys):
+    code = '''define Show with X:
+    output X
+
+define Play:
+    call Show with 10
+    output X
+'''
+
+    with pytest.raises(TypeCheckError):
+        run_program(code, monkeypatch, capsys, slot=973)
+
+
+def test_e2e_struct_missing_field_raises(monkeypatch, capsys):
+    code = '''create Player with:
+    Name
+
+define Play:
+    output Health from Player
+'''
+
+    with pytest.raises(TypeCheckError):
+        run_program(code, monkeypatch, capsys, slot=971)
+
+
+def test_e2e_if_condition_must_be_bool(monkeypatch, capsys):
+    code = '''create X is 10
+
+define Play:
+    if X do:
+        output "bad"
+'''
+
+    with pytest.raises(TypeCheckError):
+        run_program(code, monkeypatch, capsys, slot=970)
+
+
+def test_e2e_chance_rejects_string(monkeypatch, capsys):
+    code = '''create CriticalHit
+
+define Play:
+    CriticalHit is chance "yes" in 100
+'''
+
+    with pytest.raises(TypeCheckError):
+        run_program(code, monkeypatch, capsys, slot=968)
+
+
+def test_e2e_between_rejects_string(monkeypatch, capsys):
+    code = '''create Health
+
+define Play:
+    Health is between "low" and 100
+'''
+
+    with pytest.raises(TypeCheckError):
+        run_program(code, monkeypatch, capsys, slot=967)
+
+
+def test_e2e_division_by_zero_raises(monkeypatch, capsys):
+    code = '''define Play:
+    output 10 / 0
+'''
+
+    with pytest.raises(InterpreterError):
+        run_program(code, monkeypatch, capsys, slot=966)
+
+
+def test_e2e_list_index_assignment_can_change_type(monkeypatch, capsys):
+    code = '''create Items is listing: "sword", "shield"
+
+define Play:
+    index 0 of Items is 10
+    output index 0 of Items
+'''
+
+    output = run_program(code, monkeypatch, capsys, slot=965)
+
+    assert output == ["10"]

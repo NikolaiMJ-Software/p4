@@ -12,7 +12,7 @@ define Play:
     output Number + "text"
 '''
 
-    with pytest.raises(TypeCheckError, match="Expected numeric types, got int and str"):
+    with pytest.raises(TypeCheckError, match="Expected numeric types on operation: \\+, got 'int' and 'str'"):
         run_program(code, monkeypatch, capsys)
 
 
@@ -24,7 +24,7 @@ define Play:
     output Number + Text
 '''
 
-    with pytest.raises(TypeCheckError, match="Expected numeric types, got int and str"):
+    with pytest.raises(TypeCheckError, match="Expected numeric types on operation: \\+, got 'int' and 'str'"):
         run_program(code, monkeypatch, capsys)
 
 

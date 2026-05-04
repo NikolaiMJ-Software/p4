@@ -59,7 +59,7 @@ define Play:
     output call BadAdd with 10
 '''
 
-    with pytest.raises(TypeCheckError, match="Expected numeric types, got int and str"):
+    with pytest.raises(TypeCheckError, match="Expected numeric types on operation: \\+, got 'int' and 'str'"):
         run_program(code, monkeypatch, capsys)
 
 

@@ -29,7 +29,7 @@ def test_e2e_for_range_loop(monkeypatch, capsys):
         output I
 '''
 
-    output = run_program(code, monkeypatch, capsys, slot=988)
+    output = run_program(code, monkeypatch, capsys)
 
     assert output == ["1", "2", "3"]
 
@@ -42,7 +42,7 @@ define Play:
         output Item
 '''
 
-    output = run_program(code, monkeypatch, capsys, slot=987)
+    output = run_program(code, monkeypatch, capsys)
 
     assert output == ["sword", "shield", "potion"]
 
@@ -60,7 +60,7 @@ define Play:
         output "else branch"
 '''
 
-    output = run_program(code, monkeypatch, capsys, inputs=["maybe"], slot=984)
+    output = run_program(code, monkeypatch, capsys, inputs=["maybe"])
 
     assert output == ["maybe branch"]
 
@@ -74,6 +74,6 @@ define Play:
     while false
 '''
 
-    output = run_program(code, monkeypatch, capsys, slot=977)
+    output = run_program(code, monkeypatch, capsys,)
 
     assert output == ["ran"]

@@ -13,7 +13,7 @@ define Play:
     output index 2 of Items
 '''
 
-    output = run_program(code, monkeypatch, capsys, slot=990)
+    output = run_program(code, monkeypatch, capsys)
 
     assert output == ["sword", "potion"]
 
@@ -26,7 +26,7 @@ define Play:
     output index 1 of Items
 '''
 
-    output = run_program(code, monkeypatch, capsys, slot=989)
+    output = run_program(code, monkeypatch, capsys)
 
     assert output == ["axe"]
 
@@ -39,7 +39,7 @@ define Play:
     output index 0 of Items
 '''
 
-    output = run_program(code, monkeypatch, capsys, slot=965)
+    output = run_program(code, monkeypatch, capsys)
 
     assert output == ["10"]
 
@@ -51,6 +51,6 @@ define Play:
     output index "zero" of Items
 '''
 
-    with pytest.raises(TypeCheckError):
-        run_program(code, monkeypatch, capsys, slot=982)
+    with pytest.raises(TypeCheckError, match="List index must be int, got str"):
+        run_program(code, monkeypatch, capsys)
 

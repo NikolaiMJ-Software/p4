@@ -13,7 +13,7 @@ define Play:
     output First + Second
 '''
 
-    output = run_program(code, monkeypatch, capsys, slot=985)
+    output = run_program(code, monkeypatch, capsys)
 
     assert output == ["Hello World"]
 
@@ -26,7 +26,7 @@ define Play:
     output Health
 '''
 
-    output = run_program(code, monkeypatch, capsys, slot=980)
+    output = run_program(code, monkeypatch, capsys)
 
     assert output == ["1"]
 
@@ -42,7 +42,7 @@ define Play:
         output "normal"
 '''
 
-    output = run_program(code, monkeypatch, capsys, slot=978)
+    output = run_program(code, monkeypatch, capsys)
 
     assert output == ["critical"]
 
@@ -54,6 +54,6 @@ define Play:
     output X
 '''
 
-    output = run_program(code, monkeypatch, capsys, slot=976)
+    output = run_program(code, monkeypatch, capsys)
 
     assert output == ["-5"]

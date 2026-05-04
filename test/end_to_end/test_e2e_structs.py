@@ -16,7 +16,7 @@ define Play:
     output "Weapon:", Weapon from Game, "Damage:", Weapon_damage from Game
 '''
 
-    output = run_program(code, monkeypatch, capsys, slot=997)
+    output = run_program(code, monkeypatch, capsys)
 
     assert output == ["Weapon: sword Damage: 10"]
 
@@ -34,7 +34,7 @@ define Play:
     output Health from Enemy
 '''
 
-    output = run_program(code, monkeypatch, capsys, slot=995)
+    output = run_program(code, monkeypatch, capsys)
 
     assert output == ["Jeff", "100"]
 
@@ -47,7 +47,7 @@ define Play:
     output index 0 of Items from Player
 '''
 
-    output = run_program(code, monkeypatch, capsys, slot=975)
+    output = run_program(code, monkeypatch, capsys)
 
     assert output == ["sword"]
 
@@ -60,5 +60,5 @@ define Play:
     output Health from Player
 '''
 
-    with pytest.raises(TypeCheckError):
-        run_program(code, monkeypatch, capsys, slot=971)
+    with pytest.raises(TypeCheckError, match="The variable: 'Health' is not defined in the struct: 'Player'"):
+        run_program(code, monkeypatch, capsys)

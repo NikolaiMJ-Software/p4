@@ -12,8 +12,8 @@ define Play:
     output Number + "text"
 '''
 
-    with pytest.raises(TypeCheckError):
-        run_program(code, monkeypatch, capsys, slot=992)
+    with pytest.raises(TypeCheckError, match="Expected numeric types, got int and str"):
+        run_program(code, monkeypatch, capsys)
 
 
 def test_e2e_type_error_for_bad_arithmetic(monkeypatch, capsys):
@@ -24,8 +24,8 @@ define Play:
     output Number + Text
 '''
 
-    with pytest.raises(TypeCheckError):
-        run_program(code, monkeypatch, capsys, slot=983)
+    with pytest.raises(TypeCheckError, match="Expected numeric types, got int and str"):
+        run_program(code, monkeypatch, capsys)
 
 
 def test_e2e_type_error_for_wrong_function_arg_count(monkeypatch, capsys):
@@ -36,8 +36,8 @@ define Play:
     call AddNumbers with 10
 '''
 
-    with pytest.raises(TypeCheckError):
-        run_program(code, monkeypatch, capsys, slot=981)
+    with pytest.raises(TypeCheckError, match="The variable: 'B' does not exist"):
+        run_program(code, monkeypatch, capsys)
 
 
 def test_e2e_if_condition_must_be_bool(monkeypatch, capsys):
@@ -48,8 +48,8 @@ define Play:
         output "bad"
 '''
 
-    with pytest.raises(TypeCheckError):
-        run_program(code, monkeypatch, capsys, slot=970)
+    with pytest.raises(TypeCheckError, match="if condition must be bool, got int"):
+        run_program(code, monkeypatch, capsys)
 
 
 def test_e2e_chance_rejects_string(monkeypatch, capsys):
@@ -59,8 +59,8 @@ define Play:
     CriticalHit is chance "yes" in 100
 '''
 
-    with pytest.raises(TypeCheckError):
-        run_program(code, monkeypatch, capsys, slot=968)
+    with pytest.raises(TypeCheckError, match="chance requires numeric types, got str and int"):
+        run_program(code, monkeypatch, capsys)
 
 
 def test_e2e_between_rejects_string(monkeypatch, capsys):
@@ -70,8 +70,8 @@ define Play:
     Health is between "low" and 100
 '''
 
-    with pytest.raises(TypeCheckError):
-        run_program(code, monkeypatch, capsys, slot=967)
+    with pytest.raises(TypeCheckError, match="between requires numeric types, got str and int"):
+        run_program(code, monkeypatch, capsys)
 
 
 def test_e2e_division_by_zero_raises(monkeypatch, capsys):
@@ -79,5 +79,5 @@ def test_e2e_division_by_zero_raises(monkeypatch, capsys):
     output 10 / 0
 '''
 
-    with pytest.raises(InterpreterError):
-        run_program(code, monkeypatch, capsys, slot=966)
+    with pytest.raises(InterpreterError, match="division by 0"):
+        run_program(code, monkeypatch, capsys)

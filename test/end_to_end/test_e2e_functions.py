@@ -33,7 +33,7 @@ define Play:
     output call AddNumbers with Number1, Number2
 '''
 
-    output = run_program(code, monkeypatch, capsys, slot=994)
+    output = run_program(code, monkeypatch, capsys)
 
     assert output == ["35", "35"]
 
@@ -46,7 +46,7 @@ define Play:
     output call AddNumbers with 10, 25
 '''
 
-    output = run_program(code, monkeypatch, capsys, slot=986)
+    output = run_program(code, monkeypatch, capsys)
 
     assert output == ["35"]
 
@@ -59,8 +59,8 @@ define Play:
     output call BadAdd with 10
 '''
 
-    with pytest.raises(TypeCheckError):
-        run_program(code, monkeypatch, capsys, slot=974)
+    with pytest.raises(TypeCheckError, match="Expected numeric types, got int and str"):
+        run_program(code, monkeypatch, capsys)
 
 
 def test_e2e_function_parameter_does_not_leak(monkeypatch, capsys):
@@ -72,5 +72,5 @@ define Play:
     output X
 '''
 
-    with pytest.raises(TypeCheckError):
-        run_program(code, monkeypatch, capsys, slot=973)
+    with pytest.raises(TypeCheckError, match="The variable: 'X' does not exist"):
+        run_program(code, monkeypatch, capsys)

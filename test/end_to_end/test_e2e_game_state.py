@@ -6,7 +6,7 @@ from src.errors import InterpreterError
 
 
 def test_e2e_save_and_load_game_state(monkeypatch, capsys):
-    slot = 996
+    slot = 4
 
     first_code = '''create Game with:
     Game_status is 0
@@ -36,7 +36,7 @@ define Play:
 
 
 def test_e2e_type_error_does_not_save_broken_game_state(monkeypatch, capsys):
-    slot = 991
+    slot = 3
 
     first_code = '''create Game with:
     Name
@@ -57,7 +57,7 @@ define Play:
     output MissingVariable
 '''
 
-    with pytest.raises(TypeCheckError):
+    with pytest.raises(TypeCheckError, match="The variable: 'MissingVariable' does not exist"):
         run_program(broken_code, monkeypatch, capsys, slot=slot)
 
     third_code = '''create Game with:
@@ -92,7 +92,7 @@ define Play:
         output "Invalid class"
 '''
 
-    output = run_program(code, monkeypatch, capsys, inputs=["warrior"], slot=993)
+    output = run_program(code, monkeypatch, capsys, inputs=["warrior"], slot=5)
 
     assert output == [
         "Choose class",

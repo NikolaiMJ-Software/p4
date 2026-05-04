@@ -127,7 +127,7 @@ def test_foreach_from_list_including_input(monkeypatch):
     node = [
         CreateList("List",[StringLiteral("Hello"), StringLiteral("Hello"), StringLiteral("Hello")]),
         Foreach("Element","List",[
-            Input(IndexAccess([Var("Element")], Var("List")))
+            Input([],IndexAccess([Var("Element")], Var("List")))
         ])
     ]
     

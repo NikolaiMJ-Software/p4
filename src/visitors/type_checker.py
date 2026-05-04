@@ -21,13 +21,13 @@ class TypeCheckerVisitor(Visitor):
     def is_numeric(self, t):
         return t in ["int", "float"]
 
-    def numeric_result_type(self, node, left_type, right_type):
+    def numeric_result_type(self, node, symbol, left_type, right_type):
         # Makes sure both sides are numeric
         if not self.is_numeric(left_type) or not self.is_numeric(right_type):
             raise TypeError(
                 self.code,
                 node,
-                f"Expected numeric types, got {left_type} and {right_type}"
+                f"Expected numeric types on operation: {symbol}, got '{left_type}' and '{right_type}'"
             )
         if "float" in (left_type, right_type):
             return "float"
@@ -270,21 +270,21 @@ class TypeCheckerVisitor(Visitor):
             return "str"
 
         # Otherwise, both sides must be numeric
-        return self.numeric_result_type(node, left_type, right_type)
+        return self.numeric_result_type(node, "+", left_type, right_type)
 
     def visit_sub(self, node):
         #both sides must be numeric
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
 
-        return self.numeric_result_type(node, left_type, right_type)
+        return self.numeric_result_type(node, "-", left_type, right_type)
 
     def visit_mul(self, node):
         #both sides must be numeric
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
 
-        return self.numeric_result_type(node, left_type, right_type)
+        return self.numeric_result_type(node, "*", left_type, right_type)
 
     def visit_div(self, node):
         #both sides must be numeric
@@ -295,7 +295,7 @@ class TypeCheckerVisitor(Visitor):
             raise TypeError(
                 self.code,
                 node,
-                f"Expected numeric types, got {left_type} and {right_type}"
+                f"Expected numeric types on operation: /, got '{left_type}' and '{right_type}'"
             )
 
         #division always returns float
@@ -306,7 +306,7 @@ class TypeCheckerVisitor(Visitor):
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
         
-        return self.numeric_result_type(node, left_type, right_type)
+        return self.numeric_result_type(node, "^", left_type, right_type)
 
     # comparison operators
     def visit_equal_expr(self, node):

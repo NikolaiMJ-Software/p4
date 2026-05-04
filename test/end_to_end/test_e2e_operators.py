@@ -58,7 +58,7 @@ output "Result:", Y + Z
     output = run_program(code, monkeypatch, capsys, inputs=["hello"])
     assert output == ["Result: 10"]
     
-    with pytest.raises(TypeCheckError):
+    with pytest.raises(TypeCheckError, match="Expected numeric types"):
         run_program(code, monkeypatch, capsys, inputs=["str"])
 
 

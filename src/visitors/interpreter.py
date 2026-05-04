@@ -269,7 +269,7 @@ class InterpreterVisitor(Visitor):
         lst[indices[-1]] = value
 
     def visit_if(self, node):
-        self.check_expression_type(node.cond)
+        self.check_expression_type(node)
 
         if self.unwrap(self.visit(node.cond)):
             # Save outer scope and create if scope

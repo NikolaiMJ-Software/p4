@@ -21,13 +21,13 @@ def test_is_numeric():
 def test_numeric_result_type():
     checker = make_checker()
 
-    assert checker.numeric_result_type(None, "int", "int") == "int"
-    assert checker.numeric_result_type(None, "int", "float") == "float"
-    assert checker.numeric_result_type(None, "float", "int") == "float"
-    assert checker.numeric_result_type(None, "float", "float") == "float"
+    assert checker.numeric_result_type(None, "+", "int", "int") == "int"
+    assert checker.numeric_result_type(None, "+", "int", "float") == "float"
+    assert checker.numeric_result_type(None, "+", "float", "int") == "float"
+    assert checker.numeric_result_type(None, "+", "float", "float") == "float"
 
     with pytest.raises(TypeError, match="Expected numeric types"):
-        checker.numeric_result_type(None, "str", "int")
+        checker.numeric_result_type(None, "+", "str", "int")
 
 
 def test_literal_visits():

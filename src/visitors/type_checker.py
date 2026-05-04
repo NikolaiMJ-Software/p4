@@ -30,13 +30,13 @@ class TypeCheckerVisitor(Visitor):
     def is_numeric(self, t):
         return t in ["int", "float"]
 
-    def numeric_result_type(self, node, left_type, right_type):
+    def numeric_result_type(self, node, symbol, left_type, right_type):
         # Makes sure both sides are numeric
         if not self.is_numeric(left_type) or not self.is_numeric(right_type):
             raise TypeError(
                 self.code,
                 node,
-                f"Expected numeric types, got {left_type} and {right_type}"
+                f"Expected numeric types on operation: {symbol}, got '{left_type}' and '{right_type}'"
             )
         if "float" in (left_type, right_type):
             return "float"
@@ -288,21 +288,21 @@ class TypeCheckerVisitor(Visitor):
             return "str"
 
         # Otherwise, both sides must be numeric
-        return self.numeric_result_type(node, left_type, right_type)
+        return self.numeric_result_type(node, "+", left_type, right_type)
 
     def visit_sub(self, node):
         #both sides must be numeric
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
 
-        return self.numeric_result_type(node, left_type, right_type)
+        return self.numeric_result_type(node, "-", left_type, right_type)
 
     def visit_mul(self, node):
         #both sides must be numeric
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
 
-        return self.numeric_result_type(node, left_type, right_type)
+        return self.numeric_result_type(node, "*", left_type, right_type)
 
     def visit_div(self, node):
         #both sides must be numeric
@@ -313,7 +313,7 @@ class TypeCheckerVisitor(Visitor):
             raise TypeError(
                 self.code,
                 node,
-                f"Expected numeric types, got {left_type} and {right_type}"
+                f"Expected numeric types on operation: /, got '{left_type}' and '{right_type}'"
             )
 
         #division always returns float
@@ -324,7 +324,7 @@ class TypeCheckerVisitor(Visitor):
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
         
-        return self.numeric_result_type(node, left_type, right_type)
+        return self.numeric_result_type(node, "^", left_type, right_type)
 
     # comparison operators
     def visit_equal_expr(self, node):
@@ -729,6 +729,7 @@ class TypeCheckerVisitor(Visitor):
 
     def visit_foreach(self, node):
         # List to iterate over must exist
+        target_list = self.lookup_var(node.collection)
         if self.lookup_var(node.collection) is False:
             raise TypeError(
                 self.code,
@@ -736,13 +737,11 @@ class TypeCheckerVisitor(Visitor):
                 f"The list: '{node.collection}' does not exist"
             )
 
-        collection_type = self.v_table[node.collection]
-
         # Only lists can be used in foreach
-        if not isinstance(collection_type, list):
+        if not isinstance(target_list, list):
             raise TypeError(
                 self.code,
-                node,f"Cannot iterate over non-list type '{collection_type}'"
+                node,f"Cannot iterate over non-list type '{target_list}'"
             )
         
         # Saves old scope
@@ -752,7 +751,7 @@ class TypeCheckerVisitor(Visitor):
         self.f_table = {"__parent__": old_fun}
         
         # Checks all statements inside loop body once
-        for item in collection_type:
+        for item in target_list:
             old_table = self.v_table.copy()
             self.v_table[node.name] = item
             for stmt in node.body:

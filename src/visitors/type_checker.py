@@ -737,13 +737,11 @@ class TypeCheckerVisitor(Visitor):
                 f"The list: '{node.collection}' does not exist"
             )
 
-        collection_type = target_list
-
         # Only lists can be used in foreach
-        if not isinstance(collection_type, list):
+        if not isinstance(target_list, list):
             raise TypeError(
                 self.code,
-                node,f"Cannot iterate over non-list type '{collection_type}'"
+                node,f"Cannot iterate over non-list type '{target_list}'"
             )
         
         # Saves old scope
@@ -753,7 +751,7 @@ class TypeCheckerVisitor(Visitor):
         self.f_table = {"__parent__": old_fun}
         
         # Checks all statements inside loop body once
-        for item in collection_type:
+        for item in target_list:
             old_table = self.v_table.copy()
             self.v_table[node.name] = item
             for stmt in node.body:

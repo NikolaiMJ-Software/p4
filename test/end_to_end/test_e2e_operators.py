@@ -46,6 +46,21 @@ define Play:
 
     assert output == ["critical"]
 
+def test_e2e_change_X_to_int_or_str(monkeypatch, capsys):
+    code = """create Y is 5
+create Z is 5
+create X
+input in X
+if X equal "str" do:
+    Z is "Hello"
+output "Result:", Y + Z
+"""
+    output = run_program(code, monkeypatch, capsys, inputs=["hello"])
+    assert output == ["Result: 10"]
+    
+    with pytest.raises(TypeCheckError):
+        run_program(code, monkeypatch, capsys, inputs=["str"])
+
 
 def test_e2e_unary_negative_number(monkeypatch, capsys):
     code = '''create X is -5

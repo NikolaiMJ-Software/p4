@@ -1,6 +1,6 @@
 import pytest
 
-from test.end_to_end.setup_e2e import run_program
+from setup_e2e import run_program
 from src.errors import TypeError as TypeCheckError
 from src.errors import InterpreterError
 

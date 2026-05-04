@@ -36,7 +36,7 @@ define Play:
     call AddNumbers with 10
 '''
 
-    with pytest.raises(TypeCheckError, match="The variable: 'B' does not exist"):
+    with pytest.raises(TypeCheckError, match="Function 'AddNumbers' expects 2 args, got 1"):
         run_program(code, monkeypatch, capsys)
 
 

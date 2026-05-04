@@ -765,21 +765,32 @@ class TypeCheckerVisitor(Visitor):
         return None
         
     def visit_input(self, node):
-        table = self.v_table
+        scope = self.v_table
 
-        while table:
-            if node.name in table:
-                # Input always stores user input as a string
-                table[node.name] = "str"
-                return "str"
-
-            table = table.get("__parent__")
-
-        raise TypeError(
-            self.code,
-            node,
-            f"The variable: '{node.name}' does not exist"
-        )
+        # Find the scope whith the variable we want to change
+        if node.base:
+            while node.base not in scope:
+                if "__parent__" not in scope:
+                    raise TypeError(
+                        self.code,
+                        node,
+                        f"The struct: '{node.base}' does not exist"
+                    )
+                scope = scope.get("__parent__")
+            scope = scope[node.base]
+        else:
+            while node.name not in scope:
+                if "__parent__" not in scope:
+                    raise TypeError(
+                            self.code,
+                            node,
+                            f"The variable: '{node.name}' does not exist"
+                        )
+                scope = scope.get("__parent__")
+        if not node.indexing: # standard case if variable is not a list
+            scope[node.name] = "str"
+            return
+        # cant save data in lists since we literally dont have the index values
 
     def visit_output(self, node):
         # Output has no type, but each printed value must be type checked

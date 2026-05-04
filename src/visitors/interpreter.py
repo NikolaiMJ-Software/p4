@@ -461,7 +461,7 @@ class InterpreterVisitor(Visitor):
 
         try:
             # Go through each item in the list
-            for item in collection:
+            for item in range(len(collection)):
                 # Save loop scope before this iteration
                 old_table = self.v_table.copy()
                 old_f_table = self.f_table.copy()
@@ -529,9 +529,40 @@ class InterpreterVisitor(Visitor):
             scope = scope[name] # can safely enter variable as we know its a list
             indices = [self.unwrap(self.visit(i)) for i in indexing][::-1] # reverse list because of our syntax
             for index in indices[:-1]:
+                if index < 0 or index >= len(scope):
+                    raise InterpreterError(
+                            self.code,
+                            node,
+                            f"Index {index} outside of list: '{scope}'"
+                        )
+                if not isinstance(scope[index],list):
+                    raise InterpreterError(
+                            self.code,
+                            node,
+                            f"Index {index} of the list {scope} is not a list"
+                        )
                 scope = scope[index]
+            if indices[-1] < 0 or indices[-1] >= len(scope):
+                raise InterpreterError(
+                    self.code,
+                    node,
+                    f"Index {indices[-1]} outside of list: '{scope}'"
+                )
+            if not isinstance(scope,list):
+                    raise InterpreterError(
+                            self.code,
+                            node,
+                            f"Index {indices[-1]} of the list {scope} is not a list"
+                        )
             scope[indices[-1]] = value
         else: # standard case if variable is not a list
+            if node.base:
+                if not node.name in scope:
+                    raise InterpreterError(
+                            self.code,
+                            node,
+                            f"Variable '{node.name}' does not exist in struct '{node.base}'"
+                        )
             scope[name] = value
     
     def visit_output(self, node):
@@ -792,12 +823,11 @@ class InterpreterVisitor(Visitor):
     
     def visit_index_access(self, node):
         self.check_expression_type(node) # typecheck
-        if node.base == None: # If not from parent, look up value
-            lst = self.lookup_var(node.target)
-        else: # If has a parent, look up parent, and then find the target value
+        if node.base: # If not from parent, look up value
             lst_base = self.lookup_var(node.base)
             lst = lst_base[node.target]
-
+        else: # If has a parent, look up parent, and then find the target value
+            lst = self.lookup_var(node.target)
         for index in node.indexing:
             index = self.unwrap(self.visit(index)) # convert from Literal-Class to primal value
             lst = lst[index]

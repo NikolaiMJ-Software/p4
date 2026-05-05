@@ -94,3 +94,28 @@ define Play:
         "Your class is: Warrior",
         "Your weapon is: sword"
     ]
+
+def test_e2e_stop_game_while_running(monkeypatch, capsys):
+    # Stop the program with 'Ctrl+c'
+    force_break_code = '''create Game with:
+    Animal
+
+define Play:
+    Animal from Game is "Raccoon"
+    create X
+    input in X
+    Animal from Game is "Panda"
+'''
+
+    output = run_program(force_break_code, monkeypatch, capsys, inputs=[KeyboardInterrupt])
+    assert output == ["Program interrupted. Saving game state..."]
+    
+    # Check the Animal in Game is still 'Raccoon'
+    code2 = '''create Game with:
+    Animal
+
+define Play:
+    output Animal from Game
+'''
+    output = run_program(code2, monkeypatch, capsys)
+    assert output == ["Raccoon"]

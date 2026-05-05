@@ -222,10 +222,10 @@ def test_input():
     
     # X not initilized
     with pytest.raises(TypeError, match="does not exist"):
-        checker.visit(Input("X"))
+        checker.visit(Input([],"X"))
     
     # X are initilized
-    nodes = [CreateVariable("X", None),Input("X")]
+    nodes = [CreateVariable("X", None),Input([],"X")]
     for node in nodes:
         checker.visit(node)
 

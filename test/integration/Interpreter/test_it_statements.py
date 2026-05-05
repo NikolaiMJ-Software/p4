@@ -135,4 +135,34 @@ def test_foreach_from_list_including_input(monkeypatch):
     
     assert checker.unwrap_list(checker.lookup_var("List")) == ["Bye","Bye","Bye"]
 
-#needs to be done: function creation/call, return, foreach, input
+def test_func_create_call_no_params():
+    checker = make_checker()
+    
+    nodes = [
+        CreateVariable("X", FloatLiteral(5.5)),
+        Define("Func", [], [
+            Assign("X", None, Add(Var("X"), FloatLiteral(1.2)))
+        ]),
+        Call("Func", [])
+    ]
+    
+    checker.visit(nodes)
+    
+    assert checker.unwrap(checker.lookup_var("X")) == 6.7
+
+
+def test_func_create_call_return_params():
+    checker = make_checker()
+    
+    nodes = [
+        Define("Func", ["A", "B"], [
+            CreateVariable("Y", Add(Var("A"), Var("B"))),
+            Return(Var("Y"))
+        ]),
+        CreateVariable("X", Call("Func", [IntLiteral(2), IntLiteral(3)]))
+    ]
+    
+    checker.visit(nodes)
+    
+    assert checker.unwrap(checker.lookup_var("X")) == 5
+

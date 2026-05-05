@@ -309,9 +309,9 @@ def test_foreach():
     assert node.data == "foreach_stmt"
     assert node.children[0] == "X"
     assert node.children[1] == "Y"
-    
+
     body = next(child for child in node.children if hasattr(child, "data") and child.data == "mul_stmt")
-    assert len(body.children) == 2
+    assert len(body.children) == 3
     assert body.children[0].data == "assign_v"
     
 

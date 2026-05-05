@@ -828,7 +828,7 @@ class InterpreterVisitor(Visitor):
             lst = lst_base[node.target]
         else: # If has a parent, look up parent, and then find the target value
             lst = self.lookup_var(node.target)
-        for index in node.indexing:
+        for index in node.indexing[::-1]:
             index = self.unwrap(self.visit(index)) # convert from Literal-Class to primal value
             lst = lst[index]
         return lst

@@ -659,7 +659,7 @@ class TypeCheckerVisitor(Visitor):
 
         # Find the index
         target_list = table
-        for i in node.indexing:
+        for i in node.indexing[::-1]:
             # Make sure it's a list
             if not isinstance(target_list, list):
                 raise TypeError(
@@ -677,7 +677,10 @@ class TypeCheckerVisitor(Visitor):
                     f"List index must be int, got {index_type}"
                 )
             
-            # Check if the index is positive
+            
+            # variable index, bounds are checked at runtime
+            if not hasattr(i, "value"):
+                return target_list[0] if target_list else None
             index = i.value
             if not isinstance(index, int):
                 raise TypeError(
@@ -786,10 +789,83 @@ class TypeCheckerVisitor(Visitor):
                             f"The variable: '{node.name}' does not exist"
                         )
                 scope = scope.get("__parent__")
-        if not node.indexing: # standard case if variable is not a list
+
+        if not node.indexing:
+            # normal input, just set variable to string
             scope[node.name] = "str"
-            return
-        # cant save data in lists since we literally dont have the index values
+            return "str"
+
+        # input into a list element
+        target_list = scope[node.name]
+
+        # make sure it's a list
+        if not isinstance(target_list, list):
+            raise TypeError(
+                self.code,
+                node,
+                f"The variable: '{node.name}' is not a list"
+            )
+        
+        # Nested indexes are stored backwards by the AST, thereby they need to be flipped
+        indexes = node.indexing[::-1]
+        for index_node in indexes[:-1]:
+            index_type = self.visit(index_node)
+
+            # index has to be int
+            if index_type != "int":
+                raise TypeError(
+                    self.code,
+                    node,
+                    f"List index must be int, got {index_type}"
+                )
+            # variable index, so no value to check here
+            if not hasattr(index_node, "value"):
+                return "str"
+            index = index_node.value
+
+            # check bounds
+            if index < 0 or index >= len(target_list):
+                raise TypeError(
+                    self.code,
+                    node,
+                    f"The index: '{index}' does not exist in '{node.name}'"
+                )
+
+            # move into the list
+            target_list = target_list[index]
+
+            # if we still have more indexes, this better be a list
+            if not isinstance(target_list, list):
+                raise TypeError(
+                    self.code,
+                    node,
+                    f"Trying to index into something that isn't a list"
+                )
+
+        # final index (this is where we store the input)
+        final_index_node = indexes[-1]
+        final_index_type = self.visit(final_index_node)
+
+        if final_index_type != "int":
+            raise TypeError(
+                self.code,
+                node,
+                f"List index must be int, got {final_index_type}"
+            )
+        if not hasattr(final_index_node, "value"):
+            return "str"
+        final_index = final_index_node.value
+
+        if final_index < 0 or final_index >= len(target_list):
+            raise TypeError(
+                self.code,
+                node,
+                f"The index: '{final_index}' does not exist in '{node.name}'"
+            )
+
+        # input is always string, so overwrite the type
+        target_list[final_index] = "str"
+        return "str"
 
     def visit_output(self, node):
         # Output has no type, but each printed value must be type checked

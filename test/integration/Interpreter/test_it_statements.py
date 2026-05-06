@@ -119,21 +119,52 @@ def test_forrange_with_if_if_else_else_and_output(capsys):
     
     assert checker.unwrap(checker.lookup_var("X")) == "Hej!, med dig!, the cake is a lie!!!!!!!!!"
 
-def test_foreach_from_list_including_input(monkeypatch):
+def test_foreach_from_list_including_input(monkeypatch, capsys):
     checker = make_checker()
-    
+
     monkeypatch.setattr("builtins.input", lambda: "Bye")
-    
+
     node = [
-        CreateList("List",[StringLiteral("Hello"), StringLiteral("Hello"), StringLiteral("Hello")]),
-        Foreach("Element","List",[
-            Input([],IndexAccess([Var("Element")], Var("List")))
+        CreateList("List", [
+            StringLiteral("Hello"),
+            StringLiteral("Hello"),
+            StringLiteral("Hello")
+        ]),
+        CreateVariable("Count", IntLiteral(0)),
+        Foreach("Element", "List", [
+            Input([], "Element", None),
+            AssignIndex(
+                IndexAccess([Var("Count")], "List", None), Var("Element")),
+            Assign("Count", None, Add(Var("Count"), IntLiteral(1)))        ]),
+        Output([Var("List")])
+    ]
+
+    checker.visit(node)
+
+    captured = capsys.readouterr()
+    assert captured.out.strip().splitlines() == [
+        "['Bye', 'Bye', 'Bye']"
+    ]
+
+def test_forrange_from_list_including_input(monkeypatch):
+    checker = make_checker()
+
+    monkeypatch.setattr("builtins.input", lambda: "Bye")
+
+    node = [
+        CreateList("List", [
+            StringLiteral("Hello"),
+            StringLiteral("Hello"),
+            StringLiteral("Hello")
+        ]),
+        Forrange("Index", IntLiteral(0), IntLiteral(2), [
+            Input([Var("Index")], "List", None)
         ])
     ]
-    
+
     checker.visit(node)
-    
-    assert checker.unwrap_list(checker.lookup_var("List")) == ["Bye","Bye","Bye"]
+
+    assert checker.unwrap_list(checker.lookup_var("List")) == ["Bye", "Bye", "Bye"]
 
 def test_func_create_call_no_params():
     checker = make_checker()

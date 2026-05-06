@@ -288,7 +288,7 @@ boolean_in_if_code = """if true and false do:
 # -------------------------
 def test_it_pass_input():
     res = type_check_test(create_var_and_input_in_it)
-    assert [None, None] == res
+    assert [None, "str"] == res
 create_var_and_input_in_it = """create X
 input in X
 """

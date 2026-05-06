@@ -190,22 +190,49 @@ class TypeCheckerVisitor(Visitor):
         return value_type
 
     def visit_assign_index(self, node):
-        # Check if target node exist
+        # Check if target exists and is indexable
         self.visit(node.target)
 
-        # Get the list
         target = node.target
-        v_table = self.lookup_var(target.base)[target.target] if target.base else self.lookup_var(target.target)
-        target_list = v_table
-        
-        indexes = [i.value for i in target.indexing] # Convert IntLiteral to a list of values
-        # Go to last index in the target list
+        target_list = self.lookup_var(target.base)[target.target] if target.base else self.lookup_var(target.target)
+
+        # Nested indexes are stored backwards in the AST, so flip them first
+        indexes = target.indexing[::-1]
+
+        # Move through nested lists until the final index
         for i in indexes[:-1]:
-            target_list = target_list[i]
-        
-        # Save the new value(s) in the last index of the target list
+            index_type = self.visit(i)
+
+            if index_type != "int":
+                raise TypeError(
+                    self.code,
+                    node,
+                    f"List index must be int, got {index_type}"
+                )
+
+            # Dynamic index, so the exact element cannot be resolved during type checking
+            if not hasattr(i, "value"):
+                return self.visit(node.value)
+
+            target_list = target_list[i.value]
+
         var_type = self.visit(node.value)
-        target_list[indexes[-1]] = var_type
+
+        final_index = indexes[-1]
+        final_index_type = self.visit(final_index)
+
+        if final_index_type != "int":
+            raise TypeError(
+                self.code,
+                node,
+                f"List index must be int, got {final_index_type}"
+            )
+
+        # Dynamic final index, so we can only verify the assigned value type
+        if not hasattr(final_index, "value"):
+            return var_type
+
+        target_list[final_index.value] = var_type
         return var_type
 
     def visit_return(self, node):
@@ -731,37 +758,35 @@ class TypeCheckerVisitor(Visitor):
         return None
 
     def visit_foreach(self, node):
-        # List to iterate over must exist
         target_list = self.lookup_var(node.collection)
-        if self.lookup_var(node.collection) is False:
+        if target_list is False:
             raise TypeError(
                 self.code,
                 node,
                 f"The list: '{node.collection}' does not exist"
             )
 
-        # Only lists can be used in foreach
         if not isinstance(target_list, list):
             raise TypeError(
                 self.code,
-                node,f"Cannot iterate over non-list type '{target_list}'"
+                node,
+                f"Cannot iterate over non-list type '{target_list}'"
             )
-        
-        # Saves old scope
+
         old = self.v_table.copy()
         self.v_table = {"__parent__": self.v_table}
         old_fun = self.f_table.copy()
         self.f_table = {"__parent__": old_fun}
-        
-        # Checks all statements inside loop body once
+
         for item in target_list:
             old_table = self.v_table.copy()
             self.v_table[node.name] = item
+
             for stmt in node.body:
                 self.visit(stmt)
+
             self.v_table = old_table
 
-        # Restores previous scope
         self.v_table = {**old, **self.v_table["__parent__"]}
         self.f_table = old_fun
         return None

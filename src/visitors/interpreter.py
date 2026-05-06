@@ -258,15 +258,50 @@ class InterpreterVisitor(Visitor):
 
     def visit_assign_index(self, node):
         self.check_expression_type(node)
+
         value = self.visit(node.value)
+
         if node.target.base:
             lst = self.lookup_var(node.target.base)[node.target.target]
         else:
             lst = self.lookup_var(node.target.target)
-        indices = [self.unwrap(self.visit(i)) for i in node.target.indexing] # reverse list because of our syntax
-        for index in indices[:-1]: # get to last guaranteed list to preserve pointer
+
+        indices = [self.unwrap(self.visit(i)) for i in node.target.indexing][::-1]
+
+        for index in indices[:-1]:
+            if not isinstance(lst, list):
+                raise InterpreterError(
+                    self.code,
+                    node,
+                    f"Trying to index into something that isn't a list"
+                )
+
+            if index < 0 or index >= len(lst):
+                raise InterpreterError(
+                    self.code,
+                    node,
+                    f"Index {index} outside of list: '{self.unwrap_list(lst)}'"
+                )
+
             lst = lst[index]
-        lst[indices[-1]] = value
+
+        final_index = indices[-1]
+
+        if not isinstance(lst, list):
+            raise InterpreterError(
+                self.code,
+                node,
+                f"Trying to assign into something that isn't a list"
+            )
+
+        if final_index < 0 or final_index >= len(lst):
+            raise InterpreterError(
+                self.code,
+                node,
+                f"Index {final_index} outside of list: '{self.unwrap_list(lst)}'"
+            )
+
+        lst[final_index] = value
 
     def visit_if(self, node):
         self.check_expression_type(node)
@@ -358,7 +393,7 @@ class InterpreterVisitor(Visitor):
         finally:
             # Restore outer scope after while is done
             self.v_table = old
-            self.f_table = old
+            self.f_table = old_fun
                 
     def visit_dowhile(self, node):
         old = self.v_table
@@ -461,7 +496,7 @@ class InterpreterVisitor(Visitor):
 
         try:
             # Go through each item in the list
-            for item in range(len(collection)):
+            for item in collection:
                 # Save loop scope before this iteration
                 old_table = self.v_table.copy()
                 old_f_table = self.f_table.copy()

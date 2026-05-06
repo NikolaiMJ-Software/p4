@@ -268,6 +268,6 @@ def test_indexaccess_struct():
     checker = make_checker()
     
     checker.v_table = {"X":{"Z":[[int(1),int(2),int(3)],int(4),int(5)]}}
-    node = IndexAccess([IntLiteral(0), IntLiteral(1)], "Z", "X")
+    node = IndexAccess([IntLiteral(1), IntLiteral(0)], "Z", "X")
     
     assert checker.unwrap(checker.visit(node)) == 2

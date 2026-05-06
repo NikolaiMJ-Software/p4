@@ -126,6 +126,20 @@ def test_create_list():
     assert third_item.data == "var"
     assert third_item.children[0] == "C"
 
+def test_create_empty_list():
+    tree = parse("create X is listing:\n")
+    node = tree.children[0]
+
+    assert node.data == "create_l"
+    assert node.children[0] == "X"
+
+
+def test_create_nested_list():
+    tree = parse("create X is listing: 1, listing: 2, 3\n")
+    node = tree.children[0]
+
+    assert node.data == "create_l"
+
 #Stucts
 def test_create_struct():
     code = """create X with:
@@ -172,6 +186,13 @@ def test_creat_struct_inheritance():
     
     assert tree.children[0].data == "create_s"
 
+def test_struct_empty_list_field():
+    code = """create X with:
+    Items is listing:
+"""
+    tree = parse(code)
+
+    assert tree.children[0].data == "create_s"
 ####################
 # assign functions #
 ####################
@@ -216,6 +237,33 @@ def test_assign_ID_index_value():
 
     assert tree_assign_ID_index.children[0].data == "assign_v"
     assert tree_assign_ID_index_of_index.children[0].data == "assign_v"
+
+def test_assign_index_from_struct_list():
+    tree = parse("index 0 of Inventory from Player is \"Sword\"\n")
+    node = tree.children[0]
+
+    assert node.data == "assign_index"
+
+
+def test_nested_index_access_expr():
+    tree = parse("X is index 1 of index 3 of Y\n")
+    node = tree.children[0]
+
+    assert node.data == "assign_v"
+
+def test_struct_field_access_expr():
+    tree = parse("create X is Health from Zombie\n")
+    node = tree.children[0]
+
+    assert node.data == "create_v"
+    assert node.children[0] == "X"
+
+
+def test_assign_from_struct_field_expr():
+    tree = parse("X is Health from Zombie + 5\n")
+    node = tree.children[0]
+
+    assert node.data == "assign_v"
 
 ################
 # Control Flow #
@@ -275,7 +323,24 @@ while true
     tree = parse(code)
     
     assert tree.children[0].data == "dowhile_stmt"
+def test_stop_inside_while():
+    code = """while true do:
+    stop
+"""
+    tree = parse(code)
 
+    assert tree.children[0].data == "while_stmt"
+
+
+def test_return_inside_if_function():
+    code = """define X:
+    if true do:
+        return 1
+"""
+    tree = parse(code)
+
+    assert tree.children[0].data == "func_def"
+    
 #########
 # Loops #
 #########
@@ -347,6 +412,26 @@ def test_call_param():
     tree = parse("call Function with 1, 2\n")
     assert tree.children[0].data == "expr_stmt"
 
+def test_call_inside_assignment():
+    tree = parse("X is call Damage with 1, 2\n")
+    node = tree.children[0]
+
+    assert node.data == "assign_v"
+
+
+def test_call_inside_output():
+    tree = parse("output call GetHealth\n")
+    node = tree.children[0]
+
+    assert node.data == "output_stmt"
+
+
+def test_call_inside_create():
+    tree = parse("create X is call Roll with 1, 2\n")
+    node = tree.children[0]
+
+    assert node.data == "create_v"
+
 #######
 # I/O #
 #######
@@ -366,6 +451,25 @@ def test_output_index():
     assert tree.children[0].data == "output_stmt"
     assert tree_index.children[0].data == "output_stmt"
     
+def test_input_index():
+    tree = parse("input in index 0 of X\n")
+    node = tree.children[0]
+
+    assert node.data == "input_stmt"
+
+
+def test_input_struct_field():
+    tree = parse("input in Health from Zombie\n")
+    node = tree.children[0]
+
+    assert node.data == "input_stmt"
+
+
+def test_input_index_struct_field():
+    tree = parse("input in index 0 of Inventory from Player\n")
+    node = tree.children[0]
+
+    assert node.data == "input_stmt"
 
 
 ###############
@@ -414,6 +518,46 @@ def test_chance_expression():
     tree_chance_2 = parse("create X is chance 1 in 100\n")
     assert tree_chance_1 is not None
     assert tree_chance_2 is not None
+
+def test_math_precedence_mul_before_add():
+    tree = parse("create X is 1 + 2 * 3\n")
+    expr = tree.children[0].children[1].children[0]
+
+    assert expr.data == "add"
+    assert expr.children[1].data == "mul"
+
+
+def test_math_parentheses_override_precedence():
+    tree = parse("create X is (1 + 2) * 3\n")
+    expr = tree.children[0].children[1].children[0]
+
+    assert expr.data == "mul"
+    assert expr.children[0].data == "add"
+
+
+def test_pow_right_associative():
+    tree = parse("create X is 2^3^4\n")
+    expr = tree.children[0].children[1].children[0]
+
+    assert expr.data == "pow"
+    assert expr.children[1].data == "pow"
+
+
+def test_boolean_precedence_and_before_or():
+    tree = parse("create X is true or false and true\n")
+    expr = tree.children[0].children[1].children[0]
+
+    assert expr.data == "or_expr"
+    assert expr.children[1].data == "and_expr"
+
+
+def test_comparison_inside_boolean_expression():
+    tree = parse("create X is A equal B or C equal D\n")
+    expr = tree.children[0].children[1].children[0]
+
+    assert expr.data == "or_expr"
+    assert expr.children[0].data == "equal_expr"
+    assert expr.children[1].data == "equal_expr"
 
 ############
 # Comments #
@@ -592,4 +736,44 @@ create X is 5
         
 def test_assign_index_allowed_value():
     parse("index 1 of Y is 5 + 1\n")
-        
+
+
+def test_index_missing_of():
+    with pytest.raises(ParseError):
+        parse("X is index 1 Y\n")
+
+
+def test_index_missing_target():
+    with pytest.raises(ParseError):
+        parse("X is index 1 of\n")
+
+
+def test_assign_index_missing_value():
+    with pytest.raises(ParseError):
+        parse("index 1 of X is\n")
+
+
+def test_foreach_missing_array():
+    with pytest.raises(ParseError):
+        parse("""for each X in do:
+    X is 5
+""")
+
+
+def test_call_missing_function_name():
+    with pytest.raises(ParseError):
+        parse("call with 1, 2\n")
+
+
+def test_define_lowercase_name():
+    with pytest.raises(ParseError):
+        parse("""define test:
+    return 1
+""")
+
+
+def test_function_param_lowercase():
+    with pytest.raises(ParseError):
+        parse("""define X with a:
+    return a
+""")

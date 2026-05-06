@@ -1,9 +1,10 @@
 import pytest
+from test.end_to_end.setup_e2e import delete_save_file # Remove save file '999'
 from src.visitors.interpreter import *
 from src.ast.nodes import *
 
 def make_checker():
-    return InterpreterVisitor()
+    return InterpreterVisitor(slot=999)
 
 def test_gamestate_saveload():
     checker = make_checker()

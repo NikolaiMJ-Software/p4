@@ -54,3 +54,19 @@ define Play:
     with pytest.raises(TypeCheckError, match="List index must be int, got str"):
         run_program(code, monkeypatch, capsys)
 
+
+def test_e2e_nested_list_index_access(monkeypatch, capsys):
+    code = '''create X is listing: 1, 2, 3
+index 2 of X is listing: 4, 5
+index 1 of X is listing: 2.1, 2.3, 2.5
+index 0 of index 2 of X is listing: 4, "he he", 9.2
+output X
+
+create Y is 0
+create Z is 2
+output index 2 of index Y of index Z of X       # 9.2
+output index 2 of index Y of index Z + 1 of X   # <----- Error
+'''
+    with pytest.raises(TypeCheckError, match="The index: '3' does not exist in 'X'"):
+        output = run_program(code, monkeypatch, capsys)
+        assert output == ["[1, [2.1, 2.3, 2.5], [[4, 'he he', 9.2], 5]]", "9.2"]

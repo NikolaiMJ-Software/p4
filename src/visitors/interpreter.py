@@ -865,5 +865,14 @@ class InterpreterVisitor(Visitor):
             lst = self.lookup_var(node.target)
         for index in node.indexing[::-1]:
             index = self.unwrap(self.visit(index)) # convert from Literal-Class to primal value
-            lst = lst[index]
+            
+            # Check if the index are out of bound
+            if 0 <= index and index <= len(lst) - 1:
+                lst = lst[index]
+            else:
+                raise TypeError(
+                    self.code,
+                    node,
+                    f"The index: '{index}' does not exist in '{node.target}'"
+                )
         return lst

@@ -1,12 +1,12 @@
-import pytest
+import pytest, json, os
 
 from setup_e2e import *
 from src.errors import TypeError as TypeCheckError
 from src.errors import InterpreterError
 
 
-def test_e2e_save_and_load_game_state(monkeypatch, capsys):
-    first_code = '''create Game with:
+def test_e2e_save_game_state_writes_json(monkeypatch, capsys):
+    code = '''create Game with:
     Game_status is 0
     Name
 
@@ -15,11 +15,30 @@ define Play:
     Name from Game is "Bob"
     output "saved"
 '''
-    output = run_program(first_code, monkeypatch, capsys)
+
+    output = run_program(code, monkeypatch, capsys)
 
     assert output == ["saved"]
 
-    second_code = '''create Game with:
+    with open("src/runtime/save_states/save_slot_999.json", "r") as file:
+        data = json.load(file)
+
+    assert data == {
+        "Game_status": 1,
+        "Name": "Bob"
+    }
+
+
+def test_e2e_load_game_state_from_json(monkeypatch, capsys):
+    os.makedirs("src/runtime/save_states", exist_ok=True)
+
+    with open("src/runtime/save_states/save_slot_999.json", "w") as file:
+        json.dump({
+            "Game_status": 1,
+            "Name": "Bob"
+        }, file)
+
+    code = '''create Game with:
     Game_status is 0
     Name
 
@@ -28,7 +47,7 @@ define Play:
     output Name from Game
 '''
 
-    output = run_program(second_code, monkeypatch, capsys)
+    output = run_program(code, monkeypatch, capsys)
 
     assert output == ["1", "Bob"]
 

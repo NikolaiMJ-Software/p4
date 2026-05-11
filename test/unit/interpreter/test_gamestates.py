@@ -1,5 +1,5 @@
 import pytest
-from test.end_to_end.setup_e2e import delete_save_file # Remove save file '999'
+from end_to_end.setup_e2e import delete_save_file # Remove save file '999'
 from src.visitors.interpreter import *
 from src.ast.nodes import *
 

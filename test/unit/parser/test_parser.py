@@ -354,6 +354,7 @@ def test_forrange():
     node = tree.children[0]
 
     assert node.data == "forrange_stmt"
+    assert len([child for child in node.children if isinstance(child, str) and len(child) and " " not in child]) == 3
     assert node.children[0] == "X"
     assert node.children[1].value == "1"
     assert node.children[2].value == "10"

@@ -242,47 +242,6 @@ class TypeChecker:
 
         return "bool"
 
-    def visit_or_expr(self, node):
-        # OR requires both sides to be bool
-        left_type = self.visit(node.left)
-        right_type = self.visit(node.right)
-
-        if left_type != "bool" or right_type != "bool":
-            raise TypeError(
-                self.code,
-                node,
-                f"OR requires bool, got {left_type} and {right_type}"
-            )
-
-        return "bool"
-
-    def visit_not_expr(self, node):
-        # NOT requires a single bool operand
-        value_type = self.visit(node.cond)
-
-        if value_type != "bool":
-            raise TypeError(
-                self.code,
-                node,
-                f"NOT requires bool, got {value_type}"
-            )
-
-        return "bool"
-
-    def visit_xor_expr(self, node):
-        # XOR requires both sides to be bool
-        left_type = self.visit(node.left)
-        right_type = self.visit(node.right)
-
-        if left_type != "bool" or right_type != "bool":
-            raise TypeError(
-                self.code,
-                node,
-                f"XOR requires bool, got {left_type} and {right_type}"
-            )
-
-        return "bool"
-
     def check_between(self, node, left_type, right_type):
         if not self.is_numeric(left_type) or not self.is_numeric(right_type):
             raise TypeError(

@@ -115,9 +115,7 @@ class TypeChecker:
     def visit_break(self, node):
         return None
 
-    def visit_neg(self, node):
-        value_type = self.visit(node.value)
-
+    def check_neg(self, node, value_type):
         if not self.is_numeric(value_type):
             raise TypeError(
                 self.code,

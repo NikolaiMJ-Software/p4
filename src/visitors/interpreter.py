@@ -798,9 +798,9 @@ class InterpreterVisitor(Visitor):
         )
 
     def visit_neg(self, node):
-        result_type = self.check_expression_type(node)
-
         value = self.visit(node.value)
+
+        result_type = self.type_checker.check_neg(node, value.type)
 
         return RuntimeValue(
             result_type,

@@ -27,8 +27,7 @@ class InterpreterVisitor(Visitor):
         self.v_table = {} # list of variables split into scope levels
         self.f_table = {} # list of defined functions
         self.game_state_manager = GameStateManager(slot) # save-state manager, where slot equals save-file
-        self.type_checker = TypeCheckerVisitor(self.code)
-    
+        self.type_checker = TypeChecker(self.code)    
     
     
     # SCOPE HANDLING
@@ -731,33 +730,47 @@ class InterpreterVisitor(Visitor):
         )
     
     def visit_add(self, node):
-        result_type = self.check_expression_type(node)
-        left = self.unwrap(self.visit(node.left))
-        right = self.unwrap(self.visit(node.right))
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+
+        result_type = self.type_checker.check_add(
+            node,
+            left.type,
+            right.type
+        )
+
         return RuntimeValue(
             result_type,
-            left + right
+            self.unwrap(left) + self.unwrap(right)
         )
     
 
     def visit_mul(self, node):
-        result_type = self.check_expression_type(node)
+        left = self.visit(node.left)
+        right = self.visit(node.right)
 
-        left = self.unwrap(self.visit(node.left))
-        right = self.unwrap(self.visit(node.right))
+        result_type = self.type_checker.check_mul(
+            node,
+            left.type,
+            right.type
+        )
 
         return RuntimeValue(
             result_type,
-            left * right
+            self.unwrap(left) * self.unwrap(right)
         )
 
     def visit_div(self, node):
-        result_type = self.check_expression_type(node)
+        left = self.visit(node.left)
+        right = self.visit(node.right)
 
-        left = self.unwrap(self.visit(node.left))
-        right = self.unwrap(self.visit(node.right))
+        result_type = self.type_checker.check_div(
+            node,
+            left.type,
+            right.type
+        )
 
-        if right == 0:
+        if self.unwrap(right) == 0:
             raise InterpreterError(
                 self.code,
                 node,
@@ -766,18 +779,22 @@ class InterpreterVisitor(Visitor):
 
         return RuntimeValue(
             result_type,
-            left / right
+            self.unwrap(left) / self.unwrap(right)
         )
     
     def visit_pow(self, node):
-        result_type = self.check_expression_type(node)
+        left = self.visit(node.left)
+        right = self.visit(node.right)
 
-        left = self.unwrap(self.visit(node.left))
-        right = self.unwrap(self.visit(node.right))
+        result_type = self.type_checker.check_pow(
+            node,
+            left.type,
+            right.type
+        )
 
         return RuntimeValue(
             result_type,
-            left ** right
+            self.unwrap(left) ** self.unwrap(right)
         )
 
     def visit_neg(self, node):

@@ -3,7 +3,7 @@ from src.errors import Error
 from src.ast.nodes import Return, Var 
 from src.errors import TypeError
 
-class TypeCheckerVisitor(Visitor):
+class TypeChecker:
     def __init__(self, code=""):
         self.code = code
         self.v_table = {}
@@ -307,9 +307,7 @@ class TypeCheckerVisitor(Visitor):
 
         return return_type
 
-    def visit_add(self, node):
-        left_type = self.visit(node.left)
-        right_type = self.visit(node.right)
+    def check_add(self, node, left_type, right_type):
         # Allow string concatenation
         if left_type == "str" and right_type == "str":
             return "str"
@@ -324,18 +322,10 @@ class TypeCheckerVisitor(Visitor):
 
         return self.numeric_result_type(node, "-", left_type, right_type)
 
-    def visit_mul(self, node):
-        #both sides must be numeric
-        left_type = self.visit(node.left)
-        right_type = self.visit(node.right)
-
+    def check_mul(self, node, left_type, right_type):
         return self.numeric_result_type(node, "*", left_type, right_type)
 
-    def visit_div(self, node):
-        #both sides must be numeric
-        left_type = self.visit(node.left)
-        right_type = self.visit(node.right)
-
+    def check_div(self, node, left_type, right_type):
         if not self.is_numeric(left_type) or not self.is_numeric(right_type):
             raise TypeError(
                 self.code,
@@ -343,14 +333,10 @@ class TypeCheckerVisitor(Visitor):
                 f"Expected numeric types on operation: /, got '{left_type}' and '{right_type}'"
             )
 
-        #division always returns float
+        # division always returns float
         return "float"
 
-    def visit_pow(self, node):
-        #both sides must be numeric
-        left_type = self.visit(node.left)
-        right_type = self.visit(node.right)
-        
+    def check_pow(self, node, left_type, right_type):
         return self.numeric_result_type(node, "^", left_type, right_type)
 
     # comparison operators

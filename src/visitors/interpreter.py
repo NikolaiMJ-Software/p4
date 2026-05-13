@@ -36,7 +36,7 @@ class InterpreterVisitor(Visitor):
 
         while scope:
             if name in scope:
-                return self.unwrap(scope[name])
+                return scope[name]
             scope = scope.get("__parent__")
         return False
     
@@ -45,7 +45,7 @@ class InterpreterVisitor(Visitor):
 
         while scope:
             if name in scope:
-                return self.unwrap(scope[name])
+                return scope[name]
             scope = scope.get("__parent__")
         return False
 
@@ -391,12 +391,14 @@ class InterpreterVisitor(Visitor):
         # Save outer scope
         old = self.v_table
         old_fun = self.f_table
+
         try:
             while True:
-                # Type check condition only
-                self.check_expression_type(node.cond)
+                # Type check condition
+                cond = self.visit(node.cond)
+                self.type_checker.check_while(node, cond.type)
 
-                if not self.unwrap(self.visit(node.cond)):
+                if not self.unwrap(cond):
                     break
 
                 # Create fresh scope for this iteration
@@ -421,7 +423,7 @@ class InterpreterVisitor(Visitor):
             # Restore outer scope after while is done
             self.v_table = old
             self.f_table = old_fun
-                
+    
     def visit_dowhile(self, node):
         old = self.v_table
         old_fun = self.f_table
@@ -445,23 +447,33 @@ class InterpreterVisitor(Visitor):
                     self.v_table = old
                     self.f_table = old_fun
 
-                # Type check condition only
-                self.check_expression_type(node.cond)
+                # Type check condition
+                cond = self.visit(node.cond)
+                self.type_checker.check_dowhile(node, cond.type)
 
                 # Check condition after body has run
-                if not self.unwrap(self.visit(node.cond)):
+                if not self.unwrap(cond):
                     break
 
         finally:
             # Restore outer scope after do-while is done
             self.v_table = old
             self.f_table = old_fun
-            
-    def visit_forrange(self, node):
-        self.check_expression_type(node)
 
-        start = self.unwrap(self.visit(node.start))
-        end = self.unwrap(self.visit(node.end))
+    def visit_forrange(self, node):
+        # Evaluate range start and end
+        start_value = self.visit(node.start)
+        end_value = self.visit(node.end)
+
+        # Range start and end must be numeric
+        self.type_checker.check_forrange(
+            node,
+            start_value.type,
+            end_value.type
+        )
+
+        start = self.unwrap(start_value)
+        end = self.unwrap(end_value)
 
         reverse = False
         if end < start:
@@ -481,6 +493,7 @@ class InterpreterVisitor(Visitor):
                 # Save loop scope before this iteration
                 old_table = self.v_table.copy()
                 old_f_table = self.f_table.copy()
+
                 # Set current loop variable as int RuntimeValue
                 self.v_table[node.name] = RuntimeValue("int", i)
 
@@ -502,18 +515,13 @@ class InterpreterVisitor(Visitor):
             # Restore outer scope after for-range is done
             self.v_table = old
             self.f_table = old_fun
-    
-    def visit_foreach(self, node):
-        self.check_expression_type(node)
 
+    def visit_foreach(self, node):
         # Find the list we want to loop over
         collection = self.lookup_var(node.collection)
-        if collection is False:
-            raise InterpreterError(
-                self.code,
-                node,
-                f"The list: '{node.collection}' does not exist"
-            )
+
+        # Check if the collection exists and is a list
+        self.type_checker.check_foreach(node, collection)
 
         # Save outer scope and create foreach scope
         old = self.v_table
@@ -551,19 +559,25 @@ class InterpreterVisitor(Visitor):
             self.f_table = old_fun
     
     def visit_define(self, node):
-        result_type = self.check_expression_type(node)
+        # Check if the function are already defined
+        self.type_checker.check_define(
+            node,
+            node.name in self.f_table
+        )
+
+        # Save data as 'params' and 'body' in functions
         self.f_table[node.name] = {
-            "params" : node.params,
-            "body" : node.body
+            "params": node.params,
+            "body": node.body
         }
     
     def visit_return(self, node):
-        result_type = self.check_expression_type(node)
+        # Evaluate return value
         value = self.visit(node.value)
+        # Stop function call and send value back
         raise ReturnException(value)
 
     def visit_break(self, node):
-        result_type = self.check_expression_type(node)
         raise BreakException()
 
     def visit_expression(self, node):
@@ -880,32 +894,39 @@ class InterpreterVisitor(Visitor):
         return value
     
     def visit_call(self, node):
-        self.check_expression_type(node) # Sync current runtime types without checking the whole function body
         function = self.lookup_fun(node.name)
+
+        # Check if function exists and argument count matches
+        self.type_checker.check_call(node, function)
+
         params = function["params"] or []
         body = function["body"]
         args = node.args or []
-        
+
         local_vars = {}
+
+        # Evaluate arguments and bind them to parameters
         for param, arg in zip(params, args):
             local_vars[param] = self.visit(arg)
 
-        old = self.v_table # Save current scope
+        old = self.v_table
         self.v_table = {
             "__parent__": old,
             **local_vars
         }
+
         old_fun = self.f_table
         self.f_table = {"__parent__": old_fun}
+
         try:
             for stmt in body:
                 self.visit(stmt)
 
         except ReturnException as r:
-            return r.value # Return the actual runtime value from the function
+            return r.value
 
         finally:
-            self.v_table = old # Always restore scope after the function call
+            self.v_table = old
             self.f_table = old_fun
 
         return None

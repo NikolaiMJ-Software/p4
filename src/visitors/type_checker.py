@@ -157,37 +157,27 @@ class TypeChecker:
     def visit_return(self, node):
         return self.visit(node.value)
 
-    def visit_define(self, node):
+    def check_define(self, node, already_exists):
         self.validate_game_name(node, "function")
-        
-        # Check if fthe function are already defined
-        if node.name in self.f_table:
+
+        # Check if the function are already defined
+        if already_exists:
             raise TypeError(
                 self.code,
                 node,
                 f"Function: '{node.name}' already exists"
             )
 
-        # Save data as 'params' and 'body' in functions
-        self.f_table[node.name] = {
-            "params": node.params,
-            "body": node.body
-        }
-
-        return None
-
-    def visit_call(self, node):
-        # Check if the function are already definend, then get its data
-        if self.lookup_fun(node.name) is False:
+    def check_call(self, node, function):
+        # Check if the function are already defined
+        if function is False:
             raise TypeError(
                 self.code,
                 node,
                 f"The function: '{node.name}' does not exist"
             )
 
-        func = self.lookup_fun(node.name)
-        
-        params = func["params"] or []
+        params = function["params"] or []
         args = node.args or []
 
         # validate argument counts
@@ -197,34 +187,6 @@ class TypeChecker:
                 node,
                 f"Function '{node.name}' expects {len(params)} args, got {len(args)}"
             )
-        
-        # Update the local variable types
-        local_vars = {}
-        for p, arg in zip(params, args):
-            local_vars[p] = self.visit(arg)
-        
-        # Temperary switch scope
-        new_scope = {
-            "__parent__": self.v_table,
-            **local_vars
-        }
-        old = self.v_table.copy()
-        self.v_table = new_scope
-        old_fun = self.f_table.copy()
-        self.f_table = {"__parent__": old_fun}
-
-        # Typecheck the function
-        return_type = None
-        for stmt in func["body"]:
-            t = self.visit(stmt)
-            if isinstance(stmt, Return):
-                return_type = t
-
-        # Restore old scope
-        self.v_table = {**old, **self.v_table["__parent__"]}
-        self.f_table = old_fun
-
-        return return_type
 
     def check_add(self, node, left_type, right_type):
         # Allow string concatenation
@@ -358,46 +320,19 @@ class TypeChecker:
 
         return "bool"
 
-    def visit_while(self, node):
-        cond_type = self.visit(node.cond)
-
+    def check_while(self, node, cond_type):
+        # while condition must be bool
         if cond_type != "bool":
             raise TypeError(
                 self.code,
                 node,
                 f"while condition must be bool, got {cond_type}"
             )
-        # saves current scope
-        old = self.v_table.copy()
-        self.v_table = {"__parent__": self.v_table}
-        old_fun = self.f_table.copy()
-        self.f_table = {"__parent__": old_fun}
 
-        # Checks all statements inside loop body
-        for stmt in node.body:
-            self.visit(stmt)
+        return "bool"
 
-        #restore previous scope
-        self.v_table = {**old, **self.v_table["__parent__"]}
-        self.f_table = old_fun
-
-        return None
-
-    def visit_dowhile(self, node):
-        # Saves current scope
-        old = self.v_table.copy()
-        self.v_table = {"__parent__": self.v_table}
-        old_fun = self.f_table.copy()
-        self.f_table = {"__parent__": old_fun}
-        # Checks body
-        for stmt in node.body:
-            self.visit(stmt)
-        # Restore previous scope
-        self.v_table = {**old, **self.v_table["__parent__"]}
-        self.f_table = old_fun
-
-        # check condition
-        cond_type = self.visit(node.cond)
+    def check_dowhile(self, node, cond_type):
+        # dowhile condition must be bool
         if cond_type != "bool":
             raise TypeError(
                 self.code,
@@ -405,7 +340,7 @@ class TypeChecker:
                 f"dowhile condition must be bool, got {cond_type}"
             )
 
-        return None
+        return "bool"
 
     def check_create_list(self, node, already_exists):
         self.validate_game_name(node, "list")
@@ -426,11 +361,9 @@ class TypeChecker:
                 f"List index must be 'int', got a '{index_type}'"
             )
 
-    def visit_forrange(self, node):
-        # Range start and end must be numeric
-        start_type = self.visit(node.start)
-        end_type = self.visit(node.end)
 
+    def check_forrange(self, node, start_type, end_type):
+        # Range start and end must be numeric
         if not self.is_numeric(start_type) or not self.is_numeric(end_type):
             raise TypeError(
                 self.code,
@@ -438,57 +371,26 @@ class TypeChecker:
                 f"for-range bounds must be numeric, got {start_type} and {end_type}"
             )
 
-        # Saves old scope and creates loop variable
-        old = self.v_table.copy()
-        self.v_table = {"__parent__": self.v_table}
-        old_fun = self.f_table
-        self.f_table = {"__parent__": old_fun}
-        self.v_table[node.name] = "int"
-
-        # Checks all statements inside loop body once
-        for stmt in node.body:
-            self.visit(stmt)
-
-        # Restore previous scope
-        self.v_table = {**old, **self.v_table["__parent__"]}
-        self.f_table = old_fun
-        return None
-
-    def visit_foreach(self, node):
-        target_list = self.lookup_var(node.collection)
-        if target_list is False:
+    def check_foreach(self, node, collection):
+        # Check if the list exists
+        if collection is False:
             raise TypeError(
                 self.code,
                 node,
                 f"The list: '{node.collection}' does not exist"
             )
 
-        if not isinstance(target_list, list):
+        # Check if the collection is a list
+        if not isinstance(collection, list):
             raise TypeError(
                 self.code,
                 node,
-                f"Cannot iterate over non-list type '{target_list}'"
+                f"Cannot iterate over non-list type '{collection}'"
             )
 
-        old = self.v_table.copy()
-        self.v_table = {"__parent__": self.v_table}
-        old_fun = self.f_table.copy()
-        self.f_table = {"__parent__": old_fun}
-
-        for item in target_list:
-            old_table = self.v_table.copy()
-            self.v_table[node.name] = item
-
-            for stmt in node.body:
-                self.visit(stmt)
-
-            self.v_table = old_table
-
-        self.v_table = {**old, **self.v_table["__parent__"]}
-        self.f_table = old_fun
-        return None
-        
     def check_input(self, node, already_exists, parent_exists):
+        scope = self.v_table
+
         # Find the scope whith the variable we want to change
         cat = None
         if node.base and not parent_exists:

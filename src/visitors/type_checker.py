@@ -384,67 +384,19 @@ class TypeChecker:
 
         return "bool"
 
-    def visit_if(self, node):
-        # leftition must be a bool
-        left_type = self.visit(node.cond)
-
-        if left_type is None:
+    def check_if(self, node, cond_type, kind="if"):
+        # condition must be a bool
+        if cond_type is None:
             return None
-        if left_type != "bool":
+
+        if cond_type != "bool":
             raise TypeError(
                 self.code,
                 node,
-                f"if condition must be bool, got {left_type}"
+                f"{kind} condition must be bool, got {cond_type}"
             )
 
-        # Checks statements inside if body
-        parent = self.v_table
-        self.v_table = {"__parent__": parent}
-        old_fun = self.f_table
-        self.f_table = {"__parent__": old_fun}
-
-        for stmt in node.body:
-            self.visit(stmt)
-
-        self.v_table = parent
-        self.f_table = old_fun
-
-        # Checks statements inside else body
-        if node.elses:
-            parent = self.v_table
-            self.v_table = {"__parent__": parent}
-            old_fun = self.f_table
-            self.f_table = {"__parent__": old_fun}
-
-            for stmt in node.elses:
-                self.visit(stmt)
-
-            self.v_table = parent
-            self.f_table = old_fun
-
-        # Checks all elif branches
-        if node.elifs:
-            for cond, body in node.elifs:
-                cond_type = self.visit(cond)
-                if cond_type != "bool":
-                    raise TypeError(
-                        self.code,
-                        node,
-                        f"elif condition must be bool, got {cond_type}"
-                    )
-
-                parent = self.v_table
-                self.v_table = {"__parent__": parent}
-                old_fun = self.f_table
-                self.f_table = {"__parent__": old_fun}
-
-                for stmt in body:
-                    self.visit(stmt)
-
-                self.v_table = parent
-                self.f_table = old_fun
-
-        return None
+        return "bool"
 
     def visit_while(self, node):
         cond_type = self.visit(node.cond)

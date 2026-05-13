@@ -332,9 +332,11 @@ class InterpreterVisitor(Visitor):
         lst[final_index] = value
 
     def visit_if(self, node):
-        self.check_expression_type(node)
+        # condition must be a bool
+        cond = self.visit(node.cond)
+        self.type_checker.check_if(node, cond.type, "if")
 
-        if self.unwrap(self.visit(node.cond)):
+        if self.unwrap(cond):
             # Save outer scope and create if scope
             old = self.v_table
             self.v_table = {"__parent__": old}
@@ -351,11 +353,12 @@ class InterpreterVisitor(Visitor):
             return
 
         # Check all else-if branches
-        for cond, body in node.elifs:
+        for cond, body in node.elifs or []:
             # Type check else-if condition
-            self.check_expression_type(cond)
+            cond_value = self.visit(cond)
+            self.type_checker.check_if(node, cond_value.type, "elif")
 
-            if self.unwrap(self.visit(cond)):
+            if self.unwrap(cond_value):
                 # Save outer scope and create else-if scope
                 old = self.v_table
                 self.v_table = {"__parent__": old}

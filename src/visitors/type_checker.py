@@ -42,35 +42,31 @@ class TypeChecker:
             return "float"
         return "int"
 
-    def visit_var(self, node):
+    def check_var(self, node, value):
         if node.base is None:
-            var_type = self.lookup_var(node.name)
-            if var_type is False:
+            if value is False:
                 raise TypeError(
                     self.code,
                     node,
                     f"The variable: '{node.name}' does not exist"
                 )
-            return var_type
+            return
 
         # Error, if the parent (base) is not defined
-        if self.lookup_var(node.base) is False:
+        if value is False:
             raise TypeError(
                 self.code,
                 node,
                 f"The struct: '{node.base}' is not defined"
             )
-        
+
         # Error, if the variable 'name' are not inside of the struct (base)
-        if node.name not in self.lookup_var(node.base):
+        if not isinstance(value, dict) or node.name not in value:
             raise TypeError(
                 self.code,
                 node,
                 f"The variable: '{node.name}' is not defined in the struct: '{node.base}'"
             )
-        
-        # Find and return the type of the 'name'
-        return self.lookup_var(node.base)[node.name]
         
     def comparable_ordered(self, left_type, right_type):
         # for <, >, <=, >=
@@ -125,67 +121,45 @@ class TypeChecker:
 
         return value_type
 
-    def visit_create_variable(self, node):
+    def check_create_variable(self, node, already_exists):
         self.validate_game_name(node, "variable")
-        
+
         # Make sure no duplicate of variabels
-        if node.name in self.v_table:
+        if already_exists:
             raise TypeError(
                 self.code,
                 node,
                 f"The variable: '{node.name}' already exists"
             )
-        
-        # Set type to 'None' if it doesn't exist
-        if node.value is None:
-            self.v_table[node.name] = None
-            return None
 
-        # Save variable in v_table, with name and type
-        value_type = self.visit(node.value)
-        self.v_table[node.name] = value_type
-        return value_type
-
-    def visit_assign(self, node):
+    def check_assign(self, node, target):
         # Check if it got inheritance
         if node.base:
             # Check if the parent exist
-            if self.lookup_var(node.base) is False:
+            if target is False:
                 raise TypeError(
                     self.code,
                     node,
                     f"The struct: '{node.base}' does not exist"
                 )
-            
+
             # Check if the name exist
-            base_type = self.lookup_var(node.base)
-            if node.name not in base_type:
+            if not isinstance(target, dict) or node.name not in target:
                 raise TypeError(
                     self.code,
                     node,
                     f"The variable: '{node.name}' does not exist in the struct: '{node.base}'"
                 )
-            
-            # Save in the struct's v_table and return the type 
-            value_type = self.visit(node.value)
-            base_type[node.name] = value_type
-            return value_type
-        
+
+            return
+
         # Check if the name exist
-        if self.lookup_var(node.name) is False:
+        if target is None:
             raise TypeError(
                 self.code,
                 node,
                 f"The variable: '{node.name}' does not exist"
             )
-        
-        # Save in v_table and return the type
-        value_type = self.visit(node.value)
-        table = self.v_table
-        while node.name not in table:
-            table = table.get("__parent__")
-        table[node.name] = value_type
-        return value_type
 
     def visit_assign_index(self, node):
         # Check if target exists and is indexable
@@ -479,33 +453,27 @@ class TypeChecker:
 
         return "bool"
 
-    def visit_between(self, node):
-        left_type = self.visit(node.left)
-        right_type = self.visit(node.right)
-
+    def check_between(self, node, left_type, right_type):
         if not self.is_numeric(left_type) or not self.is_numeric(right_type):
             raise TypeError(
                 self.code,
                 node,
                 f"between requires numeric types, got {left_type} and {right_type}"
             )
-        
+
         if "float" in (left_type, right_type):
             return "float"
 
         return "int"
 
-    def visit_chance(self, node):
-        # Chance requires numeric values
-        left_type = self.visit(node.left)
-        right_type = self.visit(node.right)
-
+    def check_chance(self, node, left_type, right_type):
         if not self.is_numeric(left_type) or not self.is_numeric(right_type):
             raise TypeError(
                 self.code,
                 node,
                 f"chance requires numeric types, got {left_type} and {right_type}"
             )
+
         return "bool"
 
     def visit_if(self, node):

@@ -223,10 +223,21 @@ class InterpreterVisitor(Visitor):
     
     # STATEMENTS
     def visit_create_variable(self, node):
-        self.check_expression_type(node)
-        value = self.visit(node.value) if node.value else "UNINITIALIZED"
+        # Make sure no duplicate of variabels
+        self.type_checker.check_create_variable(
+            node,
+            node.name in self.v_table
+        )
+
+        # Set value to 'UNINITIALIZED' if it doesn't exist
+        if node.value is None:
+            self.v_table[node.name] = "UNINITIALIZED"
+            return
+
+        # Save variable in v_table, with name and value
+        value = self.visit(node.value)
         self.v_table[node.name] = value
-        
+
     def visit_create_struct(self, node):
         self.check_expression_type(node)
         parent = self.lookup_var(node.base)
@@ -244,15 +255,28 @@ class InterpreterVisitor(Visitor):
         self.v_table[node.name] = listing
         
     def visit_assign(self, node):
-        self.check_expression_type(node)
+        # Save value
         value = self.visit(node.value)
-        if node.base: # handles inheritance
-            struct = self.lookup_var(node.base)
-            struct[node.name] = value
+
+        # Check if it got inheritance
+        if node.base:
+            # Find parent
+            target = self.lookup_var(node.base)
+            # Check if parent and name exist
+            self.type_checker.check_assign(node, target)
+            # Save in the struct's v_table
+            target[node.name] = value
             return
+
+        # Find the scope where the variable exists
         table = self.v_table
-        while node.name not in table:
+        while table and node.name not in table:
             table = table.get("__parent__")
+
+        # Check if the name exist
+        self.type_checker.check_assign(node, table)
+
+        # Save in v_table
         table[node.name] = value
 
     def visit_assign_index(self, node):
@@ -600,7 +624,6 @@ class InterpreterVisitor(Visitor):
             scope[name] = value
     
     def visit_output(self, node):
-        self.check_expression_type(node)
         values = [self.visit(v) for v in node.value]
         processed = [] # storage for processed strings
         for v in values:
@@ -808,39 +831,52 @@ class InterpreterVisitor(Visitor):
         )
 
     def visit_between(self, node):
-        result_type = self.check_expression_type(node)
-        left = self.unwrap(self.visit(node.left))
-        right = self.unwrap(self.visit(node.right))
-        
-        result_value = left # if both are equal
-        if left < right: # if first value smallest
-            result_value = random.randrange(left, right+1)
-        elif left > right: # if second value smallest
-            result_value = random.randrange(right, left+1)
-        
-        return RuntimeValue(
-            result_type,
-            result_value
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+
+        result_type = self.type_checker.check_between(
+            node,
+            left.type,
+            right.type
         )
+
+        left_value = self.unwrap(left)
+        right_value = self.unwrap(right)
+
+        result_value = left_value
+        if left_value < right_value:
+            result_value = random.randrange(left_value, right_value + 1)
+        elif left_value > right_value:
+            result_value = random.randrange(right_value, left_value + 1)
+
+        return RuntimeValue(result_type, result_value)
     
     def visit_chance(self, node):
-        result_type = self.check_expression_type(node)
-        left = self.unwrap(self.visit(node.left))
-        right = self.unwrap(self.visit(node.right))
-        
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+
+        result_type = self.type_checker.check_chance(
+            node,
+            left.type,
+            right.type
+        )
+
         return RuntimeValue(
             result_type,
-            random.randrange(0, right) < left
+            random.randrange(0, self.unwrap(right)) < self.unwrap(left)
         )
     
     def visit_var(self, node):
-            self.check_expression_type(node)
-            if node.base:
-                struct = self.lookup_var(node.base)
-                struct = self.unwrap(struct)
-                return struct[node.name]
+        if node.base:
+            struct = self.lookup_var(node.base)
+            self.type_checker.check_var(node, struct)
 
-            return self.lookup_var(node.name)
+            return struct[node.name]
+
+        value = self.lookup_var(node.name)
+        self.type_checker.check_var(node, value)
+
+        return value
     
     def visit_call(self, node):
         self.check_expression_type(node) # Sync current runtime types without checking the whole function body

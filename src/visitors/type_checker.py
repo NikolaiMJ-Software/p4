@@ -67,7 +67,6 @@ class TypeChecker:
                 node,
                 f"The variable: '{node.name}' is not defined in the struct: '{node.base}'"
             )
-        return self.lookup_var(node.base)[node.name]
 
     def validate_game_name(self, node, type_type):
         #check if we are dealing with and ID game
@@ -760,44 +759,18 @@ class TypeChecker:
 
         return None
 
-    def visit_create_struct(self, node):
+    def check_create_struct(self, node, already_exists, parent_exists):
         self.validate_game_name(node, "struct")
-        
+
         # Error, if the 'name' already exist
-        if node.name in self.v_table:
+        if already_exists:
             raise TypeError(
                 self.code,
                 node,
                 f"The struct: '{node.name}' already exists"
             )
         
-        elif self.lookup_var(node.base) != False:
-            # Copy the parrent (base)
-            merged = self.lookup_var(node.base).copy()
-
-            # Afterwards fields (overwrite)
-            for f in node.fields:
-                if f.value is not None: # Check if it's not a 'None' type
-                    merged[f.name] = self.visit(f.value)
-                else:
-                    merged[f.name] = None
-
-            # Update v_table
-            self.v_table[node.name] = merged
-            
-        elif node.base is None:
-            # Create new struct, if no parent (base) are defined 
-            res = {}
-            for f in node.fields:
-                if f.value is not None: # Check if it's not a 'None' type
-                    res[f.name] = self.visit(f.value)
-                else:
-                    res[f.name] = None
-            
-            # Update v_table
-            self.v_table[node.name] = res
-            
-        else:
+        elif node.base and parent_exists is False:
             # Error, for no parent
             raise TypeError(
                 self.code,

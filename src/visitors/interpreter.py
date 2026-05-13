@@ -239,9 +239,14 @@ class InterpreterVisitor(Visitor):
         self.v_table[node.name] = value
 
     def visit_create_struct(self, node):
-        self.check_expression_type(node)
+        # Make sure no duplicate of struct, and check parrent
+        self.type_checker.check_create_struct(
+            node,
+            node.name in self.v_table,
+            self.lookup_var(node.base)
+        )
+
         parent = self.lookup_var(node.base)
-        fields = {}
         fields = {field.name: self.visit(field.value) if field.value else "UNINITIALIZED" for field in node.fields}
 
         if parent is False:

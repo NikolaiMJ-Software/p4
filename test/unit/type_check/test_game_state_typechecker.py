@@ -1,12 +1,12 @@
 import pytest
 
-from src.visitors.type_checker import TypeCheckerVisitor
+from src.visitors.type_checker import TypeChecker
 from src.ast.nodes import *
 from src.errors import TypeError
 
 
 def make_checker():
-    return TypeCheckerVisitor()
+    return TypeChecker()
 
 
 def game_struct(fields):

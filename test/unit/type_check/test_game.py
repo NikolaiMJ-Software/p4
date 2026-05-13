@@ -1,14 +1,14 @@
 import pytest
 from src.parser import parse
 from src.ast.builder import ASTBuilder
-from src.visitors.type_checker import TypeCheckerVisitor
+from src.visitors.type_checker import TypeChecker
 from src.errors import TypeError
 
 
 def type_check(code):
     tree = parse(code)
     ast = ASTBuilder().transform(tree)
-    checker = TypeCheckerVisitor()
+    checker = TypeChecker(code)
 
     for stmt in ast:
         checker.visit(stmt)

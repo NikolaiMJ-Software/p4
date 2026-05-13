@@ -121,7 +121,7 @@ class TypeChecker:
 
     def check_assign(self, node, target):
         # Check if it got inheritance
-        if node.base:
+        '''if node.base:
             # Check if the parent exist
             if target is False:
                 raise TypeError(
@@ -131,68 +131,28 @@ class TypeChecker:
                 )
 
             # Check if the name exist
-            if not isinstance(target, dict) or node.name not in target:
+            name = node.target if hasattr(node, "target") else node.name
+            if not isinstance(target, dict) or name not in target:
                 raise TypeError(
                     self.code,
                     node,
-                    f"The variable: '{node.name}' does not exist in the struct: '{node.base}'"
+                    f"The variable: '{name}' does not exist in the struct: '{node.base}'"
                 )
 
-            return
+            return'''
 
         # Check if the name exist
-        if target is None:
+        if target is False:
+            if hasattr(node, "target"):
+                msg = f"The list: '{node.target}' does not exist"
+            else:
+                msg = f"The variable: '{node.name}' does not exist"
+            
             raise TypeError(
                 self.code,
                 node,
-                f"The variable: '{node.name}' does not exist"
+                msg
             )
-
-    def visit_assign_index(self, node):
-        # Check if target exists and is indexable
-        self.visit(node.target)
-
-        target = node.target
-        target_list = self.lookup_var(target.base)[target.target] if target.base else self.lookup_var(target.target)
-
-        # Nested indexes are stored backwards in the AST, so flip them first
-        indexes = target.indexing[::-1]
-
-        # Move through nested lists until the final index
-        for i in indexes[:-1]:
-            index_type = self.visit(i)
-
-            if index_type != "int":
-                raise TypeError(
-                    self.code,
-                    node,
-                    f"List index must be int, got {index_type}"
-                )
-
-            # Dynamic index, so the exact element cannot be resolved during type checking
-            if not hasattr(i, "value"):
-                return self.visit(node.value)
-
-            target_list = target_list[i.value]
-
-        var_type = self.visit(node.value)
-
-        final_index = indexes[-1]
-        final_index_type = self.visit(final_index)
-
-        if final_index_type != "int":
-            raise TypeError(
-                self.code,
-                node,
-                f"List index must be int, got {final_index_type}"
-            )
-
-        # Dynamic final index, so we can only verify the assigned value type
-        if not hasattr(final_index, "value"):
-            return var_type
-
-        target_list[final_index.value] = var_type
-        return var_type
 
     def visit_return(self, node):
         return self.visit(node.value)
@@ -447,99 +407,24 @@ class TypeChecker:
 
         return None
 
-    def visit_create_list(self, node):
+    def check_create_list(self, node, already_exists):
         self.validate_game_name(node, "list")
 
-        if node.name in self.v_table:
+        if already_exists:
             raise TypeError(
                 self.code,
                 node,
                 f"The list: '{node.name}' already exists"
             )
 
-        # Empty list gets generic list type
-        if node.value is None:
-            self.v_table[node.name] = []
-            return []
-
-        element_types = []
-
-        # Finds type of each list element
-        for item in node.value:
-            t = self.visit(item)
-            element_types.append(t)
-
-        self.v_table[node.name] = element_types
-        return element_types
-
-
-    def visit_index_access(self, node):
-        # Check if the list is in a struct
-        table = None
-        if node.base:
-            table = self.lookup_var(node.base)
-            if table is False:
-                raise TypeError(
-                    self.code,
-                    node,
-                    f"The struct: '{node.base}' is not defined"
-                )
-            table = table[node.target] if node.target in table else False
-        else:
-            table = self.lookup_var(node.target)
-
-        # Check if the list exist in table
-        if table is False:
+    def check_index_access(self, node, index_type):        
+        # Make sure the index is a 'int'
+        if index_type != "int":
             raise TypeError(
                 self.code,
                 node,
-                f"The list: '{node.target}' does not exist"
+                f"List index must be 'int', got a '{index_type}'"
             )
-
-        # Find the index
-        target_list = table
-        for i in node.indexing[::-1]:
-            # Make sure it's a list
-            if not isinstance(target_list, list):
-                raise TypeError(
-                    self.code,
-                    node,
-                    f"The target: '{target_list}' is not a list"
-                )
-            
-            # Make sure the index is a 'int'
-            index_type = self.visit(i)
-            if index_type != "int":
-                raise TypeError(
-                    self.code,
-                    node,
-                    f"List index must be int, got {index_type}"
-                )
-            
-            
-            # variable index, bounds are checked at runtime
-            if not hasattr(i, "value"):
-                return target_list[0] if target_list else None
-            index = i.value
-            if not isinstance(index, int):
-                raise TypeError(
-                    self.code,
-                    node,
-                    f"The index: '{-index.value}' must be positive"
-                )
-                
-            # Check if the index are out of bound
-            if 0 <= index and index <= len(target_list) - 1:
-                target_list = target_list[index]
-            else:
-                raise TypeError(
-                    self.code,
-                    node,
-                    f"The index: '{index}' does not exist in '{node.target}'"
-                )    
-            
-        return target_list
-
 
     def visit_forrange(self, node):
         # Range start and end must be numeric
@@ -603,113 +488,20 @@ class TypeChecker:
         self.f_table = old_fun
         return None
         
-    def visit_input(self, node):
-        scope = self.v_table
-
+    def check_input(self, node, already_exists, parent_exists):
         # Find the scope whith the variable we want to change
-        if node.base:
-            while node.base not in scope:
-                if "__parent__" not in scope:
-                    raise TypeError(
-                        self.code,
-                        node,
-                        f"The struct: '{node.base}' does not exist"
-                    )
-                scope = scope.get("__parent__")
-            scope = scope[node.base]
-        else:
-            while node.name not in scope:
-                if "__parent__" not in scope:
-                    raise TypeError(
-                            self.code,
-                            node,
-                            f"The variable: '{node.name}' does not exist"
-                        )
-                scope = scope.get("__parent__")
-
-        if not node.indexing:
-            # normal input, just set variable to string
-            scope[node.name] = "str"
-            return "str"
-
-        # input into a list element
-        target_list = scope[node.name]
-
-        # make sure it's a list
-        if not isinstance(target_list, list):
-            raise TypeError(
-                self.code,
-                node,
-                f"The variable: '{node.name}' is not a list"
-            )
+        cat = None
+        if node.base and not parent_exists:
+            cat = "struct"
+        elif not node.base and not already_exists:
+            cat = "variable"
         
-        # Nested indexes are stored backwards by the AST, thereby they need to be flipped
-        indexes = node.indexing[::-1]
-        for index_node in indexes[:-1]:
-            index_type = self.visit(index_node)
-
-            # index has to be int
-            if index_type != "int":
-                raise TypeError(
-                    self.code,
-                    node,
-                    f"List index must be int, got {index_type}"
-                )
-            # variable index, so no value to check here
-            if not hasattr(index_node, "value"):
-                return "str"
-            index = index_node.value
-
-            # check bounds
-            if index < 0 or index >= len(target_list):
-                raise TypeError(
-                    self.code,
-                    node,
-                    f"The index: '{index}' does not exist in '{node.name}'"
-                )
-
-            # move into the list
-            target_list = target_list[index]
-
-            # if we still have more indexes, this better be a list
-            if not isinstance(target_list, list):
-                raise TypeError(
-                    self.code,
-                    node,
-                    f"Trying to index into something that isn't a list"
-                )
-
-        # final index (this is where we store the input)
-        final_index_node = indexes[-1]
-        final_index_type = self.visit(final_index_node)
-
-        if final_index_type != "int":
+        if cat:
             raise TypeError(
                 self.code,
                 node,
-                f"List index must be int, got {final_index_type}"
+                f"The {cat}: '{node.name}' does not exist"
             )
-        if not hasattr(final_index_node, "value"):
-            return "str"
-        final_index = final_index_node.value
-
-        if final_index < 0 or final_index >= len(target_list):
-            raise TypeError(
-                self.code,
-                node,
-                f"The index: '{final_index}' does not exist in '{node.name}'"
-            )
-
-        # input is always string, so overwrite the type
-        target_list[final_index] = "str"
-        return "str"
-
-    def visit_output(self, node):
-        # Output has no type, but each printed value must be type checked
-        for each in node.value:
-            self.visit(each)
-
-        return None
 
     def check_create_struct(self, node, already_exists, parent_exists):
         self.validate_game_name(node, "struct")

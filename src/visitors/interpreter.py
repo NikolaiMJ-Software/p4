@@ -573,14 +573,21 @@ class InterpreterVisitor(Visitor):
         name = node.name
         base = node.base
 
-        # Find the scope whith the variable we want to change
-        scope = self.lookup_var(base) if base else self.lookup_var(name)
-        
-        # Check if value exist
+        target = self.lookup_var(base) if base else self.lookup_var(name)
         self.type_checker.check_assign(
             node,
-            scope
+            target
         )
+
+        # Find the scope whith the variable we want to change
+        scope = self.v_table
+        if base:
+            while base not in scope:
+                scope = scope.get("__parent__")
+            scope = scope[base]
+        else:
+            while name not in scope:
+                scope = scope.get("__parent__")
                 
         if indexing: # Handle if the variable is a list
             indexes = indexing[::-1]

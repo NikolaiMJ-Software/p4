@@ -295,29 +295,20 @@ class InterpreterVisitor(Visitor):
 
     def visit_assign_index(self, node):
         value = self.visit(node.value)
-        lst = self.lookup_var(node.target.base)[node.target.target] if node.target.base else self.lookup_var(node.target.target)
+        lst = self.lookup_var(node.target.base) if node.target.base else self.lookup_var(node.target.target)
 
         # Check if list exist
         self.type_checker.check_assign(node.target, lst)
+        lst = lst[node.target.target]
 
+        # Find the last target list
         indexes = node.target.indexing
-        lst = self.iterate_through_list(node, lst, indexes[:-1])
+        for i in indexes[:-1]:
+            lst = self.iterate_through_list(node, lst, i)
 
+        # Assign to last index
+        self.iterate_through_list(node, lst, indexes[-1])
         final_index = self.unwrap(self.visit(indexes[-1]))
-        if not isinstance(lst, list):
-            raise InterpreterError(
-                self.code,
-                node,
-                f"Trying to assign into something that isn't a list"
-            )
-
-        if final_index < 0 or final_index >= len(lst):
-            raise InterpreterError(
-                self.code,
-                node,
-                f"Index {final_index} outside of list: '{self.unwrap_list(lst)}'"
-            )
-
         lst[final_index] = value
 
     def visit_if(self, node):
@@ -583,7 +574,7 @@ class InterpreterVisitor(Visitor):
         base = node.base
         scope = self.v_table
 
-        target = self.lookup_var(node.base)[node.name] if node.base else self.lookup_var(node.name)
+        target = self.lookup_var(base) if base else self.lookup_var(name)
         self.type_checker.check_assign(
             node,
             target
@@ -599,35 +590,18 @@ class InterpreterVisitor(Visitor):
                 scope = scope.get("__parent__")
                 
         if indexing: # Handle if the variable is a list
-            scope = scope[name] # can safely enter variable as we know its a list
-            indices = [self.unwrap(self.visit(i)) for i in indexing][::-1] # reverse list because of our syntax
-            for index in indices[:-1]:
-                if index < 0 or index >= len(scope):
-                    raise InterpreterError(
-                            self.code,
-                            node,
-                            f"Index {index} outside of list: '{scope}'"
-                        )
-                if not isinstance(scope[index],list):
-                    raise InterpreterError(
-                            self.code,
-                            node,
-                            f"Index {index} of the list {scope} is not a list"
-                        )
-                scope = scope[index]
-            if indices[-1] < 0 or indices[-1] >= len(scope):
-                raise InterpreterError(
-                    self.code,
-                    node,
-                    f"Index {indices[-1]} outside of list: '{scope}'"
-                )
-            if not isinstance(scope,list):
-                    raise InterpreterError(
-                            self.code,
-                            node,
-                            f"Index {indices[-1]} of the list {scope} is not a list"
-                        )
-            scope[indices[-1]] = value
+            indexes = indexing[::-1]
+            
+            # Find the last target list
+            scope = scope[name]
+            for i in indexes[:-1]:
+                scope = self.iterate_through_list(node, scope, i)
+            
+            # Assign to last index
+            self.iterate_through_list(node, scope, indexes[-1])
+            final_index = self.unwrap(self.visit(indexes[-1]))
+            scope[final_index] = value
+
         else: # standard case if variable is not a list
             scope[name] = value
     
@@ -929,32 +903,33 @@ class InterpreterVisitor(Visitor):
 
         # Check if list exist
         self.type_checker.check_assign(node, lst)
-        return self.iterate_through_list(node, lst, node.indexing[::-1])
+        for i in node.indexing[::-1]:
+            lst = self.iterate_through_list(node, lst, i)
+        return lst
 
     def iterate_through_list(self, node, lst, index):
-        for i in index:
-            i = self.visit(index)
-                
-            # Make sure it's a list
-            if not isinstance(lst, list):
-                raise TypeError(
-                    self.code,
-                    node,
-                    f"Trying to index into something that isn't a list"
-                )
-
-            self.type_checker.check_index_access(
-                node,
-                i.type
-            )
+        index = self.visit(index)
             
-            i = self.unwrap(i)
-            # Check if the index are out of bound
-            if i < 0 and i > len(lst) - 1:
-                raise InterpreterError(
-                    self.code,
-                    node,
-                    f"The index: '{i}' does not exist in '{node.target}'"
-                )
-            lst = lst[i]
-        return lst
+        # Make sure it's a list
+        if not isinstance(lst, list):
+            raise TypeError(
+                self.code,
+                node,
+                f"Trying to index into something that isn't a list"
+            )
+
+        # Check type
+        self.type_checker.check_index_access(
+            node,
+            index.type
+        )
+        
+        index = self.unwrap(index)
+        # Check if the index are out of bound
+        if index < 0 and index > len(lst) - 1:
+            raise InterpreterError(
+                self.code,
+                node,
+                f"The index: '{index}' does not exist in '{node.target}'"
+            )
+        return lst[index]

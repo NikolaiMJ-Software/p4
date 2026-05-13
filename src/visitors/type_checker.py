@@ -121,7 +121,7 @@ class TypeChecker:
 
     def check_assign(self, node, target):
         # Check if it got inheritance
-        '''if node.base:
+        if node.base:
             # Check if the parent exist
             if target is False:
                 raise TypeError(
@@ -139,7 +139,7 @@ class TypeChecker:
                     f"The variable: '{name}' does not exist in the struct: '{node.base}'"
                 )
 
-            return'''
+            return
 
         # Check if the name exist
         if target is False:

@@ -295,17 +295,10 @@ class InterpreterVisitor(Visitor):
 
     def visit_assign_index(self, node):
         value = self.visit(node.value)
-
-        if node.target.base:
-            lst = self.lookup_var(node.target.base)[node.target.target]
-        else:
-            lst = self.lookup_var(node.target.target)
+        lst = self.lookup_var(node.target.base)[node.target.target] if node.target.base else self.lookup_var(node.target.target)
 
         # Check if list exist
-        self.type_checker.check_assign(
-            node.target,
-            lst
-        )
+        self.type_checker.check_assign(node.target, lst)
 
         indexes = node.target.indexing
         lst = self.iterate_through_list(node, lst, indexes[:-1])
@@ -589,11 +582,11 @@ class InterpreterVisitor(Visitor):
         name = node.name
         base = node.base
         scope = self.v_table
-        
+
+        target = self.lookup_var(node.base)[node.name] if node.base else self.lookup_var(node.name)
         self.type_checker.check_assign(
             node,
-            name in self.v_table,
-            self.lookup_var(base)
+            target
         )
 
         # Find the scope whith the variable we want to change
@@ -932,22 +925,15 @@ class InterpreterVisitor(Visitor):
         return None
     
     def visit_index_access(self, node):
-        if node.base: # If not from parent, look up value
-            lst_base = self.lookup_var(node.base)
-            lst = lst_base[node.target]
-        else: # If has a parent, look up parent, and then find the target value
-            lst = self.lookup_var(node.target)
+        lst = self.lookup_var(node.base)[node.target] if node.base else self.lookup_var(node.target)
 
         # Check if list exist
-        self.type_checker.check_assign(
-            node,
-            lst
-        )
+        self.type_checker.check_assign(node, lst)
         return self.iterate_through_list(node, lst, node.indexing[::-1])
 
     def iterate_through_list(self, node, lst, index):
-        for index in index:
-            index = self.visit(index)
+        for i in index:
+            i = self.visit(index)
                 
             # Make sure it's a list
             if not isinstance(lst, list):
@@ -959,16 +945,16 @@ class InterpreterVisitor(Visitor):
 
             self.type_checker.check_index_access(
                 node,
-                index.type
+                i.type
             )
             
-            index = self.unwrap(index)
+            i = self.unwrap(i)
             # Check if the index are out of bound
-            if index < 0 and index > len(lst) - 1:
+            if i < 0 and i > len(lst) - 1:
                 raise InterpreterError(
                     self.code,
                     node,
-                    f"The index: '{index}' does not exist in '{node.target}'"
+                    f"The index: '{i}' does not exist in '{node.target}'"
                 )
-            lst = lst[index]
+            lst = lst[i]
         return lst

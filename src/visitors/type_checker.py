@@ -389,8 +389,6 @@ class TypeChecker:
             )
 
     def check_input(self, node, already_exists, parent_exists):
-        scope = self.v_table
-
         # Find the scope whith the variable we want to change
         cat = None
         if node.base and not parent_exists:

@@ -71,19 +71,6 @@ class TypeChecker:
         
         # Find and return the type of the 'name'
         return self.lookup_var(node.base)[node.name]
-        
-    def comparable_ordered(self, left_type, right_type):
-        # for <, >, <=, >=
-        return self.is_numeric(left_type) and self.is_numeric(right_type)
-
-    def comparable_equality(self, left_type, right_type):
-        # for ==, !=
-        if left_type == right_type:
-            return True
-        if self.is_numeric(left_type) and self.is_numeric(right_type):
-            return True
-        
-        return False
 
     def validate_game_name(self, node, type_type):
         #check if we are dealing with and ID game
@@ -340,102 +327,23 @@ class TypeChecker:
         return self.numeric_result_type(node, "^", left_type, right_type)
 
     # comparison operators
-    def visit_equal_expr(self, node):
-        #checks both sides of equality
-        left_type = self.visit(node.left)
-        right_type = self.visit(node.right)
-
-        if not self.comparable_equality(left_type, right_type):
+    def check_comp_ops_expr(self, node, symbol, left_type, right_type):
+        if not (left_type == right_type or self.is_numeric(left_type) and self.is_numeric(right_type)):
             raise TypeError(
                 self.code,
                 node,
-                f"Cannot compare {left_type} == {right_type}"
-            )
-
-        return "bool"
-
-    def visit_not_equal_expr(self, node):
-        # Checks both sides of inequality
-        left_type = self.visit(node.left)
-        right_type = self.visit(node.right)
-
-        if not self.comparable_equality(left_type, right_type):
-            raise TypeError(
-                self.code,
-                node,
-                f"Cannot compare {left_type} != {right_type}"
-            )
-
-        return "bool"
-
-    def visit_greater_expr(self, node):
-        # Checks both sides of greater than ">"
-        left_type = self.visit(node.left)
-        right_type = self.visit(node.right)
-
-        if not self.comparable_ordered(left_type, right_type):
-            raise TypeError(
-                self.code,
-                node,
-                f"Cannot compare {left_type} > {right_type}"
-            )
-
-        return "bool"
-
-    def visit_less_expr(self, node):
-        #checks both sides of less than "<"
-        left_type = self.visit(node.left)
-        right_type = self.visit(node.right)
-
-        if not self.comparable_ordered(left_type, right_type):
-            raise TypeError(
-                self.code,
-                node,
-                f"Cannot compare {left_type} < {right_type}"
-            )
-
-        return "bool"
-
-    def visit_greater_equal_expr(self, node):
-        # Checks both sides of greater than or equal ">="
-        left_type = self.visit(node.left)
-        right_type = self.visit(node.right)
-
-        if not self.comparable_ordered(left_type, right_type):
-            raise TypeError(
-                self.code,
-                node,
-                f"Cannot compare {left_type} >= {right_type}"
-            )
-
-        return "bool"
-
-    def visit_less_equal_expr(self, node):
-        # Checks both sides of less than or equal "<="
-        left_type = self.visit(node.left)
-        right_type = self.visit(node.right)
-
-        if not self.comparable_ordered(left_type, right_type):
-            raise TypeError(
-                self.code,
-                node,
-                f"Cannot compare {left_type} <= {right_type}"
+                f"Cannot compare {left_type} {symbol} {right_type}"
             )
 
         return "bool"
 
     #boolean operators
-
-    def visit_and_expr(self,node):
-        # AND requires both sides to be bool
-        left_type = self.visit(node.left)
-        right_type = self.visit(node.right)
-
+    def check_bool_ops_expr(self, node, ops, left_type, right_type):
         if left_type != "bool" or right_type != "bool":
             raise TypeError(
                 self.code,
                 node,
-                f"AND requires bool, got {left_type} and {right_type}"
+                f"{ops} requires bool, got {left_type} and {right_type}"
             )
 
         return "bool"

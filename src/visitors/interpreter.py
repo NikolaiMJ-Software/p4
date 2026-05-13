@@ -45,7 +45,7 @@ class InterpreterVisitor(Visitor):
 
         while scope:
             if name in scope:
-                return self.unwrap(scope[name])
+                return scope[name]
             scope = scope.get("__parent__")
         return False
 
@@ -563,19 +563,25 @@ class InterpreterVisitor(Visitor):
             self.f_table = old_fun
     
     def visit_define(self, node):
-        result_type = self.check_expression_type(node)
+        # Check if the function are already defined
+        self.type_checker.check_define(
+            node,
+            node.name in self.f_table
+        )
+
+        # Save data as 'params' and 'body' in functions
         self.f_table[node.name] = {
-            "params" : node.params,
-            "body" : node.body
+            "params": node.params,
+            "body": node.body
         }
     
     def visit_return(self, node):
-        result_type = self.check_expression_type(node)
+        # Evaluate return value
         value = self.visit(node.value)
+        # Stop function call and send value back
         raise ReturnException(value)
 
     def visit_break(self, node):
-        result_type = self.check_expression_type(node)
         raise BreakException()
 
     def visit_expression(self, node):
@@ -895,32 +901,39 @@ class InterpreterVisitor(Visitor):
         return value
     
     def visit_call(self, node):
-        self.check_expression_type(node) # Sync current runtime types without checking the whole function body
         function = self.lookup_fun(node.name)
+
+        # Check if function exists and argument count matches
+        self.type_checker.check_call(node, function)
+
         params = function["params"] or []
         body = function["body"]
         args = node.args or []
-        
+
         local_vars = {}
+
+        # Evaluate arguments and bind them to parameters
         for param, arg in zip(params, args):
             local_vars[param] = self.visit(arg)
 
-        old = self.v_table # Save current scope
+        old = self.v_table
         self.v_table = {
             "__parent__": old,
             **local_vars
         }
+
         old_fun = self.f_table
         self.f_table = {"__parent__": old_fun}
+
         try:
             for stmt in body:
                 self.visit(stmt)
 
         except ReturnException as r:
-            return r.value # Return the actual runtime value from the function
+            return r.value
 
         finally:
-            self.v_table = old # Always restore scope after the function call
+            self.v_table = old
             self.f_table = old_fun
 
         return None

@@ -197,37 +197,27 @@ class TypeChecker:
     def visit_return(self, node):
         return self.visit(node.value)
 
-    def visit_define(self, node):
+    def check_define(self, node, already_exists):
         self.validate_game_name(node, "function")
-        
-        # Check if fthe function are already defined
-        if node.name in self.f_table:
+
+        # Check if the function are already defined
+        if already_exists:
             raise TypeError(
                 self.code,
                 node,
                 f"Function: '{node.name}' already exists"
             )
 
-        # Save data as 'params' and 'body' in functions
-        self.f_table[node.name] = {
-            "params": node.params,
-            "body": node.body
-        }
-
-        return None
-
-    def visit_call(self, node):
-        # Check if the function are already definend, then get its data
-        if self.lookup_fun(node.name) is False:
+    def check_call(self, node, function):
+        # Check if the function are already defined
+        if function is False:
             raise TypeError(
                 self.code,
                 node,
                 f"The function: '{node.name}' does not exist"
             )
 
-        func = self.lookup_fun(node.name)
-        
-        params = func["params"] or []
+        params = function["params"] or []
         args = node.args or []
 
         # validate argument counts
@@ -237,34 +227,6 @@ class TypeChecker:
                 node,
                 f"Function '{node.name}' expects {len(params)} args, got {len(args)}"
             )
-        
-        # Update the local variable types
-        local_vars = {}
-        for p, arg in zip(params, args):
-            local_vars[p] = self.visit(arg)
-        
-        # Temperary switch scope
-        new_scope = {
-            "__parent__": self.v_table,
-            **local_vars
-        }
-        old = self.v_table.copy()
-        self.v_table = new_scope
-        old_fun = self.f_table.copy()
-        self.f_table = {"__parent__": old_fun}
-
-        # Typecheck the function
-        return_type = None
-        for stmt in func["body"]:
-            t = self.visit(stmt)
-            if isinstance(stmt, Return):
-                return_type = t
-
-        # Restore old scope
-        self.v_table = {**old, **self.v_table["__parent__"]}
-        self.f_table = old_fun
-
-        return return_type
 
     def check_add(self, node, left_type, right_type):
         # Allow string concatenation

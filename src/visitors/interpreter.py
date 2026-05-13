@@ -644,112 +644,112 @@ class InterpreterVisitor(Visitor):
 
     # EXPRESSIONS
     def visit_or_expr(self, node):
-        result_type = self.check_expression_type(node)
+        left = self.visit(node.left)
+        right = self.visit(node.right)
 
-        left = self.unwrap(self.visit(node.left))
-        right = self.unwrap(self.visit(node.right))
+        result_type = self.type_checker.check_bool_ops_expr(node, "OR", left.type, right.type)
 
         return RuntimeValue(
             result_type,
-            left or right
+            self.unwrap(left) or self.unwrap(right)
         )
 
     def visit_and_expr(self, node):
-        result_type = self.check_expression_type(node)
+        left = self.visit(node.left)
+        right = self.visit(node.right)
 
-        left = self.unwrap(self.visit(node.left))
-        right = self.unwrap(self.visit(node.right))
+        result_type = self.type_checker.check_bool_ops_expr(node, "AND", left.type, right.type)
 
         return RuntimeValue(
             result_type,
-            left and right
+            self.unwrap(left) and self.unwrap(right)
         )
 
     def visit_xor_expr(self, node):
-        result_type = self.check_expression_type(node)
+        left = self.visit(node.left)
+        right = self.visit(node.right)
 
-        left = self.unwrap(self.visit(node.left))
-        right = self.unwrap(self.visit(node.right))
+        result_type = self.type_checker.check_bool_ops_expr(node, "XOR", left.type, right.type)
 
         return RuntimeValue(
             result_type,
-            (left and not right) or (not left and right)
+            self.unwrap(left) ^ self.unwrap(right)
         )
 
     def visit_not_expr(self, node):
-        result_type = self.check_expression_type(node)
+        value = self.visit(node.cond)
 
-        value = self.unwrap(self.visit(node.cond))
+        result_type = self.type_checker.check_bool_ops_expr(node, "AND", value.type, "bool")
 
         return RuntimeValue(
             result_type,
-            not value
+            not self.unwrap(value)
         )
 
     def visit_equal_expr(self, node):
-        result_type = self.check_expression_type(node)
+        left = self.visit(node.left)
+        right = self.visit(node.right)
 
-        left = self.unwrap(self.visit(node.left))
-        right = self.unwrap(self.visit(node.right))
+        result_type = self.type_checker.check_comp_ops_expr(node, "==", left.type, right.type)
 
         return RuntimeValue(
             result_type,
-            left == right
+            self.unwrap(left) == self.unwrap(right)
         )
 
     def visit_not_equal_expr(self, node):
-        result_type = self.check_expression_type(node)
+        left = self.visit(node.left)
+        right = self.visit(node.right)
 
-        left = self.unwrap(self.visit(node.left))
-        right = self.unwrap(self.visit(node.right))
+        result_type = self.type_checker.check_comp_ops_expr(node, "!=", left.type, right.type)
 
         return RuntimeValue(
             result_type,
-            left != right
+            self.unwrap(left) != self.unwrap(right)
         )
 
     def visit_greater_expr(self, node):
-        result_type = self.check_expression_type(node)
+        left = self.visit(node.left)
+        right = self.visit(node.right)
 
-        left = self.unwrap(self.visit(node.left))
-        right = self.unwrap(self.visit(node.right))
+        result_type = self.type_checker.check_comp_ops_expr(node, ">", left.type, right.type)
 
         return RuntimeValue(
             result_type,
-            left > right
+            self.unwrap(left) > self.unwrap(right)
         )
 
     def visit_less_expr(self, node):
-        result_type = self.check_expression_type(node)
+        left = self.visit(node.left)
+        right = self.visit(node.right)
 
-        left = self.unwrap(self.visit(node.left))
-        right = self.unwrap(self.visit(node.right))
+        result_type = self.type_checker.check_comp_ops_expr(node, "<", left.type, right.type)
 
         return RuntimeValue(
             result_type,
-            left < right
+            self.unwrap(left) < self.unwrap(right)
         )
 
     def visit_greater_equal_expr(self, node):
-        result_type = self.check_expression_type(node)
+        left = self.visit(node.left)
+        right = self.visit(node.right)
 
-        left = self.unwrap(self.visit(node.left))
-        right = self.unwrap(self.visit(node.right))
+        result_type = self.type_checker.check_comp_ops_expr(node, ">=", left.type, right.type)
 
         return RuntimeValue(
             result_type,
-            left >= right
+            self.unwrap(left) >= self.unwrap(right)
         )
 
     def visit_less_equal_expr(self, node):
-        result_type = self.check_expression_type(node)
+        left = self.visit(node.left)
+        right = self.visit(node.right)
 
-        left = self.unwrap(self.visit(node.left))
-        right = self.unwrap(self.visit(node.right))
+        result_type = self.type_checker.check_comp_ops_expr(node, "<=", left.type, right.type)
 
         return RuntimeValue(
             result_type,
-            left <= right
+            self.unwrap(left) <= self.unwrap(right)
         )
     
     def visit_add(self, node):

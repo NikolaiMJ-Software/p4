@@ -398,46 +398,19 @@ class TypeChecker:
 
         return "bool"
 
-    def visit_while(self, node):
-        cond_type = self.visit(node.cond)
-
+    def check_while(self, node, cond_type):
+        # while condition must be bool
         if cond_type != "bool":
             raise TypeError(
                 self.code,
                 node,
                 f"while condition must be bool, got {cond_type}"
             )
-        # saves current scope
-        old = self.v_table.copy()
-        self.v_table = {"__parent__": self.v_table}
-        old_fun = self.f_table.copy()
-        self.f_table = {"__parent__": old_fun}
 
-        # Checks all statements inside loop body
-        for stmt in node.body:
-            self.visit(stmt)
+        return "bool"
 
-        #restore previous scope
-        self.v_table = {**old, **self.v_table["__parent__"]}
-        self.f_table = old_fun
-
-        return None
-
-    def visit_dowhile(self, node):
-        # Saves current scope
-        old = self.v_table.copy()
-        self.v_table = {"__parent__": self.v_table}
-        old_fun = self.f_table.copy()
-        self.f_table = {"__parent__": old_fun}
-        # Checks body
-        for stmt in node.body:
-            self.visit(stmt)
-        # Restore previous scope
-        self.v_table = {**old, **self.v_table["__parent__"]}
-        self.f_table = old_fun
-
-        # check condition
-        cond_type = self.visit(node.cond)
+    def check_dowhile(self, node, cond_type):
+        # dowhile condition must be bool
         if cond_type != "bool":
             raise TypeError(
                 self.code,
@@ -445,7 +418,7 @@ class TypeChecker:
                 f"dowhile condition must be bool, got {cond_type}"
             )
 
-        return None
+        return "bool"
 
     def visit_create_list(self, node):
         self.validate_game_name(node, "list")
@@ -541,11 +514,8 @@ class TypeChecker:
         return target_list
 
 
-    def visit_forrange(self, node):
+    def check_forrange(self, node, start_type, end_type):
         # Range start and end must be numeric
-        start_type = self.visit(node.start)
-        end_type = self.visit(node.end)
-
         if not self.is_numeric(start_type) or not self.is_numeric(end_type):
             raise TypeError(
                 self.code,
@@ -553,56 +523,23 @@ class TypeChecker:
                 f"for-range bounds must be numeric, got {start_type} and {end_type}"
             )
 
-        # Saves old scope and creates loop variable
-        old = self.v_table.copy()
-        self.v_table = {"__parent__": self.v_table}
-        old_fun = self.f_table
-        self.f_table = {"__parent__": old_fun}
-        self.v_table[node.name] = "int"
-
-        # Checks all statements inside loop body once
-        for stmt in node.body:
-            self.visit(stmt)
-
-        # Restore previous scope
-        self.v_table = {**old, **self.v_table["__parent__"]}
-        self.f_table = old_fun
-        return None
-
-    def visit_foreach(self, node):
-        target_list = self.lookup_var(node.collection)
-        if target_list is False:
+    def check_foreach(self, node, collection):
+        # Check if the list exists
+        if collection is False:
             raise TypeError(
                 self.code,
                 node,
                 f"The list: '{node.collection}' does not exist"
             )
 
-        if not isinstance(target_list, list):
+        # Check if the collection is a list
+        if not isinstance(collection, list):
             raise TypeError(
                 self.code,
                 node,
-                f"Cannot iterate over non-list type '{target_list}'"
+                f"Cannot iterate over non-list type '{collection}'"
             )
 
-        old = self.v_table.copy()
-        self.v_table = {"__parent__": self.v_table}
-        old_fun = self.f_table.copy()
-        self.f_table = {"__parent__": old_fun}
-
-        for item in target_list:
-            old_table = self.v_table.copy()
-            self.v_table[node.name] = item
-
-            for stmt in node.body:
-                self.visit(stmt)
-
-            self.v_table = old_table
-
-        self.v_table = {**old, **self.v_table["__parent__"]}
-        self.f_table = old_fun
-        return None
-        
     def visit_input(self, node):
         scope = self.v_table
 

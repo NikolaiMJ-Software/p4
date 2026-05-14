@@ -878,7 +878,7 @@ class InterpreterVisitor(Visitor):
         
         index = self.unwrap(index)
         # Check if the index are out of bound
-        if index < 0 and index > len(lst) - 1:
+        if index < 0 or index > len(lst) - 1:
             raise InterpreterError(
                 self.code,
                 node,

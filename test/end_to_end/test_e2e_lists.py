@@ -1,6 +1,6 @@
 import pytest
 
-from setup_e2e import *
+from setup_e2e import run_program
 from src.errors import TypeError as TypeCheckError
 from src.errors import InterpreterError
 
@@ -51,7 +51,7 @@ define Play:
     output index "zero" of Items
 '''
 
-    with pytest.raises(TypeCheckError, match="List index must be int, got str"):
+    with pytest.raises(TypeCheckError, match="List index must be 'int', got a 'str'"):
         run_program(code, monkeypatch, capsys)
 
 
@@ -67,6 +67,6 @@ create Z is 2
 output index 2 of index Y of index Z of X       # 9.2
 output index 2 of index Y of index Z + 1 of X   # <----- Error
 '''
-    with pytest.raises(TypeCheckError, match="The index: '3' does not exist in 'X'"):
+    with pytest.raises(InterpreterError, match="The index: '3' does not exist in 'X'"):
         output = run_program(code, monkeypatch, capsys)
         assert output == ["[1, [2.1, 2.3, 2.5], [[4, 'he he', 9.2], 5]]", "9.2"]

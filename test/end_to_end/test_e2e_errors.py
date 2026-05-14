@@ -59,7 +59,7 @@ define Play:
     CriticalHit is chance "yes" in 100
 '''
 
-    with pytest.raises(TypeCheckError, match="chance requires numeric types, got str and int"):
+    with pytest.raises(TypeCheckError, match="chance requires numeric types, got 'str' and 'int'"):
         run_program(code, monkeypatch, capsys)
 
 
@@ -70,7 +70,7 @@ define Play:
     Health is between "low" and 100
 '''
 
-    with pytest.raises(TypeCheckError, match="between requires numeric types, got str and int"):
+    with pytest.raises(TypeCheckError, match="between requires numeric types, got 'str' and 'int'"):
         run_program(code, monkeypatch, capsys)
 
 

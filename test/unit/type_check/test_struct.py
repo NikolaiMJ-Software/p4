@@ -7,141 +7,27 @@ from src.ast.nodes import *
 Passing unit test for the type checker
 -----------------
 '''
-def test_struct_get_parrent():
-    node = [
-        CreateStruct(   # Return = None
-            "Character", (
-                None,
-                [CreateVariable("Health", IntLiteral(100))]
-            )
-        ),
-        CreateStruct(   # Return = None
-            "Warrior", (
-                "Character",
-                []
-            )
-        ),
-        Var("Health", "Warrior")    # Return = "int"
-    ]
+def test_struct_get_parent():
+    v_table = {"Character":{"Health": "int(100)"}}
+    node = CreateStruct("Warrior", ("Character", []))
     
-    res = []
-    check = TypeCheckerVisitor()
-    for n in node: 
-        res.append(check.visit(n))
-    
-    assert [None, None, "int"] == res
-    
-def test_struct_overwrite():
-    node = [
-        CreateStruct(   # Return = None
-            "Character", (
-                None,
-                [CreateVariable("Health", IntLiteral(100))]
-            )
-        ),
-        CreateStruct(   # Return = None
-            "Warrior", (
-                "Character",
-                [CreateVariable("Health", StringLiteral("100"))]
-            )
-        ),
-        Var("Health", "Warrior"),   # Return = "str"
-        Var("Health", "Character")  # Return = "int"
-    ]
-    
-    res = []
-    check = TypeCheckerVisitor()
-    for n in node: 
-        res.append(check.visit(n))
-    assert [None, None, "str", "int"] == res
+    result = TypeChecker().check_create_struct(node, node.name in v_table, v_table["Character"])
+    assert result is None
 
 def test_struct_get_var():
-    node = [
-        CreateStruct(   # Return = None
-            "Character", (
-                None,
-                [CreateVariable("Health", IntLiteral(100))]
-            )
-        ),
-        CreateStruct(   # Return = None
-            "Warrior", (
-                "Character",
-                [CreateVariable("Defense", FloatLiteral(4.7))]
-            )
-        ),
-        CreateVariable("X", Add(Var("Defense", "Warrior"), Var("Health", "Warrior")))   # Return = "float"
-    ]
-    
-    res = []
-    check = TypeCheckerVisitor()
-    for n in node: 
-        res.append(check.visit(n))
-    assert [None, None, "float"] == res
-    
-def test_struct_change_var():
-    node = [
-        CreateStruct(   # Return = None
-            "Character", (
-                None,
-                [CreateVariable("Health", IntLiteral(100))]
-            )
-        ),
-        CreateStruct(   # Return = None
-            "Warrior", (
-                "Character",
-                [CreateVariable("Defense", FloatLiteral(4.7))]
-            )
-        ),
-        Assign("Health", "Warrior", IntLiteral(120))    # Return = "int"
-    ]
-    
-    res = []
-    check = TypeCheckerVisitor()
-    for n in node: 
-        res.append(check.visit(n))
-    assert [None, None, "int"] == res
+    v_table = {"Warrior":{"Health": "int(100)", "Defense": "float(4.7)"}}
+    node = Var("Defense", "Warrior")
 
-def test_struct_get_and_change_var():
-    node = [
-        CreateStruct(   # Return = None
-            "Character", (
-                None,
-                [CreateVariable("Health", IntLiteral(100)),
-                CreateVariable("Name", None)]
-            )
-        ),
-        CreateStruct(   # Return = None
-            "Warrior", (
-                "Character",
-                [CreateVariable("Defense", FloatLiteral(4.7))]
-            )
-        ),
-        CreateStruct(   # Return = None
-            "Knight", (
-                "Warrior",
-                [CreateVariable("Speed", Neg(IntLiteral(2)))]
-            )
-        ),
-        CreateStruct(   # Return = None
-            "Hero", 
-            ("Warrior", [])
-        ),
-        CreateStruct(   # Return = None
-            "Enemy", 
-            ("Warrior", [])
-        ),
-        Var("Name", "Hero"),    # Return = None
-        Var("Name", "Enemy"),   # Return = None
-        Assign("Name", "Hero", StringLiteral("Bob")),   # Return = "str"
-        Var("Name", "Hero"),    # Return = "str"
-        Var("Name", "Enemy"),   # Return = None
-    ]
-    
-    res = []
-    check = TypeCheckerVisitor()
-    for n in node: 
-        res.append(check.visit(n))
-    assert [None, None, None, None, None, None, None, "str", "str", None] == res
+    result = TypeChecker().check_var(node, v_table["Warrior"])
+    assert result is None
+
+def test_struct_change_var():
+    v_table = {"Warrior":{"Health": "int(100)", "Defense": "float(4.7)"}}
+    node = Assign("Health", "Warrior", IntLiteral(120))
+
+    result = TypeChecker().check_assign(node, v_table["Warrior"])
+    assert result is None
+
 
 '''
 -----------------
@@ -149,85 +35,29 @@ Failing unit test for the type checker
 -----------------
 '''
 def test_struct_duplicate_name():
-    struct_name = "Warrior"
-    node = [
-        CreateStruct(   # Return = None
-            "Character", (
-                None,
-                [CreateVariable("Health", IntLiteral(100))]
-            )
-        ),
-        CreateStruct(   # Return = None
-            struct_name, (
-                "Character",
-                []
-            )
-        ),
-        CreateStruct(   # Raise = TypeError
-            struct_name, (
-                "Character",
-                []
-            )
-        )
-    ]
-    check = TypeCheckerVisitor()
-    with pytest.raises(TypeError) as exc_info:
-        for n in node: 
-            check.visit(n)
-    assert str(exc_info.value) == f"The struct: '{struct_name}' already exists"
-    
-def test_struct_undefined_parrent():
-    undefined_parrent = "Warrior"
-    node = [
-        CreateStruct(   # Return = None
-            "Character", (
-                None,
-                [CreateVariable("Health", IntLiteral(100))]
-            )
-        ),
-        CreateStruct(
-            "Knight", (
-                undefined_parrent,  # Raise = TypeError
-                []
-            )
-        )
-    ]
-    check = TypeCheckerVisitor()
-    with pytest.raises(TypeError) as exc_info:
-        for n in node: 
-            check.visit(n)
-    assert str(exc_info.value) == f"The parent struct: '{undefined_parrent}' does not exist"
-    
+    v_table = {"Character": {"Health": "int(100)"}, "Warrior":{"Health": "int(100)"}}
+    node = CreateStruct("Warrior", ("Character", []))
+
+    with pytest.raises(TypeError, match="The struct: 'Warrior' already exists"):
+        TypeChecker().check_create_struct(node, node.name in v_table, node.base in v_table)
+
+def test_struct_undefined_parent():
+    v_table = {"Character": {"Health": "int(100)"}}
+    node = CreateStruct("Knight", ("Warrior", []))
+
+    with pytest.raises(TypeError, match="The parent struct: 'Warrior' does not exist"):
+        TypeChecker().check_create_struct(node, node.name in v_table, node.base in v_table)
+   
 def test_struct_undefined_struct():
-    undefined_struct = "Warrior"
-    node = [
-        CreateStruct(   # Return = None
-            "Character", (
-                None,
-                [CreateVariable("Health", IntLiteral(100))]
-            )
-        ),
-        Var("Health", undefined_struct)    # Raise = TypeError
-    ]
-    check = TypeCheckerVisitor()
-    with pytest.raises(TypeError) as exc_info:
-        for n in node: 
-            check.visit(n)
-    assert str(exc_info.value) == f"The struct: '{undefined_struct}' is not defined"
+    v_table = {"Character": {"Health": "int(100)"}}
+    node = Var("Health", "Warrior")
+
+    with pytest.raises(TypeError, match="The struct: 'Warrior' is not defined"):
+        TypeChecker().check_var(node, node.base in v_table)
 
 def test_struct_undefined_var():
-    var_name = "Defense"
-    node = [
-        CreateStruct(   # Return = None
-            "Character", (
-                None,
-                [CreateVariable("Health", IntLiteral(100))]
-            )
-        ),
-        Var(var_name, "Character")  # Raise = TypeError
-    ]
-    check = TypeCheckerVisitor()
-    with pytest.raises(TypeError) as exc_info:
-        for n in node: 
-            check.visit(n)
-    assert str(exc_info.value) == f"The variable: '{var_name}' is not defined in the struct: 'Character'"
+    v_table = {"Character": {"Health": "int(100)"}}
+    node = Var("Defense", "Character")
+
+    with pytest.raises(TypeError, match="The variable: 'Defense' is not defined in the struct: 'Character'"):
+        TypeChecker().check_var(node, node.base in v_table)

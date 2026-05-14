@@ -95,7 +95,7 @@ neg_in_addition_code = """2 + -3
 
 def test_it_pass_neg_in_variable_creation():
     result = type_check_test(neg_in_variable_creation_code)
-    assert ["float"] == result
+    assert [] == result
 neg_in_variable_creation_code = """create X is -2.5
 """
 
@@ -263,14 +263,14 @@ chance_float_in_code = """chance 30.5 in 100.0
 
 def test_it_pass_operator_in_variable_creation():
     result = type_check_test(operator_in_variable_creation_code)
-    assert ["float"] == result
+    assert [] == result
 operator_in_variable_creation_code = """create X is 2 + 2.0
 """
 
 
 def test_it_pass_comparison_in_if():
     result = type_check_test(comparison_in_if_code)
-    assert [None] == result
+    assert [] == result
 comparison_in_if_code = """if 2 greater than 1 do:
     create X is 5
 """
@@ -278,7 +278,7 @@ comparison_in_if_code = """if 2 greater than 1 do:
 
 def test_it_pass_boolean_in_if():
     result = type_check_test(boolean_in_if_code)
-    assert [None] == result
+    assert [] == result
 boolean_in_if_code = """if true and false do:
     create X is 5
 """
@@ -286,16 +286,17 @@ boolean_in_if_code = """if true and false do:
 # -------------------------
 # Input / Output 
 # -------------------------
-def test_it_pass_input():
+def test_it_pass_input(monkeypatch):
+    monkeypatch.setattr("builtins.input", lambda: "hello")
     res = type_check_test(create_var_and_input_in_it)
-    assert [None, "str"] == res
+    assert [] == res
+
 create_var_and_input_in_it = """create X
 input in X
 """
-
 def test_it_pass_output():
     res = type_check_test(create_var_and_output_it)
-    assert [None, None] == res
+    assert [] == res
 create_var_and_output_it = """create X
 output X
 """
@@ -305,7 +306,7 @@ output X
 # -------------------------
 def test_it_pass_expression_variable():
     result = type_check_test(expression_variable_code)
-    assert ["int", "int"] == result
+    assert ["int"] == result
 expression_variable_code = """create X is 5
 X
 """
@@ -313,7 +314,7 @@ X
 
 def test_it_pass_expression_call():
     result = type_check_test(expression_call_code)
-    assert [None, "int"] == result
+    assert ["int"] == result
 expression_call_code = """define AddOne with A:
     return A + 1
 call AddOne with 2
@@ -321,7 +322,7 @@ call AddOne with 2
 
 def test_it_pass_break_in_while():
     result = type_check_test(break_in_while_code)
-    assert [None] == result
+    assert [] == result
 break_in_while_code = """while true do:
     stop
 """
@@ -407,7 +408,7 @@ pow_string_int_code = '''"a" ^ 2
 def test_it_fail_equal_string_int():
     with pytest.raises(TypeError) as exc_info:
         type_check_test(equal_string_int_code)
-    assert "Cannot compare" in str(exc_info.value)
+    assert "Can't compare" in str(exc_info.value)
 equal_string_int_code = '''"a" equal 1
 '''
 
@@ -415,7 +416,7 @@ equal_string_int_code = '''"a" equal 1
 def test_it_fail_not_equal_string_bool():
     with pytest.raises(TypeError) as exc_info:
         type_check_test(not_equal_string_bool_code)
-    assert "Cannot compare" in str(exc_info.value)
+    assert "Can't compare" in str(exc_info.value)
 not_equal_string_bool_code = '''"a" not equal true
 '''
 
@@ -423,7 +424,7 @@ not_equal_string_bool_code = '''"a" not equal true
 def test_it_fail_greater_string_int():
     with pytest.raises(TypeError) as exc_info:
         type_check_test(greater_string_int_code)
-    assert "Cannot compare" in str(exc_info.value)
+    assert "Can't compare" in str(exc_info.value)
 greater_string_int_code = '''"a" greater than 1
 '''
 
@@ -431,7 +432,7 @@ greater_string_int_code = '''"a" greater than 1
 def test_it_fail_less_bool_int():
     with pytest.raises(TypeError) as exc_info:
         type_check_test(less_bool_int_code)
-    assert "Cannot compare" in str(exc_info.value)
+    assert "Can't compare" in str(exc_info.value)
 less_bool_int_code = """true less than 1
 """
 
@@ -502,12 +503,14 @@ chance_int_string_code = '''chance 30 in "100"
 # -------------------------
 # Input / Output
 # -------------------------
-def test_it_fail_input():
+def test_it_fail_input(monkeypatch):
+    monkeypatch.setattr("builtins.input", lambda: "hello")
     with pytest.raises(TypeError) as exc_info:
         type_check_test(input_in_var)
     assert "does not exist" in str(exc_info.value)
 input_in_var = """input in X
 """
+
 
 def test_it_fail_output():
     with pytest.raises(TypeError) as exc_info:

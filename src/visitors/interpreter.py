@@ -611,7 +611,7 @@ class InterpreterVisitor(Visitor):
     def visit_not_expr(self, node):
         value = self.visit(node.cond)
 
-        result_type = self.type_checker.check_bool_ops_expr(node, "AND", value.type, "bool")
+        result_type = self.type_checker.check_bool_ops_expr(node, "NOT", value.type)
 
         return RuntimeValue(
             result_type,
@@ -775,11 +775,13 @@ class InterpreterVisitor(Visitor):
         left_value = self.unwrap(left)
         right_value = self.unwrap(right)
 
-        result_value = left_value
-        if left_value < right_value:
-            result_value = random.randrange(left_value, right_value + 1)
-        elif left_value > right_value:
-            result_value = random.randrange(right_value, left_value + 1)
+        low = min(left_value, right_value)
+        high = max(left_value, right_value)
+
+        if result_type == "float":
+            result_value = random.uniform(low, high)
+        else:
+            result_value = random.randrange(low, high + 1)
 
         return RuntimeValue(result_type, result_value)
     
@@ -795,7 +797,7 @@ class InterpreterVisitor(Visitor):
 
         return RuntimeValue(
             result_type,
-            random.randrange(0, self.unwrap(right)) < self.unwrap(left)
+            random.uniform(0, self.unwrap(right)) < self.unwrap(left)
         )
     
     def visit_var(self, node):

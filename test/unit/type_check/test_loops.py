@@ -2,67 +2,62 @@ import pytest
 from src.visitors.type_checker import *
 from src.ast.nodes import *
 
-def make_checker():
-    return TypeCheckerVisitor()
+
+def test_forrange_valid_int_bounds():
+    node = Forrange("i", IntLiteral(1), IntLiteral(10), [])
+
+    result = TypeChecker().check_forrange(node, "int", "int")
+
+    assert result is None
 
 
-def test_forrange_valid():
-    checker = make_checker()
+def test_forrange_valid_float_bounds():
+    node = Forrange("i", FloatLiteral(1.5), FloatLiteral(10.5), [])
 
-    node = Forrange(
-        "i",
-        IntLiteral(1),
-        IntLiteral(10),
-        [CreateVariable("x", IntLiteral(2))]
-    )
+    result = TypeChecker().check_forrange(node, "float", "float")
 
-    assert checker.visit(node) is None
-    assert "i" not in checker.v_table
-    assert "x" not in checker.v_table
+    assert result is None
 
 
-def test_forrange_invalid_bounds():
-    checker = make_checker()
+def test_forrange_valid_mixed_numeric_bounds():
+    node = Forrange("i", IntLiteral(1), FloatLiteral(10.5), [])
 
-    node = Forrange(
-        "i",
-        StringLiteral("a"),
-        IntLiteral(10),
-        []
-    )
+    result = TypeChecker().check_forrange(node, "int", "float")
 
-    with pytest.raises(TypeError, match="for-range bounds must be numeric"):
-        checker.visit(node)
+    assert result is None
 
 
 def test_foreach_valid():
-    checker = make_checker()
-    checker.v_table["xs"] = ['int', 'int', 'float']
+    node = Foreach("item", "xs", [])
 
-    node = Foreach(
-        "item",
-        "xs",
-        [CreateVariable("y", Add(Var("item", None), IntLiteral(1)))]
-    )
-    assert checker.visit(node) is None
-    assert "item" not in checker.v_table
-    assert "y" not in checker.v_table
+    result = TypeChecker().check_foreach(node, ["int", "int", "float"])
+
+    assert result is None
+
+
+def test_forrange_invalid_start_bound():
+    node = Forrange("i", StringLiteral("a"), IntLiteral(10), [])
+
+    with pytest.raises(TypeError, match="for-range bounds must be numeric"):
+        TypeChecker().check_forrange(node, "str", "int")
+
+
+def test_forrange_invalid_end_bound():
+    node = Forrange("i", IntLiteral(1), StringLiteral("a"), [])
+
+    with pytest.raises(TypeError, match="for-range bounds must be numeric"):
+        TypeChecker().check_forrange(node, "int", "str")
 
 
 def test_foreach_missing_collection_fails():
-    checker = make_checker()
-
     node = Foreach("item", "xs", [])
 
-    with pytest.raises(TypeError, match="does not exist"):
-        checker.visit(node)
+    with pytest.raises(TypeError, match="The list: 'xs' does not exist"):
+        TypeChecker().check_foreach(node, False)
 
 
 def test_foreach_non_list_fails():
-    checker = make_checker()
-    checker.v_table["xs"] = "int"
-
     node = Foreach("item", "xs", [])
 
-    with pytest.raises(TypeError, match="Cannot iterate over non-list type"):
-        checker.visit(node)
+    with pytest.raises(TypeError, match="Cannot iterate over non-list type 'int'"):
+        TypeChecker().check_foreach(node, "int")

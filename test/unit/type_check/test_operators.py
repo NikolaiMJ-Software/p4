@@ -2,263 +2,217 @@ import pytest
 from src.visitors.type_checker import *
 from src.ast.nodes import *
 
-def make_checker():
-    return TypeCheckerVisitor()
-
 # -------------------------
 # basic helpers / literals
 # -------------------------
-
 def test_is_numeric():
-    checker = make_checker()
-    assert checker.is_numeric("int") is True
-    assert checker.is_numeric("float") is True
-    assert checker.is_numeric("str") is False
-    assert checker.is_numeric("bool") is False
-    assert checker.is_numeric(None) is False
+    assert TypeChecker().is_numeric("int") is True
+    assert TypeChecker().is_numeric("float") is True
+    assert TypeChecker().is_numeric("str") is False
+    assert TypeChecker().is_numeric("bool") is False
+    assert TypeChecker().is_numeric(None) is False
 
 
 def test_numeric_result_type():
-    checker = make_checker()
-
-    assert checker.numeric_result_type(None, "+", "int", "int") == "int"
-    assert checker.numeric_result_type(None, "+", "int", "float") == "float"
-    assert checker.numeric_result_type(None, "+", "float", "int") == "float"
-    assert checker.numeric_result_type(None, "+", "float", "float") == "float"
+    assert TypeChecker().numeric_result_type(None, "+", "int", "int") == "int"
+    assert TypeChecker().numeric_result_type(None, "+", "int", "float") == "float"
+    assert TypeChecker().numeric_result_type(None, "+", "float", "int") == "float"
+    assert TypeChecker().numeric_result_type(None, "+", "float", "float") == "float"
 
     with pytest.raises(TypeError, match="Expected numeric types"):
-        checker.numeric_result_type(None, "+", "str", "int")
-
-
-def test_literal_visits():
-    checker = make_checker()
-
-    assert checker.visit(IntLiteral(2)) == "int"
-    assert checker.visit(FloatLiteral(2.5)) == "float"
-    assert checker.visit(StringLiteral("hello")) == "str"
-    assert checker.visit(BoolLiteral(True)) == "bool"
+        TypeChecker().numeric_result_type(None, "+", "str", "int")
 
 # -------------------------
 # arithmetic
 # -------------------------
 
 def test_add():
-    checker = make_checker()
-
-    assert checker.visit(Add(IntLiteral(2), IntLiteral(2))) == "int"
-    assert checker.visit(Add(FloatLiteral(2.0), FloatLiteral(2.0))) == "float"
-    assert checker.visit(Add(IntLiteral(2), FloatLiteral(2.0))) == "float"
-    assert checker.visit(Add(FloatLiteral(2.0), IntLiteral(2))) == "float"
-    assert checker.visit(Add(StringLiteral("a"), StringLiteral("b"))) == "str"
+    assert TypeChecker().check_add(Add(IntLiteral(2), IntLiteral(2)), "int", "int") == "int"
+    assert TypeChecker().check_add(Add(FloatLiteral(2.0), FloatLiteral(2.0)), "float", "float") == "float"
+    assert TypeChecker().check_add(Add(IntLiteral(2), FloatLiteral(2.0)), "int", "float") == "float"
+    assert TypeChecker().check_add(Add(FloatLiteral(2.0), IntLiteral(2)), "float", "int") == "float"
+    assert TypeChecker().check_add(Add(StringLiteral("a"), StringLiteral("b")), "str", "str") == "str"
 
     with pytest.raises(TypeError, match="Expected numeric types"):
-        checker.visit(Add(StringLiteral("a"), IntLiteral(2)))
+        TypeChecker().check_add(Add(StringLiteral("a"), IntLiteral(2)), "str", "int")
 
 
 def test_neg():
-    checker = make_checker()
-
-    assert checker.visit(Neg(IntLiteral(2))) == "int"
-    assert checker.visit(Neg(FloatLiteral(2.5))) == "float"
-    assert checker.visit(Neg(Neg(IntLiteral(2)))) == "int"
-    assert checker.visit(Neg(Neg(FloatLiteral(2.5)))) == "float"
+    assert TypeChecker().check_neg(Neg(IntLiteral(2)), "int") == "int"
+    assert TypeChecker().check_neg(Neg(FloatLiteral(2.5)), "float") == "float"
 
     with pytest.raises(TypeError, match="NEG requires numeric type"):
-        checker.visit(Neg(StringLiteral("hello")))
+        TypeChecker().check_neg(Neg(StringLiteral("hello")), "str")
 
     with pytest.raises(TypeError, match="NEG requires numeric type"):
-        checker.visit(Neg(BoolLiteral(True)))
+        TypeChecker().check_neg(Neg(BoolLiteral(True)), "bool")
 
 
 def test_mul():
-    checker = make_checker()
-
-    assert checker.visit(Mul(IntLiteral(2), IntLiteral(2))) == "int"
-    assert checker.visit(Mul(IntLiteral(2), FloatLiteral(2.0))) == "float"
+    assert TypeChecker().check_mul(Mul(IntLiteral(2), IntLiteral(2)), "int", "int") == "int"
+    assert TypeChecker().check_mul(Mul(IntLiteral(2), FloatLiteral(2.0)), "int", "float") == "float"
 
     with pytest.raises(TypeError, match="Expected numeric types"):
-        checker.visit(Mul(StringLiteral("a"), IntLiteral(2)))
+        TypeChecker().check_mul(Mul(StringLiteral("a"), IntLiteral(2)), "str", "int")
 
 
 def test_div():
-    checker = make_checker()
-
-    assert checker.visit(Div(IntLiteral(4), IntLiteral(2))) == "float"
-    assert checker.visit(Div(FloatLiteral(4.0), IntLiteral(2))) == "float"
+    assert TypeChecker().check_div(Div(IntLiteral(4), IntLiteral(2)), "int", "int") == "float"
+    assert TypeChecker().check_div(Div(FloatLiteral(4.0), IntLiteral(2)), "float", "int") == "float"
 
     with pytest.raises(TypeError, match="Expected numeric types"):
-        checker.visit(Div(StringLiteral("a"), IntLiteral(2)))
+        TypeChecker().check_div(Div(StringLiteral("a"), IntLiteral(2)), "str", "int")
 
 
 def test_pow():
-    checker = make_checker()
-
-    assert checker.visit(Pow(IntLiteral(2), IntLiteral(3))) == "int"
-    assert checker.visit(Pow(IntLiteral(2), FloatLiteral(3.0))) == "float"
+    assert TypeChecker().check_pow(Pow(IntLiteral(2), IntLiteral(3)), "int", "int") == "int"
+    assert TypeChecker().check_pow(Pow(IntLiteral(2), FloatLiteral(3.0)), "int", "float") == "float"
 
     with pytest.raises(TypeError, match="Expected numeric types"):
-        checker.visit(Pow(StringLiteral("a"), IntLiteral(2)))
+        TypeChecker().check_pow(Pow(StringLiteral("a"), IntLiteral(2)), "str", "int")
 
 
 # -------------------------
 # comparisons
 # -------------------------
-
-def test_comparable_helpers():
-    checker = make_checker()
-
-    assert checker.comparable_ordered("int", "float") is True
-    assert checker.comparable_ordered("int", "str") is False
-
-    assert checker.comparable_equality("int", "int") is True
-    assert checker.comparable_equality("int", "float") is True
-    assert checker.comparable_equality("str", "str") is True
-    assert checker.comparable_equality("str", "bool") is False
-
-
 def test_equal_expr():
-    checker = make_checker()
+    node0 = EqualExpr(IntLiteral(1), IntLiteral(1))
+    node1 = EqualExpr(IntLiteral(1), FloatLiteral(1.0))
+    node2 = EqualExpr(StringLiteral("a"), StringLiteral("b"))
 
-    assert checker.visit(EqualExpr(IntLiteral(1), IntLiteral(1))) == "bool"
-    assert checker.visit(EqualExpr(IntLiteral(1), FloatLiteral(1.0))) == "bool"
-    assert checker.visit(EqualExpr(StringLiteral("a"), StringLiteral("b"))) == "bool"
+    result0 = TypeChecker().check_comp_ops_expr(node0, "==", "int", "int")
+    result1 = TypeChecker().check_comp_ops_expr(node1, "==", "int", "float")
+    result2 = TypeChecker().check_comp_ops_expr(node2, "==", "str", "str")
 
-    with pytest.raises(TypeError, match="Cannot compare"):
-        checker.visit(EqualExpr(StringLiteral("a"), IntLiteral(1)))
+    assert result0 == "bool"
+    assert result1 == "bool"
+    assert result2 == "bool"
+
+    with pytest.raises(TypeError, match="Can't compare: 'str' == 'int'"):
+        TypeChecker().check_comp_ops_expr(EqualExpr(StringLiteral("a"), IntLiteral(1)), "==", "str", "int")
 
 
 def test_not_equal_expr():
-    checker = make_checker()
+    node0 = NotEqualExpr(IntLiteral(1), FloatLiteral(1.0))
+    node1 = NotEqualExpr(StringLiteral("a"), BoolLiteral(True))
 
-    assert checker.visit(NotEqualExpr(IntLiteral(1), FloatLiteral(1.0))) == "bool"
+    result = TypeChecker().check_comp_ops_expr(node0, "!=", "int", "float")
+    assert result == "bool"
 
-    with pytest.raises(TypeError, match="Cannot compare"):
-        checker.visit(NotEqualExpr(StringLiteral("a"), BoolLiteral(True)))
+    with pytest.raises(TypeError, match="Can't compare: 'str' != 'bool'"):
+        TypeChecker().check_comp_ops_expr(node1, "!=", "str", "bool")
 
 
 def test_ordered_comparisons():
-    checker = make_checker()
+    node0 = GreaterExpr(IntLiteral(2), IntLiteral(1))
+    node1 = LessExpr(IntLiteral(1), FloatLiteral(2.0))
+    node2 = GreaterEqualExpr(FloatLiteral(2.0), IntLiteral(2))
+    node3 = LessEqualExpr(IntLiteral(2), FloatLiteral(2.0))
 
-    assert checker.visit(GreaterExpr(IntLiteral(2), IntLiteral(1))) == "bool"
-    assert checker.visit(LessExpr(IntLiteral(1), FloatLiteral(2.0))) == "bool"
-    assert checker.visit(GreaterEqualExpr(FloatLiteral(2.0), IntLiteral(2))) == "bool"
-    assert checker.visit(LessEqualExpr(IntLiteral(2), FloatLiteral(2.0))) == "bool"
+    result0 = TypeChecker().check_comp_ops_expr(node0, ">", "int", "int")
+    result1 = TypeChecker().check_comp_ops_expr(node1, "<", "int", "float")
+    result2 = TypeChecker().check_comp_ops_expr(node2, ">=", "float", "int")
+    result3 = TypeChecker().check_comp_ops_expr(node3, "<=", "int", "float")
+    
+    assert result0 == "bool"
+    assert result1 == "bool"
+    assert result2 == "bool"
+    assert result3 == "bool"
 
-    with pytest.raises(TypeError, match="Cannot compare"):
-        checker.visit(GreaterExpr(StringLiteral("a"), IntLiteral(1)))
+    with pytest.raises(TypeError, match="Can't compare: 'str' > 'int'"):
+        TypeChecker().check_comp_ops_expr(GreaterExpr(StringLiteral("a"), IntLiteral(1)), ">", "str", "int")
 
-    with pytest.raises(TypeError, match="Cannot compare"):
-        checker.visit(LessExpr(BoolLiteral(True), IntLiteral(1)))
+    with pytest.raises(TypeError, match="Can't compare: 'bool' < 'int'"):
+        TypeChecker().check_comp_ops_expr(LessExpr(BoolLiteral(True), IntLiteral(1)), "<", "bool", "int")
 
 
 # -------------------------
 # boolean operators
 # -------------------------
+def test_bool_ops_expr():
+    node = AndExpr(BoolLiteral(True), BoolLiteral(False))
+    result = TypeChecker().check_bool_ops_expr(node, "AND", "bool", "bool")
+    assert result == "bool"
 
-def test_and_expr():
-    checker = make_checker()
+    with pytest.raises(TypeError, match="AND requires bool, got 'int' and 'bool'"):
+        TypeChecker().check_bool_ops_expr(AndExpr(IntLiteral(1), BoolLiteral(False)), "AND", "int", "bool")
 
-    assert checker.visit(AndExpr(BoolLiteral(True), BoolLiteral(False))) == "bool"
+    with pytest.raises(TypeError, match="OR requires bool, got 'str' and 'bool'"):
+        TypeChecker().check_bool_ops_expr(OrExpr(StringLiteral("a"), BoolLiteral(False)), "OR", "str", "bool")
 
-    with pytest.raises(TypeError, match="AND requires bool"):
-        checker.visit(AndExpr(IntLiteral(1), BoolLiteral(False)))
+    with pytest.raises(TypeError, match="NOT requires bool, got 'int'"):
+        TypeChecker().check_bool_ops_expr(NotExpr(IntLiteral(1)), "NOT", "int")
 
-
-def test_or_expr():
-    checker = make_checker()
-
-    assert checker.visit(OrExpr(BoolLiteral(True), BoolLiteral(False))) == "bool"
-
-    with pytest.raises(TypeError, match="OR requires bool"):
-        checker.visit(OrExpr(StringLiteral("a"), BoolLiteral(False)))
-
-
-def test_not_expr():
-    checker = make_checker()
-
-    assert checker.visit(NotExpr(BoolLiteral(True))) == "bool"
-
-    with pytest.raises(TypeError, match="NOT requires bool"):
-        checker.visit(NotExpr(IntLiteral(1)))
-
-
-def test_xor_expr():
-    checker = make_checker()
-
-    assert checker.visit(XorExpr(BoolLiteral(True), BoolLiteral(False))) == "bool"
-
-    with pytest.raises(TypeError, match="XOR requires bool"):
-        checker.visit(XorExpr(BoolLiteral(True), IntLiteral(1)))
+    with pytest.raises(TypeError, match="XOR requires bool, got 'bool' and 'float'"):
+        TypeChecker().check_bool_ops_expr(XorExpr(BoolLiteral(True), FloatLiteral(1.0)), "XOR", "bool", "float")
 
 
 # -------------------------
 # between / chance
 # -------------------------
-
 def test_between():
-    checker = make_checker()
+    node0 = Between(IntLiteral(30), IntLiteral(100))
+    node1 = Between(FloatLiteral(30.0), IntLiteral(100))
+    node2 = Between(IntLiteral(100), FloatLiteral(30.0))
+    node3 = Between(IntLiteral(100), StringLiteral("30"))
+    node4 = Between(StringLiteral("30"), BoolLiteral(True))
 
-    assert checker.visit(Between(IntLiteral(1), IntLiteral(10))) == "int"
-    assert checker.visit(Between(FloatLiteral(1.5), IntLiteral(10))) == "float"
+    result0 = TypeChecker().check_between(node0, "int", "int")
+    result1 = TypeChecker().check_between(node1, "float", "int")
+    result2 = TypeChecker().check_between(node2, "int", "float")
 
-    with pytest.raises(TypeError, match="between requires numeric types"):
-        checker.visit(Between(StringLiteral("a"), IntLiteral(10)))
-
+    assert result0 == "int"
+    assert result1 == "float"
+    assert result2 == "float"
+    with pytest.raises(TypeError, match="between requires numeric types, got 'int' and 'str'"):
+        TypeChecker().check_between(node3, "int", "str")
+    with pytest.raises(TypeError, match="between requires numeric types, got 'str' and 'bool'"):
+        TypeChecker().check_between(node4, "str", "bool")
 
 def test_chance():
-    checker = make_checker()
+    node0 = Chance(IntLiteral(30), IntLiteral(100))
+    node1 = Chance(FloatLiteral(30.0), IntLiteral(100))
+    node2 = Chance(IntLiteral(100), FloatLiteral(30.0))
+    node3 = Chance(IntLiteral(100), StringLiteral("30"))
+    node4 = Chance(StringLiteral("30"), BoolLiteral(True))
 
-    assert checker.visit(Chance(IntLiteral(30), IntLiteral(100))) == "bool"
-    assert checker.visit(Chance(FloatLiteral(30.0), IntLiteral(100))) == "bool"
+    result0 = TypeChecker().check_chance(node0, "int", "int")
+    result1 = TypeChecker().check_chance(node1, "float", "int")
+    result2 = TypeChecker().check_chance(node2, "int", "float")
 
-    with pytest.raises(TypeError, match="chance requires numeric types"):
-        checker.visit(Chance(BoolLiteral(True), IntLiteral(100)))
-        
+    assert result0 == "bool"
+    assert result1 == "bool"
+    assert result2 == "bool"
+    with pytest.raises(TypeError, match="chance requires numeric types, got 'int' and 'str'"):
+        TypeChecker().check_chance(node3, "int", "str")
+    with pytest.raises(TypeError, match="chance requires numeric types, got 'str' and 'bool'"):
+        TypeChecker().check_chance(node4, "str", "bool")
+
 # -------------------------
-# Input / Output
+# Input
 # -------------------------
-def test_input():
-    checker = make_checker()
-    
+def test_input_var():
     # X not initilized
-    with pytest.raises(TypeError, match="does not exist"):
-        checker.visit(Input([],"X"))
+    v_table = {}
+    node = Input([], "X", None)
+    with pytest.raises(TypeError, match="The variable: 'X' does not exist"):
+        TypeChecker().check_input(node, node.name in v_table, node.base in v_table)
     
     # X are initilized
-    nodes = [CreateVariable("X", None),Input([],"X")]
-    for node in nodes:
-        checker.visit(node)
+    v_table = {"X": "int(1)"}
+    node = Input([], "X", None)
+    result = TypeChecker().check_input(node, node.name in v_table, node.base in v_table)
+    assert result is None
 
-def test_output():
-    checker = make_checker()
+def test_input_struct():
     # X not initilized
-    with pytest.raises(TypeError, match="does not exist"):
-        checker.visit(Output([StringLiteral("Hello"), Var("X", None), IntLiteral(5)]))
+    v_table = {}
+    node = Input([], "X", "Car")
+    with pytest.raises(TypeError, match="The variable: 'X' does not exist in 'Car'"):
+        TypeChecker().check_input(node, node.name in v_table, node.base in v_table)
     
     # X are initilized
-    nodes = [CreateVariable("X", None),Output([StringLiteral("Hello"), Var("X", None)])]
-    for node in nodes:
-        checker.visit(node)
-
-# -------------------------
-# Expression / Break
-# -------------------------
-def test_expression():
-    checker = make_checker()
-
-    assert checker.visit(Expression(IntLiteral(2))) == "int"
-    assert checker.visit(Expression(FloatLiteral(2.5))) == "float"
-    assert checker.visit(Expression(StringLiteral("hello"))) == "str"
-    assert checker.visit(Expression(BoolLiteral(True))) == "bool"
-    assert checker.visit(Expression(Add(IntLiteral(2), IntLiteral(3)))) == "int"
-
-    checker.visit(CreateVariable("X", IntLiteral(5)))
-    assert checker.visit(Expression(Var("X", None))) == "int"
-
-    with pytest.raises(TypeError, match="does not exist"):
-        checker.visit(Expression(Var("Y", None)))
-
-def test_break():
-    checker = make_checker()
-
-    assert checker.visit(Break()) is None
+    v_table = {"Car": {"X": "int(1)"}}
+    node = Input([], "X", "Car")
+    result = TypeChecker().check_input(node, node.name in v_table["Car"], node.base in v_table)
+    assert result is None

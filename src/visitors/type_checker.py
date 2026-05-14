@@ -62,7 +62,7 @@ class TypeChecker:
             raise TypeError(
                 self.code,
                 node,
-                f"NEG requires numeric type, got {value_type}"
+                f"NEG requires numeric type, got '{value_type}'"
             )
 
         return value_type
@@ -178,18 +178,21 @@ class TypeChecker:
             raise TypeError(
                 self.code,
                 node,
-                f"Cannot compare {left_type} {symbol} {right_type}"
+                f"Can't compare: '{left_type}' {symbol} '{right_type}'"
             )
 
         return "bool"
 
     #boolean operators
-    def check_bool_ops_expr(self, node, ops, left_type, right_type):
+    def check_bool_ops_expr(self, node, ops, left_type, right_type = "bool"):
+        include_right = f" and '{right_type}'"
+        if ops == "NOT":
+            include_right = ""
         if left_type != "bool" or right_type != "bool":
             raise TypeError(
                 self.code,
                 node,
-                f"{ops} requires bool, got {left_type} and {right_type}"
+                f"{ops} requires bool, got '{left_type}'{include_right}"
             )
 
         return "bool"
@@ -199,7 +202,7 @@ class TypeChecker:
             raise TypeError(
                 self.code,
                 node,
-                f"between requires numeric types, got {left_type} and {right_type}"
+                f"between requires numeric types, got '{left_type}' and '{right_type}'"
             )
 
         if "float" in (left_type, right_type):
@@ -212,7 +215,7 @@ class TypeChecker:
             raise TypeError(
                 self.code,
                 node,
-                f"chance requires numeric types, got {left_type} and {right_type}"
+                f"chance requires numeric types, got '{left_type}' and '{right_type}'"
             )
 
         return "bool"
@@ -301,17 +304,18 @@ class TypeChecker:
 
     def check_input(self, node, already_exists, parent_exists):
         # Find the scope whith the variable we want to change
-        cat = None
-        if node.base and not parent_exists:
-            cat = "struct"
-        elif not node.base and not already_exists:
-            cat = "variable"
-        
-        if cat:
+        if node.base:
+            missing = not parent_exists
+            context = f" in '{node.base}'"
+        else:
+            missing = not already_exists
+            context = ""
+
+        if missing:
             raise TypeError(
                 self.code,
                 node,
-                f"The {cat}: '{node.name}' does not exist"
+                f"The variable: '{node.name}' does not exist{context}"
             )
 
     def check_create_struct(self, node, already_exists, parent_exists):

@@ -102,6 +102,7 @@ def test_it_pass_while_valid_and_scope_restored():
 while_valid_code = """create Cond is true
 while Cond do:
     create X is 1
+    Cond is false
 """
 
 
@@ -111,6 +112,7 @@ def test_it_pass_dowhile_valid_and_scope_restored():
 dowhile_valid_code = """create Cond is true
 do:
     create X is 1
+    Cond is false
 while Cond
 """
 
@@ -210,6 +212,7 @@ def test_it_fail_while_invalid_condition():
 while_invalid_condition_code = """create Cond is 1
 while Cond do:
     create X is 1
+    Cond is false
 """
 
 

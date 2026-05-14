@@ -1,31 +1,8 @@
-from src.visitors.base_visitor import Visitor
-from src.errors import Error
-from src.ast.nodes import Return, Var 
 from src.errors import TypeError
 
 class TypeChecker:
     def __init__(self, code=""):
         self.code = code
-        self.v_table = {}
-        self.f_table = {}
-
-    def lookup_var(self, name):
-        scope = self.v_table
-
-        while scope:
-            if name in scope:
-                return scope[name]
-            scope = scope.get("__parent__")
-        return False
-    
-    def lookup_fun(self, name):
-        scope = self.f_table
-
-        while scope:
-            if name in scope:
-                return scope[name]
-            scope = scope.get("__parent__")
-        return False
 
     def is_numeric(self, t):
         return t in ["int", "float"]
@@ -79,24 +56,6 @@ class TypeChecker:
                 node,
                 "The identifier 'Game' is reserved and can only be used as a struct name."
             )
-
-    def visit_int_literal(self, node):
-        return "int"
-
-    def visit_string_literal(self, node):
-        return "str"
-
-    def visit_float_literal(self, node):
-        return "float"
-
-    def visit_bool_literal(self, node):
-        return "bool"
-
-    def visit_expression(self, node):
-        return self.visit(node.value)
-
-    def visit_break(self, node):
-        return None
 
     def check_neg(self, node, value_type):
         if not self.is_numeric(value_type):
@@ -153,9 +112,6 @@ class TypeChecker:
                 node,
                 msg
             )
-
-    def visit_return(self, node):
-        return self.visit(node.value)
 
     def check_define(self, node, already_exists):
         self.validate_game_name(node, "function")

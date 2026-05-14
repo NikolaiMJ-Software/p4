@@ -49,53 +49,8 @@ class InterpreterVisitor(Visitor):
             scope = scope.get("__parent__")
         return False
 
-
-    # TYPE CHECK INTEGRATION
-    def runtime_to_type(self, value):
-        # Convert interpreter values into the type format used by the type checker
-        if value == "UNINITIALIZED":
-            return None
-
-        if value is None:
-            return None
-
-        if isinstance(value, RuntimeValue):
-            return value.type
-
-        if isinstance(value, bool):
-            return "bool"
-
-        if isinstance(value, int):
-            return "int"
-
-        if isinstance(value, float):
-            return "float"
-
-        if isinstance(value, str):
-            return "str"
-
-        if isinstance(value, list):
-            return [self.runtime_to_type(item) for item in value]
-
-        if isinstance(value, dict):
-            return {
-                name: self.runtime_to_type(field_value)
-                for name, field_value in value.items()
-            }
-
-        return None
-
-    def sync_type_checker(self):
-        type_table = {}
-        scope = self.v_table
-        
-        for name, value in scope.items():
-            type_table[name] = self.runtime_to_type(value)
-
-        self.type_checker.v_table = type_table
-        self.type_checker.f_table = self.f_table
-
-    def unwrap(self, value): #unwraps runtime value to just value
+    # Unwraps runtime value to just value
+    def unwrap(self, value):
         if isinstance(value, RuntimeValue):
             return value.value
         return value
@@ -108,12 +63,6 @@ class InterpreterVisitor(Visitor):
             else:
                 var_list.append(self.unwrap(var))
         return var_list
-
-    def check_expression_type(self, node):
-        self.sync_type_checker()
-
-        return self.type_checker.visit(node)
-
 
 
     # GAME STATE HANDLING

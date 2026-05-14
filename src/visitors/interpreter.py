@@ -264,7 +264,7 @@ class InterpreterVisitor(Visitor):
     def visit_if(self, node):
         # condition must be a bool
         cond = self.visit(node.cond)
-        self.type_checker.check_if(node, cond.type, "if")
+        self.type_checker.check_if(node, cond.type if hasattr(cond, "type") else None, "if")
 
         if self.unwrap(cond):
             # Save outer scope and create if scope

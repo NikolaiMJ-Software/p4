@@ -107,7 +107,7 @@ def test_it_pass_arithmetic_list_call():
         ]
     checker.visit(nodes)
     
-    assert checker.lookup_var("Answer") == float(0.2)
+    assert checker.unwrap(checker.lookup_var("Answer")) == float(0.2)
 
 def test_it_pass_arithmetic_var_struct_between():
     checker = make_checker()
@@ -159,4 +159,4 @@ def test_it_pass_arithmetic_var_struct_between():
     ]
     checker.visit(nodes)
     
-    assert checker.lookup_var("Answer") == int(1353)
+    assert checker.unwrap(checker.lookup_var("Answer")) == int(1353)

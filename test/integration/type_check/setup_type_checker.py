@@ -1,14 +1,20 @@
 from src.parser import parser
 from src.ast import builder
-from src.visitors import type_checker
+from src.visitors.interpreter import InterpreterVisitor, RuntimeValue
 
-# Help funtion to exictue integration test for type checker
 def type_check_test(code):
     tree = parser.parse(code)
     ast = builder.ASTBuilder().transform(tree)
-    checker = type_checker.TypeCheckerVisitor()
+
+    runner = InterpreterVisitor(code, slot=999)
     res = []
+
     for node in ast:
-        res.append(checker.visit(node))
-    # Return an array of the code's node types
+        value = runner.visit(node)
+
+        if isinstance(value, RuntimeValue):
+            res.append(value.type)
+        else:
+            res.append(None)
+
     return res

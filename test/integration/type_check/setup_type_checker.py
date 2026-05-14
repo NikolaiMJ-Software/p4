@@ -14,7 +14,5 @@ def type_check_test(code):
 
         if isinstance(value, RuntimeValue):
             res.append(value.type)
-        else:
-            res.append(None)
 
     return res

@@ -11,21 +11,21 @@ Passing integration tests for variables
 
 def test_it_pass_create_variable():
     result = type_check_test(create_variable_code)
-    assert [None] == result
+    assert [] == result
 create_variable_code = """create X is 5
 """
 
 
 def test_it_pass_create_variable_without_value():
     result = type_check_test(create_variable_without_value_code)
-    assert [None] == result
+    assert [] == result
 create_variable_without_value_code = """create X
 """
 
 
 def test_it_pass_visit_existing_variable():
     result = type_check_test(existing_variable_code)
-    assert [None, "int"] == result
+    assert ["int"] == result
 existing_variable_code = """create X is 5
 X
 """
@@ -33,7 +33,7 @@ X
 
 def test_it_pass_assign_existing_variable():
     result = type_check_test(assign_existing_variable_code)
-    assert [None, None] == result
+    assert [] == result
 assign_existing_variable_code = """create X is 5
 X is 10
 """
@@ -41,7 +41,7 @@ X is 10
 
 def test_it_pass_assign_existing_variable_updates_type():
     result = type_check_test(assign_existing_variable_updates_type_code)
-    assert [None, None] == result
+    assert [] == result
 assign_existing_variable_updates_type_code = '''create X is 5
 X is "hello"
 '''
@@ -49,7 +49,7 @@ X is "hello"
 
 def test_it_pass_assign_list_variable_updates_type():
     result = type_check_test(assign_list_variable_updates_type_code)
-    assert [None, None] == result
+    assert [] == result
 assign_list_variable_updates_type_code = '''create Xs is listing: 1, 2, 3
 Xs is "hello"
 '''

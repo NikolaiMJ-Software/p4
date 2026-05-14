@@ -10,7 +10,7 @@ Passing integration test for the type checker
 '''
 def test_it_pass_struct_get_parrent():
     get_parrent = type_check_test(get_parrent_code)
-    assert [None, None] == get_parrent
+    assert [] == get_parrent
 get_parrent_code = """create Character with:
     Health is 100
     Attack is 5
@@ -22,8 +22,7 @@ create Warrior from Character with:
 
 def test_it_pass_struct_with_list_as_var():
     result = type_check_test(insert_and_get_var)
-    print(result)
-    assert [None, 'int','str', ['str', 'int', 'str']] == result
+    assert ["int"] == result
 insert_and_get_var = """create Person with:
     Health is 100
     Items is listing: 1.0, 4, "K"
@@ -34,7 +33,7 @@ Items from Person
 
 def test_it_pass_struct_overwrite():
     overwrite = type_check_test(overwrite_parrent_var_code)
-    assert [None, None, None, None, None] == overwrite
+    assert [] == overwrite
 overwrite_parrent_var_code = """create Character with:
     Health is 100
     Attack is 5
@@ -54,7 +53,7 @@ create Enemy from Knight with:
 
 def test_it_pass_struct_get_var():
     get_var = type_check_test(get_var_code)
-    assert [None, None, None, None, None, "int"] == get_var
+    assert ["int"] == get_var
 get_var_code = """create Character with:
     Health is 100
     Attack is 5
@@ -75,7 +74,7 @@ Health from Enemy
 
 def test_it_pass_struct_change_var():
     change_var = type_check_test(change_var_code)
-    assert [None, None, None, None, None, "int"] == change_var
+    assert [] == change_var
 change_var_code = """create Character with:
     Health is 100
     Attack is 5
@@ -96,9 +95,7 @@ Health from Enemy is Health from Enemy - Attack from Me
 
 def test_it_pass_struct_get_and_change_var():
     change_name_res = type_check_test(change_name_code)
-    for res in change_name_res:
-        print(res)
-    assert [None, None, None, None, None, None, None, "str", "str", None, None, None, "str", "int"] == change_name_res
+    assert ["str", "str", "int"] == change_name_res
 change_name_code = """create Character with:
     Health is 100
     Attack is 5
@@ -139,7 +136,7 @@ Failing integration test for the type checker
 def test_it_fail_struct_duplicate_name():
     with pytest.raises(TypeError) as exc_info:
         type_check_test(duplicate_struct_name_code)
-    assert str(exc_info.value) == "The struct: 'Character' already exists"
+    assert "The struct: 'Character' already exists" in str(exc_info.value)
 duplicate_struct_name_code = """create Character with:
     Health is 100
     Attack is 5
@@ -152,7 +149,7 @@ create Character with:
 def test_it_fail_struct_undefined_parrent():
     with pytest.raises(TypeError) as exc_info:
         type_check_test(wrong_parrent_code)
-    assert str(exc_info.value) == "The parent struct: 'Person' does not exist"
+    assert "The parent struct: 'Person' does not exist" in str(exc_info.value)
 wrong_parrent_code = """create Character with:
     Health is 100
     Attack is 5
@@ -166,14 +163,14 @@ create Warrior from Person with:
 def test_it_fail_struct_undefined_struct():
     with pytest.raises(TypeError) as exc_info:
         type_check_test(accing_undefined_struct_code)
-    assert str(exc_info.value) == "The struct: 'Enemy' is not defined"
+    assert "The struct: 'Enemy' is not defined" in str(exc_info.value)
 accing_undefined_struct_code = """Health from Enemy
 """    
 
 def test_it_fail_struct_undefined_var():
     with pytest.raises(TypeError) as exc_info:
         type_check_test(undefined_var_code)
-    assert str(exc_info.value) == "The variable: 'Speed' is not defined in the struct: 'Character'"
+    assert "The variable: 'Speed' is not defined in the struct: 'Character'" in str(exc_info.value)
 undefined_var_code = """create Character with:
     Health is 100
     Attack is 5

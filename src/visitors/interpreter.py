@@ -248,10 +248,11 @@ class InterpreterVisitor(Visitor):
 
         # Check if list exist
         self.type_checker.check_assign(node.target, lst)
-        lst = lst[node.target.target]
+        if node.target.base:
+            lst = lst[node.target.target]
 
         # Find the last target list
-        indexes = node.target.indexing
+        indexes = node.target.indexing[::-1]
         for i in indexes[:-1]:
             lst = self.iterate_through_list(node, lst, i)
 
@@ -848,10 +849,12 @@ class InterpreterVisitor(Visitor):
         return None
     
     def visit_index_access(self, node):
-        lst = self.lookup_var(node.base)[node.target] if node.base else self.lookup_var(node.target)
+        lst = self.lookup_var(node.base) if node.base else self.lookup_var(node.target)
 
         # Check if list exist
         self.type_checker.check_assign(node, lst)
+        if node.base:
+            lst = lst[node.target]
         for i in node.indexing[::-1]:
             lst = self.iterate_through_list(node, lst, i)
         return lst

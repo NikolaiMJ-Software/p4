@@ -196,13 +196,9 @@ class TypeChecker:
         # Otherwise, both sides must be numeric
         return self.numeric_result_type(node, "+", left_type, right_type)
 
-    def visit_sub(self, node):
-        #both sides must be numeric
-        left_type = self.visit(node.left)
-        right_type = self.visit(node.right)
-
+    def check_sub(self, node, left_type, right_type):
         return self.numeric_result_type(node, "-", left_type, right_type)
-
+    
     def check_mul(self, node, left_type, right_type):
         return self.numeric_result_type(node, "*", left_type, right_type)
 

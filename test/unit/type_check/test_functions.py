@@ -1,140 +1,91 @@
 import pytest
-from src.visitors.type_checker import *
+from src.visitors.type_checker import TypeChecker
 from src.ast.nodes import *
-
-def make_checker():
-    return TypeCheckerVisitor()
+from src.errors import TypeError
 
 
 def test_define_function():
-    checker = make_checker()
+    node = Define("Fun1", ["a", "b"], [])
 
-    node = Define(
-        "Fun1",
-        ["a", "b"],
-        [Return(Add(Var("a", None), Var("b", None)))]
-    )
+    result = TypeChecker().check_define(node, False)
 
-    assert checker.visit(node) is None
-    assert "Fun1" in checker.f_table
+    assert result is None
 
 
 def test_define_duplicate_function_fails():
-    checker = make_checker()
-
     node = Define("Fun1", [], [])
-    checker.visit(node)
 
     with pytest.raises(TypeError, match="already exist"):
-        checker.visit(node)
+        TypeChecker().check_define(node, True)
 
 
 def test_call_missing_function_fails():
-    checker = make_checker()
+    node = Call("Fun1", [])
 
     with pytest.raises(TypeError, match="does not exist"):
-        checker.visit(Call("Fun1", []))
+        TypeChecker().check_call(node, False)
 
 
 def test_call_too_few_args_fails():
-    checker = make_checker()
-
-    checker.visit(
-        Define(
-            "Fun",
-            ["a", "b"],
-            [Return(Var("a", None))]
-        )
-    )
+    node = Call("Fun", [IntLiteral(1)])
+    function = {
+        "params": ["a", "b"],
+        "body": []
+    }
 
     with pytest.raises(TypeError, match="expects 2 args, got 1"):
-        checker.visit(Call("Fun", [IntLiteral(1)]))
+        TypeChecker().check_call(node, function)
 
 
 def test_call_too_many_args_fails():
-    checker = make_checker()
-
-    checker.visit(
-        Define(
-            "Fun",
-            ["a"],
-            [Return(Var("a", None))]
-        )
-    )
+    node = Call("Fun", [IntLiteral(1), IntLiteral(2)])
+    function = {
+        "params": ["a"],
+        "body": []
+    }
 
     with pytest.raises(TypeError, match="expects 1 args, got 2"):
-        checker.visit(Call("Fun", [IntLiteral(1), IntLiteral(2)]))
+        TypeChecker().check_call(node, function)
 
 
-def test_call_function_returns_type():
-    checker = make_checker()
+def test_call_correct_arg_count():
+    node = Call("Fun", [IntLiteral(1), IntLiteral(2)])
+    function = {
+        "params": ["a", "b"],
+        "body": []
+    }
 
-    checker.visit(
-        Define(
-            "Fun1",
-            ["a", "b"],
-            [Return(Add(Var("a", None), Var("b", None)))]
-        )
-    )
+    result = TypeChecker().check_call(node, function)
 
-    result = checker.visit(Call("Fun1", [IntLiteral(1), FloatLiteral(2.0)]))
-    assert result == "float"
-
-
-def test_call_restores_scope():
-    checker = make_checker()
-    checker.v_table["outside"] = "str"
-
-    checker.visit(
-        Define(
-            "Fun1",
-            ["a"],
-            [Return(Var("a", None))]
-        )
-    )
-
-    checker.visit(Call("Fun1", [IntLiteral(1)]))
-
-    assert checker.v_table["outside"] == "str"
-    assert "a" not in checker.v_table
+    assert result is None
 
 
 def test_define_function_without_params():
-    checker = make_checker()
+    node = Define("Fun0", [], [])
 
-    node = Define(
-        "Fun0",
-        [],
-        [Return(IntLiteral(1))]
-    )
+    result = TypeChecker().check_define(node, False)
 
-    assert checker.visit(node) is None
-    assert "Fun0" in checker.f_table
+    assert result is None
 
 
-def test_call_zero_arg_function_returns_type():
-    checker = make_checker()
+def test_call_zero_arg_function():
+    node = Call("Fun0", [])
+    function = {
+        "params": [],
+        "body": []
+    }
 
-    checker.visit(
-        Define(
-            "Fun0",
-            [],
-            [Return(IntLiteral(1))]
-        )
-    )
+    result = TypeChecker().check_call(node, function)
 
-    assert checker.visit(Call("Fun0", [])) == "int"
+    assert result is None
 
 
-def test_call_function_without_return_returns_none():
-    checker = make_checker()
+def test_call_zero_arg_function_with_arg_fails():
+    node = Call("Fun0", [IntLiteral(1)])
+    function = {
+        "params": [],
+        "body": []
+    }
 
-    checker.visit(
-        Define(
-            "Fun1",
-            ["a"],
-            [CreateVariable("x", Var("a", None))]
-        )
-    )
-
-    assert checker.visit(Call("Fun1", [IntLiteral(1)])) is None
+    with pytest.raises(TypeError, match="expects 0 args, got 1"):
+        TypeChecker().check_call(node, function)

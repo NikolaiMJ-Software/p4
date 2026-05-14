@@ -101,7 +101,7 @@ class TypeChecker:
             return
 
         # Check if the name exist
-        if target is False or len(target) == 0:
+        if target is False:
             if hasattr(node, "target"):
                 msg = f"The list: '{node.target}' does not exist"
             else:

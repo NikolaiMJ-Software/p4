@@ -195,7 +195,8 @@ class ASTBuilder(Transformer):
         return self._pos(Add(tree.children[0], tree.children[1]), tree)
 
     def sub(self, tree):
-        return self._pos(Add(tree.children[0], Neg(tree.children[1])), tree)
+        neg = self._pos(Neg(tree.children[1]), tree)
+        return self._pos(Add(tree.children[0], neg), tree)
 
     def mul(self, tree):
         return self._pos(Mul(tree.children[0], tree.children[1]), tree)

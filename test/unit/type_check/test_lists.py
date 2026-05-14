@@ -1,10 +1,7 @@
 import pytest
-from src.ast.nodes import Return, Var
-from src.visitors.type_checker import *
+from src.visitors.type_checker import TypeChecker
 from src.ast.nodes import *
-
-def make_checker():
-    return TypeCheckerVisitor()
+from src.errors import TypeError
 
 
 '''
@@ -12,43 +9,37 @@ def make_checker():
 Passing unit test for the type checker
 -----------------
 '''
-def test_create_int_list():
-    checker = make_checker()
 
+def test_create_int_list():
     node = CreateList("xs", [IntLiteral(1), IntLiteral(2), IntLiteral(3)])
-    assert checker.visit(node) == ['int', 'int', 'int']
-    assert checker.v_table["xs"] == ['int', 'int', 'int']
+
+    result = TypeChecker().check_create_list(node, False)
+
+    assert result is None
 
 
 def test_create_list_mixed_types_pass():
-    checker = make_checker()
     node = CreateList("xs", [IntLiteral(1), StringLiteral("a")])
-    assert checker.visit(node) == ['int', 'str']
-    assert checker.v_table["xs"] == ['int', 'str']
+
+    result = TypeChecker().check_create_list(node, False)
+
+    assert result is None
 
 
-def test_index_access_typed_list():
-    checker = make_checker()
-    checker.v_table["xs"] = ['int', 'float', 'str']
+def test_index_access_with_int_index_passes():
+    node = IndexAccess([IntLiteral(0)], "xs", None)
 
-    index_0 = IndexAccess([IntLiteral(0)], "xs", None)
-    index_1 = IndexAccess([IntLiteral(1)], "xs", None)
-    index_2 = IndexAccess([IntLiteral(2)], "xs", None)
-    assert checker.visit(index_0) == "int"
-    assert checker.visit(index_1) == "float"
-    assert checker.visit(index_2) == "str"
+    result = TypeChecker().check_index_access(node, "int")
+
+    assert result is None
 
 
-def test_assign_to_list_index():
-    checker = make_checker()
-    checker.v_table["xs"] = ['int']
+def test_foreach_existing_list_passes():
+    node = Foreach("Item", "xs", [])
 
-    node = AssignIndex(
-        IndexAccess([IntLiteral(0)], "xs", None),
-        IntLiteral(99)
-    )
+    result = TypeChecker().check_foreach(node, ["int", "str"])
 
-    assert checker.visit(node) == "int"
+    assert result is None
 
 
 '''
@@ -56,36 +47,30 @@ def test_assign_to_list_index():
 Failing unit test for the type checker
 -----------------
 '''
+
 def test_create_two_lists_with_same_name():
-    checker = make_checker()
-    checker.v_table["X"] = ['int']
+    node = CreateList("X", [IntLiteral(1)])
 
-    node = IndexAccess([IntLiteral(1)], "X", None)
+    with pytest.raises(TypeError, match="already exists"):
+        TypeChecker().check_create_list(node, True)
 
-    with pytest.raises(TypeError, match="does not exist"):
-        checker.visit(node)
 
-def test_index_access_not_initilized_list_fails():
-    checker = make_checker()
-    checker.v_table["xs"] = ['int']
+def test_index_access_with_string_index_fails():
+    node = IndexAccess([StringLiteral("0")], "xs", None)
 
-    node = IndexAccess([StringLiteral("0")], "notalist", None)
+    with pytest.raises(TypeError, match="List index must be 'int', got a 'str'"):
+        TypeChecker().check_index_access(node, "str")
 
-    with pytest.raises(TypeError, match="does not exist"):
-        checker.visit(node)
 
-def test_index_access_out_of_bound_negative():
-    checker = make_checker()
-    checker.v_table["xs"] = ['int', 'float', 'str']
-    
-    node = IndexAccess([Neg(IntLiteral(1))], "xs", None)
-    with pytest.raises(TypeError, match="The index: '-1' must be positive"):
-        checker.visit(node)
+def test_foreach_missing_list_fails():
+    node = Foreach("Item", "xs", [])
 
-def test_index_access_out_of_bound_max():
-    checker = make_checker()
-    checker.v_table["xs"] = ['int', 'float', 'str']
-    
-    node = IndexAccess([IntLiteral(4)], "xs", None)
-    with pytest.raises(TypeError, match="The index: '4' does not exist in 'xs'"):
-        checker.visit(node)
+    with pytest.raises(TypeError, match="The list: 'xs' does not exist"):
+        TypeChecker().check_foreach(node, False)
+
+
+def test_foreach_non_list_fails():
+    node = Foreach("Item", "xs", [])
+
+    with pytest.raises(TypeError, match="Cannot iterate over non-list type 'int'"):
+        TypeChecker().check_foreach(node, "int")

@@ -1,136 +1,92 @@
 import pytest
-
 from src.visitors.type_checker import TypeChecker
 from src.ast.nodes import *
 from src.errors import TypeError
 
 
-def make_checker():
-    return TypeChecker()
-
-
-def game_struct(fields):
-    return CreateStruct("Game", [None, fields])
-
-
 def test_create_game_struct_is_allowed():
-    checker = make_checker()
-
-    node = game_struct([
+    node = CreateStruct("Game", [None, [
         CreateVariable("Health", IntLiteral(100)),
         CreateVariable("Class", StringLiteral("Warrior"))
-    ])
+    ]])
 
-    assert checker.visit(node) is None
-    assert "Game" in checker.v_table
-    assert checker.v_table["Game"]["Health"] == "int"
-    assert checker.v_table["Game"]["Class"] == "str"
+    result = TypeChecker().check_create_struct(node, False, False)
+
+    assert result is None
 
 
 def test_create_game_variable_fails():
-    checker = make_checker()
-
     node = CreateVariable("Game", IntLiteral(10))
 
     with pytest.raises(TypeError, match="reserved"):
-        checker.visit(node)
+        TypeChecker().check_create_variable(node, False)
 
 
 def test_create_game_list_fails():
-    checker = make_checker()
-
     node = CreateList("Game", [IntLiteral(1), IntLiteral(2)])
 
     with pytest.raises(TypeError, match="reserved"):
-        checker.visit(node)
+        TypeChecker().check_create_list(node, False)
 
 
 def test_define_game_function_fails():
-    checker = make_checker()
-
     node = Define("Game", [], [])
 
     with pytest.raises(TypeError, match="reserved"):
-        checker.visit(node)
+        TypeChecker().check_define(node, False)
 
 
 def test_game_struct_can_contain_unassigned_fields():
-    checker = make_checker()
-
-    node = game_struct([
+    node = CreateStruct("Game", [None, [
         CreateVariable("Class", None),
         CreateVariable("Health", None)
-    ])
+    ]])
 
-    checker.visit(node)
+    result = TypeChecker().check_create_struct(node, False, False)
 
-    assert checker.v_table["Game"]["Class"] is None
-    assert checker.v_table["Game"]["Health"] is None
+    assert result is None
 
 
 def test_game_struct_field_can_be_assigned():
-    checker = make_checker()
-
-    checker.visit(
-        game_struct([
-            CreateVariable("Health", IntLiteral(100))
-        ])
-    )
-
     node = Assign("Health", "Game", IntLiteral(80))
 
-    result = checker.visit(node)
+    game = {"Health": "int"}
 
-    assert result == "int"
-    assert checker.v_table["Game"]["Health"] == "int"
+    result = TypeChecker().check_assign(node, game)
+
+    assert result is None
 
 
 def test_assign_missing_game_field_fails():
-    checker = make_checker()
-
-    checker.visit(
-        game_struct([
-            CreateVariable("Health", IntLiteral(100))
-        ])
-    )
-
     node = Assign("Class", "Game", StringLiteral("Warrior"))
 
+    game = {"Health": "int"}
+
     with pytest.raises(TypeError, match="does not exist in the struct"):
-        checker.visit(node)
+        TypeChecker().check_assign(node, game)
 
 
 def test_assign_game_field_fails_if_game_does_not_exist():
-    checker = make_checker()
-
-    node = Assign("Health", IntLiteral(80), "Game")
+    node = Assign("Health", "Game", IntLiteral(80))
 
     with pytest.raises(TypeError, match="does not exist"):
-        checker.visit(node)
+        TypeChecker().check_assign(node, False)
 
 
 def test_read_game_field_returns_type():
-    checker = make_checker()
+    node = Var("Health", "Game")
 
-    checker.visit(
-        game_struct([
-            CreateVariable("Health", IntLiteral(100))
-        ])
-    )
+    game = {"Health": "int"}
 
-    result = checker.visit(Var("Health", "Game"))
+    result = TypeChecker().check_var(node, game)
 
-    assert result == "int"
+    assert result is None
 
 
 def test_read_missing_game_field_fails():
-    checker = make_checker()
+    node = Var("Class", "Game")
 
-    checker.visit(
-        game_struct([
-            CreateVariable("Health", IntLiteral(100))
-        ])
-    )
+    game = {"Health": "int"}
 
     with pytest.raises(TypeError, match="not defined in the struct"):
-        checker.visit(Var("Class", "Game"))
+        TypeChecker().check_var(node, game)

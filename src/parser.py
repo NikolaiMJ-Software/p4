@@ -122,7 +122,7 @@ call_expr: "call" ID args -> call_expr
 args: ("with" expr ("," expr)*)?
 inherits_from: "from" ID
 inheritance: ("from" ID)?
-block: INDENT stmt* DEDENT
+block: INDENT stmt+ DEDENT
 list_item: expr | list_tail
 indexing: ("index" expr "of")*
 

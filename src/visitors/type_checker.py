@@ -220,20 +220,6 @@ class TypeChecker:
 
         return "bool"
 
-    def check_if(self, node, cond_type, kind="if"):
-        # condition must be a bool
-        if cond_type is None:
-            return None
-
-        if cond_type != "bool":
-            raise TypeError(
-                self.code,
-                node,
-                f"{kind} condition must be bool, got {cond_type}"
-            )
-
-        return "bool"
-
     def check_while(self, node, cond_type):
         # while condition must be bool
         if cond_type != "bool":

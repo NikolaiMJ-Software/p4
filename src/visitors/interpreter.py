@@ -262,11 +262,9 @@ class InterpreterVisitor(Visitor):
         lst[final_index] = value
 
     def visit_if(self, node):
-        # condition must be a bool
-        cond = self.visit(node.cond)
-        self.type_checker.check_if(node, cond.type if hasattr(cond, "type") else None, "if")
-
-        if self.unwrap(cond):
+        cond = self.unwrap(self.visit(node.cond))
+        cond = None if cond == "UNINITIALIZED" else cond
+        if cond:
             # Save outer scope and create if scope
             old = self.v_table
             self.v_table = {"__parent__": old}
@@ -284,11 +282,9 @@ class InterpreterVisitor(Visitor):
 
         # Check all else-if branches
         for cond, body in node.elifs or []:
-            # Type check else-if condition
-            cond_value = self.visit(cond)
-            self.type_checker.check_if(node, cond_value.type, "elif")
-
-            if self.unwrap(cond_value):
+            cond_value = self.unwrap(self.visit(cond))
+            cond_value = None if cond_value == "UNINITIALIZED" else cond_value
+            if cond_value:
                 # Save outer scope and create else-if scope
                 old = self.v_table
                 self.v_table = {"__parent__": old}

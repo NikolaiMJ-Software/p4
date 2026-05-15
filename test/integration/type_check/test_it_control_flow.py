@@ -120,8 +120,18 @@ while Cond
 def test_it_pass_if_with_expression_condition():
     result = type_check_test(if_expression_condition_code)
     assert [] == result
-if_expression_condition_code = """if 1 less than 2 do:
+if_expression_condition_code = """create Z is 5
+create A
+if 1 less than 2 do:
     create X is 1
+else if 1 do:
+    create Y is 2
+else if Z do:
+    create Q is "hij"
+if A do:
+    create B is 5
+else do:
+    output "Hello"
 """
 
 
@@ -182,26 +192,6 @@ else_created_variable_does_not_leak_code = """if false do:
 else do:
     create Y is 2
 Y
-"""
-
-
-def test_it_fail_if_invalid_condition():
-    with pytest.raises(TypeError) as exc_info:
-        type_check_test(if_invalid_condition_code)
-    assert "if condition must be bool, got int" in str(exc_info.value)
-if_invalid_condition_code = """if 1 do:
-    create X is 1
-"""
-
-
-def test_it_fail_if_invalid_elif_condition():
-    with pytest.raises(TypeError) as exc_info:
-        type_check_test(if_invalid_elif_condition_code)
-    assert "elif condition must be bool, got int" in str(exc_info.value)
-if_invalid_elif_condition_code = """if false do:
-    create X is 1
-else if 1 do:
-    create Y is 2
 """
 
 

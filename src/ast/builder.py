@@ -272,14 +272,9 @@ class ASTBuilder(Transformer):
     def inheritance(self, tree):
         return tree.children[0] if tree.children else None
 
-    def more_stmt(self, tree):
+    def block(self, tree):
         return tree.children
 
-    def mul_stmt(self, tree):
-        return tree.children
-
-    def pos_stmt(self, tree):
-        return tree.children[0]
     def expr_list(self, tree):
         return tree.children
     

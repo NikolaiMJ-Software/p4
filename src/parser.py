@@ -47,21 +47,20 @@ assign_stmt: ID inheritance "is" expr NEWLINE -> assign_v
 
 assign_index_stmt: index_access "is" list_item NEWLINE-> assign_index
 index_access: indexing ID inheritance
-indexing: ("index" expr "of")*
 
-if_stmt: "if" expr "do:" NEWLINE INDENT more_stmt DEDENT elif_stmt else_stmt
-elif_stmt: ("else if" expr "do:" NEWLINE INDENT more_stmt DEDENT)*
-else_stmt: ("else do:" NEWLINE INDENT more_stmt DEDENT)?
+if_stmt: "if" expr "do:" NEWLINE block elif_stmt else_stmt
+elif_stmt: ("else if" expr "do:" NEWLINE block)*
+else_stmt: ("else do:" NEWLINE block)?
 
-while_stmt: "while" expr "do:" NEWLINE INDENT more_stmt DEDENT
+while_stmt: "while" expr "do:" NEWLINE block
 
-dowhile_stmt: "do:" NEWLINE INDENT mul_stmt DEDENT "while" expr NEWLINE
+dowhile_stmt: "do:" NEWLINE block "while" expr NEWLINE
 
-forrange_stmt: "for each" ID "from" expr "to" expr "do:" NEWLINE INDENT mul_stmt DEDENT
+forrange_stmt: "for each" ID "from" expr "to" expr "do:" NEWLINE block
 
-foreach_stmt: "for each" ID "in" ID "do:" NEWLINE INDENT mul_stmt DEDENT
+foreach_stmt: "for each" ID "in" ID "do:" NEWLINE block
 
-func_def: "define" ID params ":" NEWLINE INDENT mul_stmt DEDENT
+func_def: "define" ID params ":" NEWLINE block
 params: ("with" ID ("," ID)*)?
 
 return_stmt: "return" expr NEWLINE
@@ -116,15 +115,16 @@ ID: /[A-Z][a-zA-Z0-9_]*/
 FLOAT: /([1-9][0-9]*|0)\.[0-9]+/
 INTEGER: /[0-9]+/
 STRING: /"[^"]*"/
-BOOL: "true"|"false"|"1"|"0"
+BOOL: "true"|"false"
+
+// GENERAL HELPER RULES
 call_expr: "call" ID args -> call_expr
 args: ("with" expr ("," expr)*)?
 inherits_from: "from" ID
 inheritance: ("from" ID)?
-more_stmt: stmt+
-mul_stmt: stmt*
-pos_stmt: stmt?
+block: INDENT stmt* DEDENT
 list_item: expr | list_tail
+indexing: ("index" expr "of")*
 
 // IMPORTS & IGNORE
 NEWLINE: (/\r?\n[ \t]*/)

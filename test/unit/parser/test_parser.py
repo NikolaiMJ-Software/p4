@@ -359,9 +359,9 @@ def test_forrange():
     assert node.children[1].value == "1"
     assert node.children[2].value == "10"
 
-    body = next(child for child in node.children if hasattr(child, "data") and child.data == "mul_stmt")
-    assert len(body.children) == 1
-    assert body.children[0].data == "assign_v"
+    body = next(child for child in node.children if hasattr(child, "data") and child.data == "block")
+    assert len(body.children) == 3
+    assert body.children[1].data == "assign_v"
 
 def test_foreach():
     code="""for each X in Y do:
@@ -376,9 +376,9 @@ def test_foreach():
     assert node.children[0] == "X"
     assert node.children[1] == "Y"
 
-    body = next(child for child in node.children if hasattr(child, "data") and child.data == "mul_stmt")
-    assert len(body.children) == 3
-    assert body.children[0].data == "assign_v"
+    body = next(child for child in node.children if hasattr(child, "data") and child.data == "block")
+    assert len(body.children) == 5
+    assert body.children[1].data == "assign_v"
     
 
 #############

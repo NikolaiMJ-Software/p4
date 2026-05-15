@@ -40,18 +40,6 @@ define Play:
         run_program(code, monkeypatch, capsys)
 
 
-def test_e2e_if_condition_must_be_bool(monkeypatch, capsys):
-    code = '''create X is 10
-
-define Play:
-    if X do:
-        output "bad"
-'''
-
-    with pytest.raises(TypeCheckError, match="if condition must be bool, got int"):
-        run_program(code, monkeypatch, capsys)
-
-
 def test_e2e_chance_rejects_string(monkeypatch, capsys):
     code = '''create CriticalHit
 

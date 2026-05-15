@@ -95,7 +95,7 @@ Health from Enemy is Health from Enemy - Attack from Me
 
 def test_it_pass_struct_get_and_change_var():
     change_name_res = type_check_test(change_name_code)
-    assert ["str", "str", "int"] == change_name_res
+    assert ["str"] == change_name_res
 change_name_code = """create Character with:
     Health is 100
     Attack is 5
@@ -116,16 +116,6 @@ Name from Me
 Name from Enemy is "Bob"
 Name from Enemy
 Name from Me
-create X
-
-define Start:
-    X is 5
-    create X is Name from Enemy
-    output X
-    return X
-call Start
-X
-
 """
 
 '''

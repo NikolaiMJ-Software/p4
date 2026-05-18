@@ -1,4 +1,4 @@
-# RogueLikeScript
+# RogueLiteScript
 Some sort of program language
 
 ## Features

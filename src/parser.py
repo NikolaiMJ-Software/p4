@@ -21,6 +21,8 @@ start: stmt*
     | expr_stmt
     | input_stmt
     | output_stmt
+    | select_stmt
+    | save_stmt
     | NEWLINE
 
 // STATEMENTS
@@ -66,6 +68,10 @@ params: ("with" ID ("," ID)*)?
 return_stmt: "return" expr NEWLINE
 
 break_stmt: "stop" NEWLINE
+
+select_stmt: "select" INTEGER NEWLINE -> select_save
+
+save_stmt: "save" NEWLINE -> save_game
 
 expr_stmt: expr NEWLINE
 

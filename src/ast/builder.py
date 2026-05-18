@@ -1,7 +1,8 @@
 from lark import Transformer, v_args
 from lark import Discard
-
 from src.ast.nodes import *
+
+
 
 # AST BUILDER
 @v_args(tree=True)  # tree instead of inline, because inline gives children directly but loses access to line + column
@@ -15,14 +16,16 @@ class ASTBuilder(Transformer):
             node.column = tree.meta.column
         return node
 
-    # from here on out, we'll manually extract children
 
+
+    # DEFINITION LIST
     # START
     def start(self, tree):
         return tree.children
 
-    # STATEMENTS
-    # creates
+
+
+    # CREATE
     def create_v(self, tree):
         name = tree.children[0]
         value = tree.children[1] if len(tree.children) > 1 else None
@@ -38,7 +41,9 @@ class ASTBuilder(Transformer):
         value = tree.children[1] if len(tree.children) > 1 else None
         return self._pos(CreateList(name, value), tree)
 
-    # tails
+
+
+    # TAILS
     def var_tail(self, tree):
         return tree.children[0] if tree.children else None
 
@@ -48,7 +53,9 @@ class ASTBuilder(Transformer):
     def list_tail(self, tree):
         return tree.children[0] if tree.children else None
 
-    # struct specifics
+
+
+    # STRUCT HELPER RULES
     def struct_fields(self, tree):
         return tree.children
 
@@ -62,11 +69,15 @@ class ASTBuilder(Transformer):
         value = tree.children[1] # otherwise, its variable with standard value
         return self._pos(CreateVariable(name, value), tree)
 
-    # list specifics
+
+
+    # LIST HELPER RULE
     def list_items(self, tree):
         return tree.children
 
-    # Assignment
+
+
+    # ASSIGN
     def assign_v(self, tree):
         name = tree.children[0]
         base = tree.children[1] if len(tree.children) > 2 else None
@@ -90,15 +101,9 @@ class ASTBuilder(Transformer):
         value = tree.children[1]
         return self._pos(AssignIndex(target, value), tree)
 
-    # Reference used for assignment
-    def reference(self, tree):
-        value = tree.children[0]
-        inheritance = tree.children[1] if len(tree.children) > 1 else None
-        if isinstance(value, str):
-            return Var(value, inheritance)
-        return value
 
-    # general statements
+
+    # IF AND ITS HELPER RULES
     def if_stmt(self, tree):
         cond = tree.children[0]
         body = tree.children[1]
@@ -112,7 +117,10 @@ class ASTBuilder(Transformer):
 
     def else_stmt(self, tree):
         return tree.children[0] if tree.children else None
+    
 
+
+    # OTHER STATEMENTS
     def while_stmt(self, tree):
         cond = tree.children[0]
         body = tree.children[1]
@@ -159,6 +167,8 @@ class ASTBuilder(Transformer):
 
     def output_stmt(self, tree):
         return self._pos(Output(tree.children[0]), tree)
+
+
 
     # EXPRESSIONS
     def or_expr(self, tree):
@@ -229,6 +239,9 @@ class ASTBuilder(Transformer):
         args = tree.children[1] if len(tree.children) > 1 else None
         return self._pos(Call(name, args), tree)
 
+
+
+    # INDEXING
     def index_access(self, tree):
         indexing = tree.children[0]
         target = tree.children[1]
@@ -241,7 +254,9 @@ class ASTBuilder(Transformer):
     def index_expr(self, tree):
         return tree.children[0]
 
-    # TOKENS / helper rules
+
+
+    # TOKENS
     def ID(self, token):
         return str(token)
 
@@ -257,6 +272,9 @@ class ASTBuilder(Transformer):
     def BOOL(self, token):
         return BoolLiteral(token in ("true", "1"))
 
+
+
+    # GENERAL HELPER RULES
     def args(self, tree):
         return tree.children
 
@@ -278,6 +296,9 @@ class ASTBuilder(Transformer):
     def expr_list(self, tree):
         return tree.children
     
+    
+    
+    # DISCARDED STRUCTURAL TOKENS
     def NEWLINE(self, token):
         return Discard
     

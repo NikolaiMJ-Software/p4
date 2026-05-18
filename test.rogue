@@ -1,9 +1,0 @@
-
-
-define X with A, B:
-    return A + B
-
-create Calc is call X with 3, 2
-
-output Calc
-

@@ -6,15 +6,25 @@ Some sort of program language
 
 ## Technologies Used
 - LARK (parser)
+- Pytest (tests)
 
 ## Project Structure
 ```plaintext
-
+P4/
+├── src/
+│   ├── ast/            # AST builder and nodes
+│   ├── runtime/        # File I/O functionality
+│   ├── visitors/       # Visitors for the AST (interpreter, and type checker)
+│   ├── errors.py       # Error system for the language
+│   └── parser.py       # Lark parser
+├── test/               # Different tests
+├── app.py              # The main program
+└── main.rogue          # File to write code
 ```
 
 ## Getting Started
 ### Prerequisites
-
+- Python 3
 
 ### Setup the project
 1.	Clone the repository:
@@ -49,7 +59,7 @@ pip install -r requirements.txt
 
 2. Start the program:
 ```bash
-python app.py main.rouge
+python app.py
 ```
 
 ### Running tests

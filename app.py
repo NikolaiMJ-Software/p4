@@ -48,14 +48,8 @@ def print_ast(node, indent=0):
 
 # EXECUTION OF SOURCE CODE
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python app.py <sourcefile>")
-        sys.exit(1)
-
-    source_path = sys.argv[1]
-
     try:
-        code = load_source(source_path)
+        code = load_source("main.rls")
 
         tree = parse(code)
         ast = builder.ASTBuilder().transform(tree)
@@ -67,8 +61,6 @@ if __name__ == "__main__":
         #print("\n---------INTERPRETATION--------\n")
         interp = interpreter.InterpreterVisitor(code, slot=2)
         interp.run(ast)
-
-
 
     # ERROR LIST
     except ParseError as e:

@@ -287,17 +287,6 @@ class TypeChecker:
                 f"The function: '{node.name}' does not exist"
             )
 
-        params = function["params"] or []
-        args = node.args or []
-
-        # validate argument counts
-        if len(params) != len(args):
-            raise TypeError(
-                self.code,
-                node,
-                f"Function '{node.name}' expects {len(params)} args, got {len(args)}"
-            )
-
     def check_index_access(self, node, index_type):        
         # Make sure the index is a 'int'
         if index_type != "int":

@@ -86,14 +86,14 @@ class InterpreterVisitor(Visitor):
         if game is not None:
             self.game_state_manager.save(self.to_json_value(game)) # Convert runtime values into JSON and save to save-file
 
-    def run(self, ast, args=None):
+    def run(self, ast):
         should_save = True # Used to prevent saving after runtime or type errors
         try:
             for stmt in ast:
                 self.visit(stmt)
             self.load_game_state()
             if "Play" in self.f_table:
-                self.visit(Call("Play", args or []))
+                self.visit(Call("Play", []))
 
         except KeyboardInterrupt:
             print("\nProgram interrupted. Saving game state...")
@@ -498,7 +498,7 @@ class InterpreterVisitor(Visitor):
 
         # Save data as 'params' and 'body' in functions
         self.f_table[node.name] = {
-            "params": node.params,
+            "params": node.params if node.name != "Play" else node,
             "body": node.body
         }
     
@@ -815,9 +815,17 @@ class InterpreterVisitor(Visitor):
         # Check if function exists and argument count matches
         self.type_checker.check_call(node, function)
 
-        params = function["params"] or []
+        params = [] if node.name == "Play" else function["params"] or []
         body = function["body"]
         args = node.args or []
+        
+        # validate argument counts
+        if len(params) != len(args):
+            raise InterpreterError(
+                self.code,
+                node if node.name != "Play" else self.f_table["Play"]["params"],
+                f"Function '{node.name}' expects {len(params)} args, got {len(args)}"
+            )
 
         local_vars = {}
 

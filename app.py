@@ -49,7 +49,7 @@ def print_ast(node, indent=0):
 # EXECUTION OF SOURCE CODE
 if __name__ == "__main__":
     try:
-        code = load_source("main.rogue")
+        code = load_source("main.rls")
 
         tree = parse(code)
         ast = builder.ASTBuilder().transform(tree)

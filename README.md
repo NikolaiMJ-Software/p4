@@ -1,4 +1,4 @@
-# p4
+# RogueLikeScript
 Some sort of program language
 
 ## Features
@@ -19,7 +19,7 @@ P4/
 │   └── parser.py       # Lark parser
 ├── test/               # Different tests
 ├── app.py              # The main program
-└── main.rogue          # File to write code
+└── main.rls            # File to write code
 ```
 
 ## Getting Started
@@ -55,7 +55,7 @@ pip install -r requirements.txt
 ```
 
 ### Running the app for the first time
-1. Write some code in `main.rogue`
+1. Write some code in `main.rls`
 
 2. Start the program:
 ```bash

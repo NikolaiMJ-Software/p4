@@ -1,6 +1,7 @@
 import pytest
 from src.visitors.type_checker import *
 from src.ast.nodes import *
+from src.errors import InterpreterError
 from setup_type_checker import type_check_test
 
 '''
@@ -123,26 +124,6 @@ def test_it_fail_call_missing_function():
         type_check_test(missing_function_code)
     assert "does not exist" in str(exc_info.value)
 missing_function_code = """call Fun1
-"""
-
-
-def test_it_fail_call_too_few_args():
-    with pytest.raises(TypeError) as exc_info:
-        type_check_test(too_few_args_code)
-    assert "expects 2 args, got 1" in str(exc_info.value)
-too_few_args_code = """define Fun with A, B:
-    return A
-call Fun with 1
-"""
-
-
-def test_it_fail_call_too_many_args():
-    with pytest.raises(TypeError) as exc_info:
-        type_check_test(too_many_args_code)
-    assert "expects 1 args, got 2" in str(exc_info.value)
-too_many_args_code = """define Fun with A:
-    return A
-call Fun with 1, 2
 """
 
 

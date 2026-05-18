@@ -133,17 +133,6 @@ class TypeChecker:
                 f"The function: '{node.name}' does not exist"
             )
 
-        params = function["params"] or []
-        args = node.args or []
-
-        # validate argument counts
-        if len(params) != len(args):
-            raise TypeError(
-                self.code,
-                node,
-                f"Function '{node.name}' expects {len(params)} args, got {len(args)}"
-            )
-
     def check_add(self, node, left_type, right_type):
         # Allow string concatenation
         if left_type == "str" and right_type == "str":

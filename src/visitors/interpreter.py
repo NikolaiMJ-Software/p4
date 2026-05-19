@@ -6,6 +6,9 @@ from src.errors import InterpreterError
 from src.errors import TypeError as TypeCheckError
 import random
 
+
+
+# EXCEPTIONS
 class ReturnException(Exception): # exception raised by return() to stop function call
     def __init__(self, value):
         self.value = value
@@ -13,6 +16,9 @@ class ReturnException(Exception): # exception raised by return() to stop functio
 class BreakException(Exception): # exception raised to stop loops
     pass
 
+
+
+# RUNTIMEVALUE CLASS
 class RuntimeValue: # class to store value and type for values sent to typechecker
     def __init__(self, type_name, value):
         self.type = type_name
@@ -21,19 +27,21 @@ class RuntimeValue: # class to store value and type for values sent to typecheck
     def __repr__(self):
         return f"{self.type}({self.value})"
 
+
+# INTERPRETER
 class InterpreterVisitor(Visitor):
     def __init__(self, code="", slot=1):
-        self.code = code
+        self.code = code 
         self.v_table = {} # list of variables split into scope levels
         self.f_table = {} # list of defined functions
         self.game_state_manager = GameStateManager(slot) # save-state manager, where slot equals save-file
-        self.type_checker = TypeChecker(self.code)    
+        self.type_checker = TypeChecker(self.code) # type checker instance
+    
     
     
     # SCOPE HANDLING
     def lookup_var(self, name):
         scope = self.v_table
-
         while scope:
             if name in scope:
                 return scope[name]
@@ -42,14 +50,15 @@ class InterpreterVisitor(Visitor):
     
     def lookup_fun(self, name):
         scope = self.f_table
-
         while scope:
             if name in scope:
                 return scope[name]
             scope = scope.get("__parent__")
         return False
 
-    # Unwraps runtime value to just value
+
+
+    # UNWRAPPING OF RUNTIMEVALUES
     def unwrap(self, value):
         if isinstance(value, RuntimeValue):
             return value.value
@@ -65,34 +74,29 @@ class InterpreterVisitor(Visitor):
         return var_list
 
 
+
     # GAME STATE HANDLING
     def load_game_state(self):
         loaded_game = self.game_state_manager.load()
         if loaded_game is not None and "Game" in self.v_table:
-            # Convert saved JSON values back into runtime values before loading them into Game
-            self.v_table["Game"] = self.from_json_value(loaded_game)
+            self.v_table["Game"] = self.from_json_value(loaded_game) # Load converted JSON save-file into v_table under "Game" key
     
     def save_game_state(self):
         game = self.v_table.get("Game")
         if game is not None:
-            # Convert runtime values before writing to JSON
-            self.game_state_manager.save(self.to_json_value(game))
+            self.game_state_manager.save(self.to_json_value(game)) # Convert runtime values into JSON and save to save-file
 
-    def run(self, ast, args=None):
+    def run(self, ast):
         should_save = True # Used to prevent saving after runtime or type errors
-
         try:
             for stmt in ast:
                 self.visit(stmt)
-
             self.load_game_state()
-
             if "Play" in self.f_table:
-                self.visit(Call("Play", args or []))
+                self.visit(Call("Play", []))
 
         except KeyboardInterrupt:
             print("\nProgram interrupted. Saving game state...")
-
         except (InterpreterError, TypeCheckError):
             should_save = False  # Do not save if the program stopped because of an error
             raise
@@ -102,16 +106,13 @@ class InterpreterVisitor(Visitor):
                 self.save_game_state()
 
     def to_json_value(self, value): # Convert runtime values before saving them as JSON
-        if isinstance(value, RuntimeValue):
-            # Save only the actual value, not the runtime wrapper
+        if isinstance(value, RuntimeValue): # Save only the actual value, not the runtime wrapper
             return self.to_json_value(value.value)
 
-        if isinstance(value, list):
-            # Convert all values inside lists
+        if isinstance(value, list): # Convert all values inside lists
             return [self.to_json_value(item) for item in value]
 
-        if isinstance(value, dict):
-            # Convert struct fields and skip parent since they are only used during interpretation and arent a part of the actual saved game state
+        if isinstance(value, dict): # Convert struct fields and skip parent since they are only used during interpretation and arent a part of the actual saved game state
             return {
                 key: self.to_json_value(val)
                 for key, val in value.items()
@@ -123,8 +124,7 @@ class InterpreterVisitor(Visitor):
 
         return value
 
-    def from_json_value(self, value):
-        # Convert saved JSON values back into runtime values
+    def from_json_value(self, value): # Convert saved JSON values back into runtime values
 
         if value is None:
             return "UNINITIALIZED"
@@ -169,9 +169,9 @@ class InterpreterVisitor(Visitor):
     
     
     
-    
     # STATEMENTS
     def visit_create_variable(self, node):
+        
         # Make sure no duplicate of variabels
         self.type_checker.check_create_variable(
             node,
@@ -188,6 +188,7 @@ class InterpreterVisitor(Visitor):
         self.v_table[node.name] = value
 
     def visit_create_struct(self, node):
+        
         # Make sure no duplicate of struct, and check parrent
         self.type_checker.check_create_struct(
             node,
@@ -204,6 +205,7 @@ class InterpreterVisitor(Visitor):
             self.v_table[node.name] = {**parent, **fields}
         
     def visit_create_list(self, node):
+        
         # Make sure no duplicate of variabels
         self.type_checker.check_create_list(
             node,
@@ -218,7 +220,6 @@ class InterpreterVisitor(Visitor):
         self.v_table[node.name] = listing
         
     def visit_assign(self, node):
-        # Save value
         value = self.visit(node.value)
 
         # Check if it got inheritance
@@ -497,7 +498,7 @@ class InterpreterVisitor(Visitor):
 
         # Save data as 'params' and 'body' in functions
         self.f_table[node.name] = {
-            "params": node.params,
+            "params": node.params if node.name != "Play" else node,
             "body": node.body
         }
     
@@ -814,9 +815,17 @@ class InterpreterVisitor(Visitor):
         # Check if function exists and argument count matches
         self.type_checker.check_call(node, function)
 
-        params = function["params"] or []
+        params = [] if node.name == "Play" else function["params"] or []
         body = function["body"]
         args = node.args or []
+        
+        # validate argument counts
+        if len(params) != len(args):
+            raise InterpreterError(
+                self.code,
+                node if node.name != "Play" else self.f_table["Play"]["params"],
+                f"Function '{node.name}' expects {len(params)} args, got {len(args)}"
+            )
 
         local_vars = {}
 

@@ -243,6 +243,33 @@ def test_call_witharguments(capsys):
     captured = capsys.readouterr()
     assert captured.out.strip().splitlines() == ["1", "2"]
 
+def test_call_too_few_args():
+    checker = make_checker()
+    
+    checker.f_table = {"X":{"params":["a", "b"], "body":[Output([Var("Y")])]}}
+    node = [Call("X", [IntLiteral(1)])]
+
+    with pytest.raises(InterpreterError, match="expects 2 args, got 1"):
+        checker.visit(node)
+
+def test_call_too_many_args():
+    checker = make_checker()
+    
+    checker.f_table = {"X":{"params":["a"], "body":[Output([Var("Y")])]}}
+    node = [Call("X", [IntLiteral(1), IntLiteral(2)])]
+
+    with pytest.raises(InterpreterError, match="expects 1 args, got 2"):
+        checker.visit(node)
+    
+def test_call_zero_arg_function_with_arg():
+    checker = make_checker()
+    
+    checker.f_table = {"X":{"params":[], "body":[Output([Var("Y")])]}}
+    node = [Call("X", [IntLiteral(1)])]
+
+    with pytest.raises(InterpreterError, match="expects 0 args, got 1"):
+        checker.visit(node)
+
 def test_call_return(capsys):
     checker = make_checker()
     

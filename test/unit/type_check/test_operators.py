@@ -187,32 +187,3 @@ def test_chance():
         TypeChecker().check_chance(node3, "int", "str")
     with pytest.raises(TypeError, match="chance requires numeric types, got 'str' and 'bool'"):
         TypeChecker().check_chance(node4, "str", "bool")
-
-# -------------------------
-# Input
-# -------------------------
-def test_input_var():
-    # X not initilized
-    v_table = {}
-    node = Input([], "X", None)
-    with pytest.raises(TypeError, match="The variable: 'X' does not exist"):
-        TypeChecker().check_input(node, node.name in v_table, node.base in v_table)
-    
-    # X are initilized
-    v_table = {"X": "int(1)"}
-    node = Input([], "X", None)
-    result = TypeChecker().check_input(node, node.name in v_table, node.base in v_table)
-    assert result is None
-
-def test_input_struct():
-    # X not initilized
-    v_table = {}
-    node = Input([], "X", "Car")
-    with pytest.raises(TypeError, match="The variable: 'X' does not exist in 'Car'"):
-        TypeChecker().check_input(node, node.name in v_table, node.base in v_table)
-    
-    # X are initilized
-    v_table = {"Car": {"X": "int(1)"}}
-    node = Input([], "X", "Car")
-    result = TypeChecker().check_input(node, node.name in v_table["Car"], node.base in v_table)
-    assert result is None

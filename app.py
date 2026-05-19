@@ -1,16 +1,20 @@
 import sys
 import traceback
 from src.ast import builder
-from src.visitors import type_checker, interpreter
+from src.visitors import interpreter
 from src.parser import parse, ParseError
 from src.errors import Error, TypeError, RuntimeError, InterpreterError
 
-# Reading the code file
+
+
+# FILE READER
 def load_source(path):
     with open(path, "r", encoding="utf-8") as f:
         return f.read()
 
-# Prints the AST
+
+
+# AST PRINTER
 def print_ast(node, indent=0):
     prefix = "  " * indent
     print(prefix + str(node))
@@ -41,32 +45,24 @@ def print_ast(node, indent=0):
             print_ast(child, indent + 1)
 
 
+
+# EXECUTION OF SOURCE CODE
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python app.py <sourcefile>")
-        sys.exit(1)
-
-    source_path = sys.argv[1]
-
     try:
-        code = load_source(source_path)
+        code = load_source("main.rls")
 
         tree = parse(code)
         ast = builder.ASTBuilder().transform(tree)
 
-        print("---------AST--------\n")
-        for stmt in ast:
-            print_ast(stmt)
+        #print("---------AST--------\n")
+        #for stmt in ast:
+        #    print_ast(stmt)
 
-        #print("\n---------TYPE CHECK--------\n")
-        #checker = type_checker.TypeCheckerVisitor(code)
-        #for node in ast:
-        #    checker.visit(node)
-
-        print("\n---------INTERPRETATION--------\n")
+        #print("\n---------INTERPRETATION--------\n")
         interp = interpreter.InterpreterVisitor(code, slot=2)
         interp.run(ast)
 
+    # ERROR LIST
     except ParseError as e:
         print(f"[Syntax Error] {e}")
         print(f"Line {e.line}, Col {e.column}")

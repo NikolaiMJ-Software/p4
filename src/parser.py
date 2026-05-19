@@ -1,8 +1,6 @@
 from lark import Lark
 from lark.indenter import Indenter
 from lark.exceptions import UnexpectedInput
-# from src.errors import Error
-# from src.errors import SyntaxError
 
 # GRAMMAR
 grammar = r"""
@@ -24,6 +22,7 @@ start: stmt*
     | select_stmt
     | save_stmt
     | NEWLINE
+
 
 // STATEMENTS
 create_stmt: "create" ID var_tail NEWLINE -> create_v
@@ -80,6 +79,7 @@ input_stmt: "input in" indexing ID inheritance? NEWLINE
 output_stmt: "output" expr_list NEWLINE
 expr_list: expr ("," expr)*
 
+
 // EXPRESSIONS
 ?expr: expr2
     | expr "or" expr2 -> or_expr
@@ -116,12 +116,14 @@ expr_list: expr ("," expr)*
     | call_expr
     | index_access -> index_expr
 
+
 // TOKENS
 ID: /[A-Z][a-zA-Z0-9_]*/
 FLOAT: /([1-9][0-9]*|0)\.[0-9]+/
 INTEGER: /[0-9]+/
 STRING: /"[^"]*"/
 BOOL: "true"|"false"
+
 
 // GENERAL HELPER RULES
 call_expr: "call" ID args -> call_expr
@@ -132,18 +134,22 @@ block: INDENT stmt+ DEDENT
 list_item: expr | list_tail
 indexing: ("index" expr "of")*
 
+
 // IMPORTS & IGNORE
 NEWLINE: (/\r?\n[ \t]*/)
 %import common.WS_INLINE
 %declare INDENT DEDENT
 %ignore WS_INLINE
 
-// Comments
+
+// COMMENTS
 COMMENT: /\#[^\n]*/
 BLOCK_COMMENT: /\#\/[\s\S]*?\/\#/
 %ignore COMMENT
 %ignore BLOCK_COMMENT
 """
+
+
 
 class TreeIndenter(Indenter):
     NL_type = 'NEWLINE'
@@ -152,6 +158,7 @@ class TreeIndenter(Indenter):
     INDENT_type = 'INDENT'
     DEDENT_type = 'DEDENT'
     tab_len = 8
+
 
 # PARSER
 parser = Lark(
@@ -162,6 +169,7 @@ parser = Lark(
     propagate_positions=True
 )
 
+
 # wrapping Lark errors in our own (decouples us from Lark)
 class ParseError(Exception):
     def __init__(self, message, line, column, context):
@@ -169,6 +177,7 @@ class ParseError(Exception):
         self.line = line
         self.column = column
         self.context = context
+
 
 # raising our own wrapped errors while parsing
 def parse(code):

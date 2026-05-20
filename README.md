@@ -1,5 +1,5 @@
 # RogueLiteScript
-Some sort of program language
+This domain-specific natural language programming language aimed at lowering the barrier to entry for aspiring indie game developers, specifically within the Roguelite genre. Traditional programming languages often present steep learning curves that hinder new developers from making games. To address this, the proposed language utilizes a human-readable, Subject-Verb-Object syntax to minimize ambiguity while maximizing accessibility. Genre-specific mechanics, such as procedural randomness and permachoice persistence, are built-in features. Implemented as a strongly and dynamically typed interpreted language using the parser Lark, the system employs type inference to simplify development.
 
 ## Features
 

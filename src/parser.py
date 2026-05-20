@@ -7,7 +7,6 @@ grammar = r"""
 start: stmt*
 ?stmt: create_stmt
     | assign_stmt
-    | assign_index_stmt
     | if_stmt
     | while_stmt
     | dowhile_stmt
@@ -31,21 +30,13 @@ var_tail: ("is" expr)?
 
 struct_tail: (inheritance "with:" NEWLINE INDENT struct_fields DEDENT | inherits_from)
 
-struct_inheritance: "from" ID
-
 struct_fields: (struct_field | NEWLINE)*
 struct_field: ID NEWLINE
     | ID "is" expr NEWLINE
     | ID "is" "listing:" list_items? NEWLINE
 
-list_tail: "listing:" list_items?
-list_items: list_item ("," list_item)*
-
-assign_stmt: ID inheritance "is" expr NEWLINE -> assign_v
-    | ID inheritance "is" list_tail NEWLINE -> assign_l
-
-assign_index_stmt: index_access "is" list_item NEWLINE-> assign_index
-index_access: indexing ID inheritance
+assign_stmt: var "is" expr NEWLINE
+    | var "is" list_tail NEWLINE
 
 if_stmt: "if" expr "do:" NEWLINE block elif_stmt else_stmt
 elif_stmt: ("else if" expr "do:" NEWLINE block)*
@@ -68,7 +59,7 @@ break_stmt: "stop" NEWLINE
 
 expr_stmt: expr NEWLINE
 
-input_stmt: "input in" indexing ID inheritance? NEWLINE
+input_stmt: "input in" var NEWLINE
 
 output_stmt: "output" expr_list NEWLINE
 expr_list: expr ("," expr)*
@@ -106,9 +97,8 @@ expr_list: expr ("," expr)*
     | FLOAT
     | STRING
     | BOOL
-    | ID inheritance -> var
     | call_expr
-    | index_access -> index_expr
+    | var
 
 
 // TOKENS
@@ -122,11 +112,14 @@ BOOL: "true"|"false"
 // GENERAL HELPER RULES
 call_expr: "call" ID args -> call_expr
 args: ("with" expr ("," expr)*)?
-inherits_from: "from" ID
-inheritance: ("from" ID)?
+inherits_from: ("from" ID)+
+inheritance: ("from" ID)*
 block: INDENT stmt+ DEDENT
 list_item: expr | list_tail
 indexing: ("index" expr "of")*
+var: indexing ID inheritance
+list_tail: "listing:" list_items?
+list_items: list_item ("," list_item)*
 
 
 // IMPORTS & IGNORE

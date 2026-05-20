@@ -77,32 +77,6 @@ class ASTBuilder(Transformer):
 
 
 
-    # ASSIGN
-    def assign_v(self, tree):
-        name = tree.children[0]
-        base = tree.children[1] if len(tree.children) > 2 else None
-        value = tree.children[-1]
-        return self._pos(Assign(name, base, value), tree)
-
-    def assign_l(self, tree):
-        name = tree.children[0]
-        base = tree.children[1] if len(tree.children) > 2 else None
-        value = tree.children[-1]
-        return self._pos(Assign(name, base, value), tree)
-
-    def assign_i(self, tree):
-        name = tree.children[0]
-        base = tree.children[1] if len(tree.children) > 2 else None
-        value = tree.children[-1]
-        return self._pos(Assign(name, base, value), tree)
-
-    def assign_index(self, tree):
-        target = tree.children[0]
-        value = tree.children[1]
-        return self._pos(AssignIndex(target, value), tree)
-
-
-
     # IF AND ITS HELPER RULES
     def if_stmt(self, tree):
         cond = tree.children[0]
@@ -121,6 +95,11 @@ class ASTBuilder(Transformer):
 
 
     # OTHER STATEMENTS
+    def assign_stmt(self, tree):
+        var = tree.children[0]
+        value = tree.children[1]
+        return self._pos(Assign(var, value), tree)
+    
     def while_stmt(self, tree):
         cond = tree.children[0]
         body = tree.children[1]
@@ -160,10 +139,8 @@ class ASTBuilder(Transformer):
         return self._pos(Expression(tree.children[0]), tree)
 
     def input_stmt(self, tree):
-        indexing = tree.children[0]
-        name = tree.children[1]
-        base = tree.children[2] if len(tree.children) > 2 else None
-        return self._pos(Input(indexing,name,base), tree)
+        var = tree.children[0]
+        return self._pos(Input(var), tree)
 
     def output_stmt(self, tree):
         return self._pos(Output(tree.children[0]), tree)
@@ -230,9 +207,10 @@ class ASTBuilder(Transformer):
         return self._pos(Chance(tree.children[0], tree.children[1]), tree)
 
     def var(self, tree):
-        name = tree.children[0]
-        base = tree.children[1] if len(tree.children) > 1 else None
-        return self._pos(Var(name, base), tree)
+        indexing = tree.children[0]
+        target = tree.children[1]
+        base = tree.children[2] if len(tree.children) > 2 else None
+        return self._pos(Var(indexing, target, base), tree)
 
     def call_expr(self, tree):
         name = tree.children[0]
@@ -242,16 +220,10 @@ class ASTBuilder(Transformer):
 
 
     # INDEXING
-    def index_access(self, tree):
-        indexing = tree.children[0]
-        target = tree.children[1]
-        base = tree.children[2] if len(tree.children) > 2 else None
-        return self._pos(IndexAccess(indexing, target, base), tree)
-
     def indexing(self, tree):
         return tree.children or []
 
-    def index_expr(self, tree):
+    def id_path_expr(self, tree):
         return tree.children[0]
 
 
@@ -285,10 +257,10 @@ class ASTBuilder(Transformer):
         return tree.children[0]
 
     def inherits_from(self, tree):
-        return tree.children[0] if tree.children else None
+        return tree.children
 
     def inheritance(self, tree):
-        return tree.children[0] if tree.children else None
+        return tree.children if tree.children else []
 
     def block(self, tree):
         return tree.children

@@ -49,16 +49,16 @@ def print_ast(node, indent=0):
 # EXECUTION OF SOURCE CODE
 if __name__ == "__main__":
     try:
-        code = load_source("main.rls")
+        code = load_source("test.rls")
 
         tree = parse(code)
         ast = builder.ASTBuilder().transform(tree)
 
-        #print("---------AST--------\n")
-        #for stmt in ast:
-        #    print_ast(stmt)
+        print("---------AST--------\n")
+        for stmt in ast:
+            print_ast(stmt)
 
-        #print("\n---------INTERPRETATION--------\n")
+        print("\n---------INTERPRETATION--------\n")
         interp = interpreter.InterpreterVisitor(code, slot=2)
         interp.run(ast)
 

@@ -64,19 +64,13 @@ class CreateList(ASTNode):
         return f"Create_l({self.name},{self.value})"
     
 class Assign(ASTNode):
-    def __init__(self, name, base, value):
-        self.name = name
-        self.base = base
+    def __init__(self, var, value):
+        self.indexing = var.indexing
+        self.name = var.target
+        self.base = var.base
         self.value = value
     def __repr__(self):
-        return f"Assign({self.name},{self.base},{self.value})"
-    
-class AssignIndex(ASTNode):
-    def __init__(self, target, value):
-        self.target = target
-        self.value = value
-    def __repr__(self):
-        return f"AssignIndex({self.target},{self.value})"
+        return f"Assign({self.indexing},{self.name},{self.base},{self.value})"
     
 class If(ASTNode):
     def __init__(self, cond, body, elifs, elses):
@@ -143,10 +137,10 @@ class Expression(ASTNode):
         return f"Expr({self.value})"
     
 class Input(ASTNode):
-    def __init__(self, indexing, name, base=None):
-        self.indexing = indexing
-        self.name = name
-        self.base = base
+    def __init__(self, var):
+        self.indexing = var.indexing
+        self.name = var.target
+        self.base = var.base
     def __repr__(self):
         return f"Input({self.indexing},{self.name},{self.base})"
     
@@ -290,10 +284,10 @@ class Call(ASTNode):
     def __repr__(self):
         return f"Call({self.name},{self.args})"
     
-class IndexAccess(ASTNode):
+class Var(ASTNode):
     def __init__(self, indexing, target, base=None):
         self.indexing = indexing
         self.target = target
         self.base = base
     def __repr__(self):
-        return f"IndexAccess({self.indexing},{self.target},{self.base})"
+        return f"Var({self.indexing},{self.target},{self.base})"

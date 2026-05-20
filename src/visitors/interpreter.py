@@ -193,10 +193,10 @@ class InterpreterVisitor(Visitor):
         self.type_checker.check_create_struct(
             node,
             node.name in self.v_table,
-            self.lookup_var(node.base)
+            self.lookup_var(node.base if node.base else None)
         )
 
-        parent = self.lookup_var(node.base)
+        parent = self.lookup_var(node.base[0] if node.base else None)
         fields = {field.name: self.visit(field.value) if field.value else "UNINITIALIZED" for field in node.fields}
 
         if parent is False:
@@ -528,13 +528,11 @@ class InterpreterVisitor(Visitor):
 
         # Find the scope whith the variable we want to change
         scope = self.v_table
+        while base not in scope:
+            scope = scope.get("__parent__")
         if base:
-            while base not in scope:
-                scope = scope.get("__parent__")
             scope = scope[base]
-        else:
-            while name not in scope:
-                scope = scope.get("__parent__")
+
                 
         if indexing: # Handle if the variable is a list
             indexes = indexing[::-1]
@@ -797,15 +795,17 @@ class InterpreterVisitor(Visitor):
             random.uniform(0, self.unwrap(right)) < self.unwrap(left)
         )
     
-    def visit_var(self, node):
-        if node.base:
-            struct = self.lookup_var(node.base)
+    def visit_var(self, node): #stopped here
+        var = None
+        if node.base != []:
+            struct = None
+            for nested_struct in node.base[::-1]:
+                struct = self.lookup_var(nested_struct)
             self.type_checker.check_var(node, struct)
-
-            return struct[node.name]
+            var = struct[node.name]
 
         value = self.lookup_var(node.name)
-        self.type_checker.check_var(node, value)
+        #self.type_checker.check_var(node, value)
 
         return value
     

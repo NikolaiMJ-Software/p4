@@ -271,11 +271,12 @@ class Chance(ASTNode):
         return f"Chance({self.left},{self.right})"
     
 class Var(ASTNode):
-    def __init__(self, name, base=None):
-        self.name = name
+    def __init__(self, indexing, target, base=None):
+        self.indexing = indexing
+        self.name = target
         self.base = base
     def __repr__(self):
-        return f"Var({self.name},{self.base})"
+        return f"Var({self.indexing},{self.name},{self.base})"
     
 class Call(ASTNode):
     def __init__(self, name, args=None):
@@ -283,11 +284,3 @@ class Call(ASTNode):
         self.args = args
     def __repr__(self):
         return f"Call({self.name},{self.args})"
-    
-class Var(ASTNode):
-    def __init__(self, indexing, target, base=None):
-        self.indexing = indexing
-        self.target = target
-        self.base = base
-    def __repr__(self):
-        return f"Var({self.indexing},{self.target},{self.base})"

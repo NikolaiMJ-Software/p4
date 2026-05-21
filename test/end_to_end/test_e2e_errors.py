@@ -122,5 +122,10 @@ def test_e2e_division_by_zero_raises(monkeypatch, capsys):
     assert error.line == 2
     assert error.column == 17
 
-    assert error.context.splitlines()[0] == "    output 10 / 0"
-    assert error.context.splitlines()[1] == " " * (error.column - 1) + "^"
+    expected_context = (
+        "    output 10 / 0\n"
+        + " " * (error.column - 1)
+        + "^"
+    )
+
+    assert error.context == expected_context

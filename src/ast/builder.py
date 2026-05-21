@@ -1,5 +1,4 @@
-from lark import Transformer, v_args
-from lark import Discard
+from lark import Transformer, v_args, Discard
 from src.ast.nodes import *
 
 
@@ -78,22 +77,10 @@ class ASTBuilder(Transformer):
 
 
     # ASSIGN
-    def assign_v(self, tree):
+    def assign_stmt(self, tree):
         name = tree.children[0]
-        base = tree.children[1] if len(tree.children) > 2 else None
-        value = tree.children[-1]
-        return self._pos(Assign(name, base, value), tree)
-
-    def assign_l(self, tree):
-        name = tree.children[0]
-        base = tree.children[1] if len(tree.children) > 2 else None
-        value = tree.children[-1]
-        return self._pos(Assign(name, base, value), tree)
-
-    def assign_i(self, tree):
-        name = tree.children[0]
-        base = tree.children[1] if len(tree.children) > 2 else None
-        value = tree.children[-1]
+        base = tree.children[1]
+        value = tree.children[2]
         return self._pos(Assign(name, base, value), tree)
 
     def assign_index(self, tree):
@@ -107,8 +94,8 @@ class ASTBuilder(Transformer):
     def if_stmt(self, tree):
         cond = tree.children[0]
         body = tree.children[1]
-        elifs = tree.children[2] if len(tree.children) > 2 else None
-        elses = tree.children[3] if len(tree.children) > 3 else None
+        elifs = tree.children[2]
+        elses = tree.children[3]
         return self._pos(If(cond, body, elifs, elses), tree)
 
     def elif_stmt(self, tree):
@@ -135,19 +122,19 @@ class ASTBuilder(Transformer):
         name = tree.children[0]
         start = tree.children[1]
         end = tree.children[2]
-        body = tree.children[3] if len(tree.children) > 3 else None
+        body = tree.children[3]
         return self._pos(Forrange(name, start, end, body), tree)
 
     def foreach_stmt(self, tree):
         name = tree.children[0]
         collection = tree.children[1]
-        body = tree.children[2] if len(tree.children) > 2 else None
+        body = tree.children[2]
         return self._pos(Foreach(name, collection, body), tree)
 
     def func_def(self, tree):
         name = tree.children[0]
-        params = tree.children[1] if len(tree.children) > 1 else None
-        body = tree.children[2] if len(tree.children) > 2 else None
+        params = tree.children[1]
+        body = tree.children[2]
         return self._pos(Define(name, params, body), tree)
 
     def return_stmt(self, tree):
@@ -231,12 +218,12 @@ class ASTBuilder(Transformer):
 
     def var(self, tree):
         name = tree.children[0]
-        base = tree.children[1] if len(tree.children) > 1 else None
+        base = tree.children[1]
         return self._pos(Var(name, base), tree)
 
     def call_expr(self, tree):
         name = tree.children[0]
-        args = tree.children[1] if len(tree.children) > 1 else None
+        args = tree.children[1]
         return self._pos(Call(name, args), tree)
 
 
@@ -245,7 +232,7 @@ class ASTBuilder(Transformer):
     def index_access(self, tree):
         indexing = tree.children[0]
         target = tree.children[1]
-        base = tree.children[2] if len(tree.children) > 2 else None
+        base = tree.children[2]
         return self._pos(IndexAccess(indexing, target, base), tree)
 
     def indexing(self, tree):
@@ -285,7 +272,7 @@ class ASTBuilder(Transformer):
         return tree.children[0]
 
     def inherits_from(self, tree):
-        return tree.children[0] if tree.children else None
+        return tree.children[0]
 
     def inheritance(self, tree):
         return tree.children[0] if tree.children else None

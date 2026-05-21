@@ -205,18 +205,18 @@ def test_assign():
     tree_list = parse("X is listing: 1, 3, 2, 4\n")
 
     
-    assert tree_int.children[0].data == "assign_v"
-    assert tree_float.children[0].data == "assign_v"
-    assert tree_string.children[0].data == "assign_v"
-    assert tree_ID.children[0].data == "assign_v"
-    assert tree_list.children[0].data == "assign_l"
+    assert tree_int.children[0].data == "assign_stmt"
+    assert tree_float.children[0].data == "assign_stmt"
+    assert tree_string.children[0].data == "assign_stmt"
+    assert tree_ID.children[0].data == "assign_stmt"
+    assert tree_list.children[0].data == "assign_stmt"
     
 def test_struct_attribute_assign():
     tree = parse("Health from Zombie is between 5 and 10\n")
     tree_assign_struct_list = parse("Health from Zombie is listing: \"a\", \"b\"\n")
     
-    assert tree.children[0].data == "assign_v"
-    assert tree_assign_struct_list.children[0].data == "assign_l"
+    assert tree.children[0].data == "assign_stmt"
+    assert tree_assign_struct_list.children[0].data == "assign_stmt"
 
 def test_assign_index_value():
     tree_int = parse("index 0 of X is 5\n")
@@ -235,8 +235,8 @@ def test_assign_ID_index_value():
     tree_assign_ID_index = parse("X is index 1 of Y\n")
     tree_assign_ID_index_of_index = parse("X is index 1 of index 3 of Y\n")
 
-    assert tree_assign_ID_index.children[0].data == "assign_v"
-    assert tree_assign_ID_index_of_index.children[0].data == "assign_v"
+    assert tree_assign_ID_index.children[0].data == "assign_stmt"
+    assert tree_assign_ID_index_of_index.children[0].data == "assign_stmt"
 
 def test_assign_index_from_struct_list():
     tree = parse("index 0 of Inventory from Player is \"Sword\"\n")
@@ -249,7 +249,7 @@ def test_nested_index_access_expr():
     tree = parse("X is index 1 of index 3 of Y\n")
     node = tree.children[0]
 
-    assert node.data == "assign_v"
+    assert node.data == "assign_stmt"
 
 def test_struct_field_access_expr():
     tree = parse("create X is Health from Zombie\n")
@@ -263,7 +263,7 @@ def test_assign_from_struct_field_expr():
     tree = parse("X is Health from Zombie + 5\n")
     node = tree.children[0]
 
-    assert node.data == "assign_v"
+    assert node.data == "assign_stmt"
 
 ################
 # Control Flow #
@@ -361,7 +361,7 @@ def test_forrange():
 
     body = next(child for child in node.children if hasattr(child, "data") and child.data == "block")
     assert len(body.children) == 3
-    assert body.children[1].data == "assign_v"
+    assert body.children[1].data == "assign_stmt"
 
 def test_foreach():
     code="""for each X in Y do:
@@ -378,7 +378,7 @@ def test_foreach():
 
     body = next(child for child in node.children if hasattr(child, "data") and child.data == "block")
     assert len(body.children) == 5
-    assert body.children[1].data == "assign_v"
+    assert body.children[1].data == "assign_stmt"
     
 
 #############
@@ -417,7 +417,7 @@ def test_call_inside_assignment():
     tree = parse("X is call Damage with 1, 2\n")
     node = tree.children[0]
 
-    assert node.data == "assign_v"
+    assert node.data == "assign_stmt"
 
 
 def test_call_inside_output():
@@ -601,7 +601,7 @@ X is 5
     stmts = [child for child in tree.children if hasattr(child, "data")]
 
     assert stmts[0].data == "create_v"
-    assert stmts[1].data == "assign_v"
+    assert stmts[1].data == "assign_stmt"
     
     
     

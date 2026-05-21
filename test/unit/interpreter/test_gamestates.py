@@ -1,6 +1,7 @@
 import pytest
 from end_to_end.setup_e2e import delete_save_file # Remove save file '999'
-from src.visitors.interpreter import *
+from src.visitors.interpreter.interpreter import InterpreterVisitor
+from src.visitors.interpreter.runtime_value import RuntimeValue
 from src.ast.nodes import *
 
 def make_checker():

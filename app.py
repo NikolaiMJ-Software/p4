@@ -1,7 +1,7 @@
 import sys
 import traceback
 from src.ast import builder
-from src.visitors import interpreter
+from src.visitors.interpreter.interpreter import InterpreterVisitor
 from src.parser import parse, ParseError
 from src.errors import Error, TypeError, RuntimeError, InterpreterError
 
@@ -59,7 +59,7 @@ if __name__ == "__main__":
         #    print_ast(stmt)
 
         #print("\n---------INTERPRETATION--------\n")
-        interp = interpreter.InterpreterVisitor(code, slot=2)
+        interp = InterpreterVisitor(code, slot=2)
         interp.run(ast)
 
     # ERROR LIST

@@ -2,8 +2,7 @@ import builtins, os, pytest
 
 from src.ast import builder
 from src.parser import parse
-from src.visitors.interpreter import InterpreterVisitor
-
+from src.visitors.interpreter.interpreter import InterpreterVisitor
 # Raise the value if it's not a string, e.g. class (KeyboardInterrupt)
 def fake_input(val):
     if not isinstance(val, str):

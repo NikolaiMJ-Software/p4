@@ -1,6 +1,9 @@
 import pytest
-from src.visitors.interpreter import *
+import random
+from src.visitors.interpreter.interpreter import InterpreterVisitor
+from src.visitors.interpreter.runtime_value import RuntimeValue
 from src.ast.nodes import *
+
 
 def make_checker():
     return InterpreterVisitor()

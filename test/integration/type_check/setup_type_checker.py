@@ -1,6 +1,7 @@
 from src.parser import parser
 from src.ast import builder
-from src.visitors.interpreter import InterpreterVisitor, RuntimeValue
+from src.visitors.interpreter.interpreter import InterpreterVisitor
+from src.visitors.interpreter.runtime_value import RuntimeValue
 
 def type_check_test(code):
     tree = parser.parse(code)

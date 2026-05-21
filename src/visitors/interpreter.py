@@ -721,7 +721,7 @@ class InterpreterVisitor(Visitor):
         if self.unwrap(right) == 0:
             raise InterpreterError(
                 self.code,
-                node,
+                node.right,
                 "division by 0"
             )
 

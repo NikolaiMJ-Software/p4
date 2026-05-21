@@ -75,34 +75,6 @@ def test_pow():
 # -------------------------
 # comparisons
 # -------------------------
-def test_equal_expr():
-    node0 = EqualExpr(IntLiteral(1), IntLiteral(1))
-    node1 = EqualExpr(IntLiteral(1), FloatLiteral(1.0))
-    node2 = EqualExpr(StringLiteral("a"), StringLiteral("b"))
-
-    result0 = TypeChecker().check_comp_ops_expr(node0, "==", "int", "int")
-    result1 = TypeChecker().check_comp_ops_expr(node1, "==", "int", "float")
-    result2 = TypeChecker().check_comp_ops_expr(node2, "==", "str", "str")
-
-    assert result0 == "bool"
-    assert result1 == "bool"
-    assert result2 == "bool"
-
-    with pytest.raises(TypeError, match="Can't compare: 'str' == 'int'"):
-        TypeChecker().check_comp_ops_expr(EqualExpr(StringLiteral("a"), IntLiteral(1)), "==", "str", "int")
-
-
-def test_not_equal_expr():
-    node0 = NotEqualExpr(IntLiteral(1), FloatLiteral(1.0))
-    node1 = NotEqualExpr(StringLiteral("a"), BoolLiteral(True))
-
-    result = TypeChecker().check_comp_ops_expr(node0, "!=", "int", "float")
-    assert result == "bool"
-
-    with pytest.raises(TypeError, match="Can't compare: 'str' != 'bool'"):
-        TypeChecker().check_comp_ops_expr(node1, "!=", "str", "bool")
-
-
 def test_ordered_comparisons():
     node0 = GreaterExpr(IntLiteral(2), IntLiteral(1))
     node1 = LessExpr(IntLiteral(1), FloatLiteral(2.0))

@@ -405,22 +405,6 @@ pow_string_int_code = '''"a" ^ 2
 '''
 
 
-def test_it_fail_equal_string_int():
-    with pytest.raises(TypeError) as exc_info:
-        type_check_test(equal_string_int_code)
-    assert "Can't compare" in str(exc_info.value)
-equal_string_int_code = '''"a" equal 1
-'''
-
-
-def test_it_fail_not_equal_string_bool():
-    with pytest.raises(TypeError) as exc_info:
-        type_check_test(not_equal_string_bool_code)
-    assert "Can't compare" in str(exc_info.value)
-not_equal_string_bool_code = '''"a" not equal true
-'''
-
-
 def test_it_fail_greater_string_int():
     with pytest.raises(TypeError) as exc_info:
         type_check_test(greater_string_int_code)

@@ -14,15 +14,13 @@ start: stmt*
     | forrange_stmt
     | foreach_stmt
     | func_def
-    | return_stmt
-    | break_stmt
     | expr_stmt
     | input_stmt
     | output_stmt
     | NEWLINE
 
 
-// STATEMENTS
+// EMPTY LINE STATEMENTS
 create_stmt: "create" ID var_tail NEWLINE -> create_v
     | "create" ID struct_tail -> create_s
     | "create" ID "is" list_tail NEWLINE-> create_l
@@ -30,9 +28,7 @@ create_stmt: "create" ID var_tail NEWLINE -> create_v
 var_tail: ("is" expr)?
 
 struct_tail: (inheritance "with:" NEWLINE INDENT struct_fields DEDENT | inherits_from)
-
 struct_inheritance: "from" ID
-
 struct_fields: (struct_field | NEWLINE)*
 struct_field: ID NEWLINE
     | ID "is" expr NEWLINE
@@ -45,7 +41,6 @@ assign_stmt: ID inheritance "is" expr NEWLINE
     | ID inheritance "is" list_tail NEWLINE
 
 assign_index_stmt: index_access "is" list_item NEWLINE-> assign_index
-index_access: indexing ID inheritance
 
 if_stmt: "if" expr "do:" NEWLINE block elif_stmt else_stmt
 elif_stmt: ("else if" expr "do:" NEWLINE block)*
@@ -62,16 +57,18 @@ foreach_stmt: "for each" ID "in" ID "do:" NEWLINE block
 func_def: "define" ID params ":" NEWLINE block
 params: ("with" ID ("," ID)*)?
 
-return_stmt: "return" expr NEWLINE
-
-break_stmt: "stop" NEWLINE
-
 expr_stmt: expr NEWLINE
 
 input_stmt: "input in" indexing ID inheritance? NEWLINE
 
 output_stmt: "output" expr_list NEWLINE
 expr_list: expr ("," expr)*
+
+
+// BLOCK STATEMENTS
+return_stmt: "return" expr NEWLINE
+
+break_stmt: "stop" NEWLINE
 
 
 // EXPRESSIONS
@@ -124,9 +121,10 @@ call_expr: "call" ID args -> call_expr
 args: ("with" expr ("," expr)*)?
 inherits_from: "from" ID
 inheritance: ("from" ID)?
-block: INDENT stmt+ DEDENT
+block: INDENT (stmt | break_stmt | return_stmt)+ DEDENT
 list_item: expr | list_tail
 indexing: ("index" expr "of")*
+index_access: indexing ID inheritance
 
 
 // IMPORTS & IGNORE

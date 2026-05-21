@@ -617,8 +617,14 @@ def test_struct_with_comments():
     assert tree is not None
     
 def test_break_stmt():
-    tree = parse("stop\n")
-    assert tree.children[0].data == "break_stmt"
+    code = """while true do:
+    stop
+    """
+    tree = parse(code)
+    assert tree.children[0].children[2].children[1].data == "break_stmt"
+    
+    
+    
 ##################
 # Negative tests #
 ##################

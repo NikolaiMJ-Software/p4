@@ -619,10 +619,8 @@ class InterpreterVisitor(Visitor):
         left = self.visit(node.left)
         right = self.visit(node.right)
 
-        result_type = self.type_checker.check_comp_ops_expr(node, "==", left.type, right.type)
-
         return RuntimeValue(
-            result_type,
+            "bool",
             self.unwrap(left) == self.unwrap(right)
         )
 
@@ -630,10 +628,8 @@ class InterpreterVisitor(Visitor):
         left = self.visit(node.left)
         right = self.visit(node.right)
 
-        result_type = self.type_checker.check_comp_ops_expr(node, "!=", left.type, right.type)
-
         return RuntimeValue(
-            result_type,
+            "bool",
             self.unwrap(left) != self.unwrap(right)
         )
 

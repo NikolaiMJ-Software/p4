@@ -19,8 +19,7 @@ start: stmt*
     | expr_stmt
     | input_stmt
     | output_stmt
-    | select_stmt
-    | save_stmt
+    | switch_stmt
     | NEWLINE
 
 
@@ -68,9 +67,7 @@ return_stmt: "return" expr NEWLINE
 
 break_stmt: "stop" NEWLINE
 
-select_stmt: "select" INTEGER NEWLINE -> select_save
-
-save_stmt: "save" NEWLINE -> save_game
+switch_stmt: "switch to save" expr NEWLINE
 
 expr_stmt: expr NEWLINE
 

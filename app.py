@@ -54,12 +54,12 @@ if __name__ == "__main__":
         tree = parse(code)
         ast = builder.ASTBuilder().transform(tree)
 
-        #print("---------AST--------\n")
-        #for stmt in ast:
-        #    print_ast(stmt)
+        print("---------AST--------\n")
+        for stmt in ast:
+            print_ast(stmt)
 
         #print("\n---------INTERPRETATION--------\n")
-        interp = interpreter.InterpreterVisitor(code, slot=2)
+        interp = interpreter.InterpreterVisitor(code)
         interp.run(ast)
 
     # ERROR LIST

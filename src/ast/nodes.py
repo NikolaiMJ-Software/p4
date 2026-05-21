@@ -135,6 +135,12 @@ class Return(ASTNode):
 class Break(ASTNode):
     def __repr__(self):
         return "Break()"
+    
+class Switch(ASTNode):
+    def __init__(self, slot):
+        self.slot = slot
+    def __repr__(self):
+        return f"Switch({self.slot})"
 
 class Expression(ASTNode):
     def __init__(self, value):

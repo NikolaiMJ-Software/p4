@@ -155,6 +155,10 @@ class ASTBuilder(Transformer):
 
     def break_stmt(self, tree):
         return self._pos(Break(), tree)
+    
+    def switch_stmt(self, tree):
+        slot = tree.children[0]
+        return self._pos(Switch(slot), tree)
 
     def expr_stmt(self, tree):
         return self._pos(Expression(tree.children[0]), tree)

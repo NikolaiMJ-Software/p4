@@ -9,13 +9,42 @@ class TypeChecker:
     # NUMERIC CHECKS FOR EXPRESSIONS
     def is_numeric(self, t):
         return t in ["int", "float"]
+    
+    def numeric_error_node(
+        self,
+        node,
+        left_type,
+        right_type,
+        left_attr="left",
+        right_attr="right"
+    ):
+        if node is None:
+            return None
+
+        if not self.is_numeric(left_type):
+            return getattr(node, left_attr, node)
+
+        if not self.is_numeric(right_type):
+            return getattr(node, right_attr, node)
+
+        return node
+
+    def value_error_node(self, node):
+        if node is None:
+            return None
+        if hasattr(node, "value"):
+            return node.value
+        if hasattr(node, "cond"):
+            return node.cond
+        return node
 
     def numeric_result_type(self, node, symbol, left_type, right_type):
         # Makes sure both sides are numeric
         if not self.is_numeric(left_type) or not self.is_numeric(right_type):
+            error_node = self.numeric_error_node(node, left_type, right_type)
             raise TypeError(
                 self.code,
-                node,
+                error_node,
                 f"Expected numeric types on operation: {symbol}, got '{left_type}' and '{right_type}'"
             )
         if "float" in (left_type, right_type):
@@ -36,8 +65,6 @@ class TypeChecker:
                 node,
                 "The identifier 'Game' is reserved and can only be used as a struct name."
             )
-
-
 
     # STATEMENTS
     def check_create_variable(self, node, already_exists):
@@ -96,7 +123,7 @@ class TypeChecker:
             if not isinstance(target, dict) or name not in target:
                 raise TypeError(
                     self.code,
-                    node,
+                    self.value_error_node(node),
                     f"The variable: '{name}' does not exist in the struct: '{node.base}'"
                 )
 
@@ -111,7 +138,7 @@ class TypeChecker:
             
             raise TypeError(
                 self.code,
-                node,
+                self.value_error_node(node),
                 msg
             )
     
@@ -138,9 +165,13 @@ class TypeChecker:
     def check_forrange(self, node, start_type, end_type):
         # Range start and end must be numeric
         if not self.is_numeric(start_type) or not self.is_numeric(end_type):
+            if not self.is_numeric(start_type):
+                error_node = node.start
+            else:
+                error_node = node.end
             raise TypeError(
                 self.code,
-                node,
+                error_node,
                 f"for-range bounds must be numeric, got {start_type} and {end_type}"
             )
 
@@ -149,7 +180,7 @@ class TypeChecker:
         if collection is False:
             raise TypeError(
                 self.code,
-                node,
+                self.value_error_node(node),
                 f"The list: '{node.collection}' does not exist"
             )
 
@@ -157,7 +188,7 @@ class TypeChecker:
         if not isinstance(collection, list):
             raise TypeError(
                 self.code,
-                node,
+                self.value_error_node(node),
                 f"Cannot iterate over non-list type '{collection}'"
             )
     
@@ -212,7 +243,7 @@ class TypeChecker:
         if not self.is_numeric(left_type) or not self.is_numeric(right_type):
             raise TypeError(
                 self.code,
-                node,
+                self.value_error_node(node),
                 f"Expected numeric types on operation: /, got '{left_type}' and '{right_type}'"
             )
         return "float" # division always returns float
@@ -224,16 +255,17 @@ class TypeChecker:
         if not self.is_numeric(value_type):
             raise TypeError(
                 self.code,
-                node,
+                self.value_error_node(node),
                 f"NEG requires numeric type, got '{value_type}'"
             )
         return value_type
     
     def check_between(self, node, left_type, right_type):
         if not self.is_numeric(left_type) or not self.is_numeric(right_type):
+            error_node = self.numeric_error_node(node, left_type, right_type)
             raise TypeError(
                 self.code,
-                node,
+                error_node,
                 f"between requires numeric types, got '{left_type}' and '{right_type}'"
             )
 
@@ -244,9 +276,10 @@ class TypeChecker:
     
     def check_chance(self, node, left_type, right_type):
         if not self.is_numeric(left_type) or not self.is_numeric(right_type):
+            error_node = self.numeric_error_node(node, left_type, right_type)
             raise TypeError(
                 self.code,
-                node,
+                error_node,
                 f"chance requires numeric types, got '{left_type}' and '{right_type}'"
             )
 
@@ -266,7 +299,7 @@ class TypeChecker:
         if value is False:
             raise TypeError(
                 self.code,
-                node,
+                self.value_error_node(node),
                 f"The struct: '{node.base}' is not defined"
             )
 
@@ -274,7 +307,7 @@ class TypeChecker:
         if not isinstance(value, dict) or node.name not in value:
             raise TypeError(
                 self.code,
-                node,
+                self.value_error_node(node),
                 f"The variable: '{node.name}' is not defined in the struct: '{node.base}'"
             )
 
@@ -292,6 +325,6 @@ class TypeChecker:
         if index_type != "int":
             raise TypeError(
                 self.code,
-                node,
+                self.value_error_node(node),
                 f"List index must be 'int', got a '{index_type}'"
             )

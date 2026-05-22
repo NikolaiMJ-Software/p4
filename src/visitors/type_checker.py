@@ -123,7 +123,7 @@ class TypeChecker:
             if not isinstance(target, dict) or name not in target:
                 raise TypeError(
                     self.code,
-                    self.value_error_node(node),
+                    node,
                     f"The variable: '{name}' does not exist in the struct: '{node.base}'"
                 )
 
@@ -180,7 +180,7 @@ class TypeChecker:
         if collection is False:
             raise TypeError(
                 self.code,
-                self.value_error_node(node),
+                node,
                 f"The list: '{node.collection}' does not exist"
             )
 
@@ -241,9 +241,10 @@ class TypeChecker:
 
     def check_div(self, node, left_type, right_type):
         if not self.is_numeric(left_type) or not self.is_numeric(right_type):
+            error_node = self.numeric_error_node(node, left_type, right_type)
             raise TypeError(
                 self.code,
-                self.value_error_node(node),
+                error_node,
                 f"Expected numeric types on operation: /, got '{left_type}' and '{right_type}'"
             )
         return "float" # division always returns float
@@ -325,6 +326,6 @@ class TypeChecker:
         if index_type != "int":
             raise TypeError(
                 self.code,
-                self.value_error_node(node),
+                node,
                 f"List index must be 'int', got a '{index_type}'"
             )

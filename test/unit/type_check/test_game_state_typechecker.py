@@ -1,5 +1,5 @@
 import pytest
-from src.visitors.type_checker import TypeChecker
+from src.visitors.type_checker.type_checker import TypeChecker
 from src.ast.nodes import *
 from src.errors import TypeError
 

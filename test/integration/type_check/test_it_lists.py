@@ -1,5 +1,5 @@
 import pytest
-from src.visitors.type_checker import *
+from src.visitors.type_checker.type_checker import *
 from src.ast.nodes import *
 from setup_type_checker import type_check_test
 

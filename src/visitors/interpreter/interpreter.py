@@ -2,7 +2,7 @@ from .runtime_value import RuntimeValue
 from src.visitors.base_visitor import Visitor
 from src.ast.nodes import *
 from src.runtime.game_state import GameStateManager
-from src.visitors.type_checker import *
+from visitors.type_checker.type_checker import *
 from src.errors import InterpreterError
 from src.errors import TypeError as TypeCheckError
 from .exceptions import ReturnException, BreakException

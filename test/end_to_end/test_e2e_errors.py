@@ -18,10 +18,10 @@ define Play:
     error = info.value
     
     assert error.line == 4
-    assert error.column == 12
+    assert error.column == 21
 
     expected_context = '''    output Number + "text"
-           ^'''
+                    ^'''
     assert error.context == expected_context
 
 
@@ -39,10 +39,10 @@ define Play:
     error = info.value
     
     assert error.line == 5
-    assert error.column == 12
+    assert error.column == 21
 
     expected_context = '''    output Number + Text
-           ^'''
+                    ^'''
     assert error.context == expected_context
 
 
@@ -82,10 +82,10 @@ define Play:
     error = info.value
     
     assert error.line == 4
-    assert error.column == 20
+    assert error.column == 27
 
     expected_context = '''    CriticalHit is chance "yes" in 100
-                   ^'''
+                          ^'''
     assert error.context == expected_context
 
 
@@ -103,10 +103,10 @@ define Play:
     error = info.value
     
     assert error.line == 4
-    assert error.column == 15
+    assert error.column == 23
 
     expected_context = '''    Health is between "low" and 100
-              ^'''
+                      ^'''
     assert error.context == expected_context
 
 def test_e2e_division_by_zero_raises(monkeypatch, capsys):
@@ -120,8 +120,12 @@ def test_e2e_division_by_zero_raises(monkeypatch, capsys):
     error = info.value
     
     assert error.line == 2
-    assert error.column == 12
+    assert error.column == 17
 
-    expected_context = '''    output 10 / 0
-           ^'''
+    expected_context = (
+        "    output 10 / 0\n"
+        + " " * (error.column - 1)
+        + "^"
+    )
+
     assert error.context == expected_context

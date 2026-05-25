@@ -14,6 +14,11 @@ class ASTBuilder(Transformer):
             node.line = tree.meta.line
             node.column = tree.meta.column
         return node
+    
+    def _token_pos(self, node, token):
+        node.line = token.line
+        node.column = token.column
+        return node
 
 
 
@@ -248,16 +253,16 @@ class ASTBuilder(Transformer):
         return str(token)
 
     def INTEGER(self, token):
-        return IntLiteral(int(token))
+        return self._token_pos(IntLiteral(int(token)), token)
 
     def FLOAT(self, token):
-        return FloatLiteral(float(token))
+        return self._token_pos(FloatLiteral(float(token)), token)
 
     def STRING(self, token):
-        return StringLiteral(str(token)[1:-1])
+        return self._token_pos(StringLiteral(str(token)[1:-1]), token)
 
     def BOOL(self, token):
-        return BoolLiteral(token in ("true", "1"))
+        return self._token_pos(BoolLiteral(str(token) in ("true", "1")), token)
 
 
 

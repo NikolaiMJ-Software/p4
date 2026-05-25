@@ -25,9 +25,13 @@ class ControlFlow:
     def check_forrange(self, node, start_type, end_type):
         # Range start and end must be numeric
         if not self.is_numeric(start_type) or not self.is_numeric(end_type):
+            if not self.is_numeric(start_type):
+                error_node = node.start
+            else:
+                error_node = node.end
             raise TypeError(
                 self.code,
-                node,
+                error_node,
                 f"for-range bounds must be numeric, got {start_type} and {end_type}"
             )
 
@@ -44,6 +48,6 @@ class ControlFlow:
         if not isinstance(collection, list):
             raise TypeError(
                 self.code,
-                node,
+                self.value_error_node(node),
                 f"Cannot iterate over non-list type '{collection}'"
             )

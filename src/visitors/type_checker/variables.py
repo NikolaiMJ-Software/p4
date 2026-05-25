@@ -44,7 +44,7 @@ class Variables:
 
             raise TypeError(
                 self.code,
-                node,
+                self.value_error_node(node),
                 msg
             )
 
@@ -62,7 +62,7 @@ class Variables:
         if value is False:
             raise TypeError(
                 self.code,
-                node,
+                self.value_error_node(node),
                 f"The struct: '{node.base}' is not defined"
             )
 
@@ -70,6 +70,6 @@ class Variables:
         if not isinstance(value, dict) or node.name not in value:
             raise TypeError(
                 self.code,
-                node,
+                self.value_error_node(node),
                 f"The variable: '{node.name}' is not defined in the struct: '{node.base}'"
             )

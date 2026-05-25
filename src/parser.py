@@ -176,6 +176,7 @@ def parse(code):
     try:
         if not code.endswith("\n"):
             code += "\n"
+        check_keyword_caps(code)
         return parser.parse(code)
     except UnexpectedInput as e:
         raise ParseError( # raise error with line + column + context from caught exception
@@ -184,3 +185,42 @@ def parse(code):
             e.column,
             e.get_context(code)
         )
+  
+
+# error message helper function
+def check_keyword_caps(code):
+    # Define keywords which must be lowercase
+    keywords = {
+        "create", "define", "if", "else", "while",
+        "do", "for", "output", "input",
+        "return", "stop", "call"
+    }
+
+    #go through each line and its line numbers
+    for line_no, line in enumerate(code.splitlines(), start=1):
+        #strip white space from line
+        stripped = line.lstrip()
+        # Initial column position after indentation
+        column = len(line) - len(stripped) + 1
+
+        #if line empty, ignore it
+        if not stripped:
+            continue
+
+        # Split line into tokens
+        tokens = [t.rstrip(":") for t in stripped.split()]
+
+        #check if token is one of the keywords but not lowercase
+        for token in tokens:
+            if token.lower() in keywords and token not in keywords:
+
+                column = line.index(token) + 1
+                # Create error context with pointer
+                context = line + "\n" + " " * (column - 1) + "^"
+
+                raise ParseError(
+                    f"Unknown keyword: '{token}'. Did you mean '{token.lower()}'?",
+                    line_no,
+                    column,
+                    context
+                )

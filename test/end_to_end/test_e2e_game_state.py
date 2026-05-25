@@ -20,7 +20,7 @@ define Play:
 
     assert output == ["saved"]
 
-    with open("src/runtime/save_states/save_slot_999.json", "r") as file:
+    with open("p4/src/runtime/save_states/save_slot_999.json", "r") as file:
         data = json.load(file)
 
     assert data == {
@@ -32,7 +32,7 @@ define Play:
 def test_e2e_load_game_state_from_json(monkeypatch, capsys):
     os.makedirs("src/runtime/save_states", exist_ok=True)
 
-    with open("src/runtime/save_states/save_slot_999.json", "w") as file:
+    with open("p4/src/runtime/save_states/save_slot_999.json", "w") as file:
         json.dump({
             "Game_status": 1,
             "Name": "Bob"

@@ -26,6 +26,6 @@ def run_program(code, monkeypatch, capsys, inputs=None, slot=999):
 def delete_save_file():
     yield
     try:
-        os.remove(f"p4/src/runtime/save_states/save_slot_999.json")
+        os.remove(f"src/runtime/save_states/save_slot_999.json")
     except Exception as e:
         print("Error, when trying to delete a file:", e)

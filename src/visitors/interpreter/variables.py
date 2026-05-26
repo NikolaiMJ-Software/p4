@@ -52,7 +52,7 @@ class Variables:
         # Find the scope where the variable exists
         table = False if len(self.v_table) == 0 else self.v_table
         while table and node.name not in table:
-            table = table.get("__parent__")
+            table = table.get("__parent__", False)
 
         # Check if the name exist
         self.type_checker.check_assign(node, table)

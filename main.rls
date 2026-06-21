@@ -3,101 +3,209 @@ create Game with:
     Health
     Weapon
     Weapon_damage
+    Gold is 0
+    Environment
+    Headpiece
     Game_status is 0
 
 create Class
 create Answer
 create Weapon_roll
 
-
-output "cake" + "idk"
-
 define Play:
-    call Start_game
-
-define Start_game:
+    output "Welcome to the RLS RPG! \n -continue game \n -new game \n -exit"
     while true do:
-        output "Are you ready to start your quest? (Yes/No)"
         input in Answer
-        if Answer equal "yes" or Answer equal "Yes" do:
+        if Answer equal "continue game" do:
             if Game_status from Game equal 0 do:
-                call Class_picker
-                Game_status from Game is 1
-                output "Your class is:", Class from Game
-                call Game_play
+                output "\nNo save file detected\n"
             else do:
-                while true do:
-                    output "Do you want to continue your last game? (Yes/No)"
-                    input in Answer
-                    if Answer equal "yes" or Answer equal "Yes" do:
-                        call Game_play
-                        stop
-                    else if Answer equal "no" or Answer equal "No" do:
-                        call Class_picker
-                        Game_status from Game is 1
-                        output "Your class is:", Class from Game
-                        output "Your Weapon is:", Weapon from Game, "with weapon damage:", Weapon_damage from Game
-                        call Game_play
-                        stop
-                    else do:
-                        output "Invalid answer, please write Yes or No."
+                call Game_play
+                stop
+        else if Answer equal "new game" do:
+            call Class_picker
+            output "\nYour class is:", Class from Game
+            output "Your Weapon is:", Weapon from Game, ", with weapon damage:", Weapon_damage from Game, "\n"
+            call Game_play
             stop
-        else if Answer equal "no" or Answer equal "No" do:
+        else if Answer equal "exit" do:
             output "Come back another time"
             stop
         else do:
-            output "Invalid answer, please write Yes or No."
+            output "Invalid option"
 
 
 define Class_picker:
     while true do:
-        output "Choose class: Warrior, Wizard or Slave"
+        output "\nChoose class: Warrior, Wizard or Slave"
         input in Class
-        if Class equal "Warrior" or Class equal "warrior" do:
+        if Class equal "warrior" do:
             Class from Game is "Warrior"
             Health from Game is between 20 and 25
-            Weapon_roll is between 1 and 3
+            Weapon_roll is between 1 and 2
             if Weapon_roll equal 1 do:
                 Weapon from Game is "rusty sword"
                 Weapon_damage from Game is 5
             else if Weapon_roll equal 2 do:
                 Weapon from Game is "sword"
                 Weapon_damage from Game is 10
-            else do:
-                Weapon from Game is "legendary sword"
-                Weapon_damage from Game is 100
             stop
-        else if Class equal "Wizard" or Class equal "wizard" do:
+        else if Class equal "wizard" do:
             Class from Game is "Wizard"
             Health from Game is between 5 and 15
-            Weapon_roll is between 1 and 3
+            Weapon_roll is between 1 and 2
             if Weapon_roll equal 1 do:
                 Weapon from Game is "Magic Missile"
                 Weapon_damage from Game is 10
             else if Weapon_roll equal 2 do:
                 Weapon from Game is "Fire Ball"
                 Weapon_damage from Game is 25
-            else do:
-                Weapon from Game is "Delete"
-                Weapon_damage from Game is "infinite"
             stop
-        else if Class equal "Slave" or Class equal "slave" do:
+        else if Class equal "slave" do:
             Class from Game is "Slave"
-            Health from Game is between 1 and 2
-            Weapon_roll is between 1 and 3
+            Health from Game is between 5 and 10
+            Weapon_roll is between 1 and 2
             if Weapon_roll equal 1 do:
                 Weapon from Game is "fists"
                 Weapon_damage from Game is 1
             else if Weapon_roll equal 2 do:
                 Weapon from Game is "stick"
                 Weapon_damage from Game is 2
-            else do:
-                Weapon from Game is "rusty knife"
-                Weapon_damage from Game is 3
             stop
         else do:
             output "Invalid class, try again."
 
 
 define Game_play:
-    output "To be made"
+    if Game_status from Game equal 0 do:
+        output "\nDue to never gathering the knowledge of learning how to program, you have gone to the RLS dungeon to find the fabled RLS! Or 1000 gold to retire! You Enter the first room of the dungeon.\n"
+        call Create_room
+        Game_status from Game is 1
+    while true do:
+        output "\nYou Currently stand in a", Environment from Game, "room with a large", Headpiece from Game, "\n -continue \n -status \n -save and exit"
+        input in Answer
+        if Answer equal "continue" do:
+            call Combat
+            if Game_status from Game equal 0 do:
+                stop
+            call Create_room
+        else if Answer equal "status" do:
+            output "\nYou currently have", Health from Game, "HP, a", Weapon from Game, "(", Weapon_damage from Game, "damage), and", Gold from Game, "gold"
+        else if Answer equal "save and exit" do:
+            output "\nGame saved, hope to see you again!"
+            stop
+        else do:
+            output "Invalid option"
+
+
+define Combat:
+    create Buff is 0
+    create Enemy_buff is false
+    create Dodge is false
+    create Enemy with:
+        Type
+        Damage
+        Health
+    call Create_enemy
+    output "\nAs you enter the next room, a", Type from Enemy, "attacks you!"
+    while true do:
+        while true do:
+            output "You currently have", Health from Game, "HP, what will you do? \n -attack \n -buff \n -dodge"
+            input in Answer
+            if Answer equal "attack" do:
+                if Buff greater than 0 do:
+                    output "You attack the", Type from Enemy, "with your buffed", Weapon from Game, ", dealing", Weapon_damage from Game * 2, "damage!"
+                    Health from Enemy is Health from Enemy - Weapon_damage from Game * 2
+                    stop
+                else do:
+                    output "You attack the", Type from Enemy, "with your", Weapon from Game, ", dealing", Weapon_damage from Game, "damage!"
+                    Health from Enemy is Health from Enemy - Weapon_damage from Game
+                    stop
+            else if Answer equal "buff" do:
+                output "You ready your", Weapon from Game, ", which will increase the damage of your next 2 attacks"
+                Buff is 2
+                stop
+            else if Answer equal "dodge" do:
+                output "You prepare to dodge the next attack of the", Type from Enemy
+                Dodge is true
+                stop
+            else do:
+                output "Invalid option"
+        if Health from Enemy less than 1 do:
+            output "With your mighty attack, you managed to slay the", Type from Enemy
+            call Loot
+            stop
+        else do:
+            create Enemy_attack is between 1 and 10
+            if Enemy_attack equal 1 do:
+                output "The", Type from Enemy, "is confused, and wasted its turn"
+            else if Enemy_attack less than 5 do:
+                output "The", Type from Enemy, "is preparing to unleash a strong attack!"
+                Enemy_buff is true
+            else do:
+                if Enemy_buff do:
+                    output "The", Type from Enemy, "swings at you with a strong attack"
+                    if Dodge do:
+                        output "But you dodged it!"
+                    else do:
+                        output "And hit you for", Damage from Enemy * 2, "Damage!"
+                        Health from Game is Health from Game - Damage from Enemy * 2
+                else do:
+                    output "The", Type from Enemy, "swings at you with an attack"
+                    if Dodge do:
+                        output "But you dodged it!"
+                    else do:
+                        output "And hit you for", Damage from Enemy, "Damage!"
+                        Health from Game is Health from Game - Damage from Enemy
+            if Health from Game less than 1 do:
+                output "You passed away from your injuries, better luck next time!"
+                Game_status from Game is 0
+                stop
+
+
+define Loot:
+    create Loot is between 1 and 100
+    create Gold is between 1 and 50
+    if Loot equal 1 do:
+        output "The slain", Type from Enemy, "had the fabled RLS! You retreat from the dungeon with your treasure and live a new and better life for it! Thanks for playing!"
+        Game_status from Game is 0
+    else if Loot less than 40 do:
+        create Healing is between 5 and 20
+        output "You found a healing potion on the", Type from Enemy, "which heals you for", Healing, "HP!"
+        Health from Game is Health from Game + Healing
+    else if Loot less than 80 do:
+        output "The slain", Type from Enemy, "was coated in magical energies, which your", Weapon from Game, "absorbs, increasing its damage slightly!"
+        Weapon_damage from Game is Weapon_damage from Game + 1
+    else do:
+        output "You look for special loot, but the", Type from Enemy, "didnt have any..."
+    output "The", Type from Enemy, "also had", Gold, "gold!"
+    Gold from Game is Gold from Game + Gold
+
+
+define Create_enemy:
+    create Type_number is between 1 and 3
+    if Type_number equal 1 do:
+        Type from Enemy is "zombie"
+        Damage from Enemy is 3
+        Health from Enemy is 10
+    if Type_number equal 2 do:
+        Type from Enemy is "bandit"
+        Damage from Enemy is 5
+        Health from Enemy is 7
+    if Type_number equal 3 do:
+        Type from Enemy is "gargoyle"
+        Damage from Enemy is 7
+        Health from Enemy is 15
+
+
+define Create_room:
+    create Environment_number is between 1 and 2
+    create Headpiece_number is between 1 and 2
+    if Environment_number equal 1 do:
+        Environment from Game is "floral"
+    if Environment_number equal 2 do:
+        Environment from Game is "dark"
+    if Headpiece_number equal 1 do:
+        Headpiece from Game is "Waterfall"
+    if Headpiece_number equal 2 do:
+        Headpiece from Game is "Statue"

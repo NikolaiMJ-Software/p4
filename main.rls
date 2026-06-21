@@ -166,7 +166,7 @@ define Combat:
 
 define Loot:
     create Loot is between 1 and 100
-    create Gold is between 1 and 50
+    create Gold is between 10 and 50
     if Loot equal 1 do:
         output "The slain", Type from Enemy, "had the fabled RLS! You retreat from the dungeon with your treasure and live a new and better life for it! Thanks for playing!"
         Game_status from Game is 0
@@ -181,6 +181,9 @@ define Loot:
         output "You look for special loot, but the", Type from Enemy, "didnt have any..."
     output "The", Type from Enemy, "also had", Gold, "gold!"
     Gold from Game is Gold from Game + Gold
+    if Gold from Game greater than 1000 do:
+        output "This put you over 1000 gold, so you retreat from the dungeon to live a luxurious retirement! Thanks for playing!"
+        Game_status from Game is 0
 
 
 define Create_enemy:

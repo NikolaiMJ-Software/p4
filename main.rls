@@ -3,7 +3,7 @@ create Game with:
     Health
     Weapon
     Weapon_damage
-    Gold is 0
+    Gold
     Environment
     Headpiece
     Game_status is 0
@@ -39,6 +39,7 @@ define Class_picker:
     while true do:
         output "\nChoose class: Warrior, Wizard or Slave"
         input in Class
+        Gold from Game is 0
         if Class equal "warrior" do:
             Class from Game is "Warrior"
             Health from Game is between 20 and 25

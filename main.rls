@@ -172,9 +172,18 @@ define Loot:
         output "The slain", Type from Enemy, "had the fabled RLS! You retreat from the dungeon with your treasure and live a new and better life for it! Thanks for playing!"
         Game_status from Game is 0
     else if Loot less than 40 do:
-        create Healing is between 5 and 20
-        output "You found a healing potion on the", Type from Enemy, "which heals you for", Healing, "HP!"
-        Health from Game is Health from Game + Healing
+        create Poison is chance 25%
+        if Poison do:
+            create Damage is between 1 and 5
+            output "You found healing potion on the", Type from Enemy, "but it turns out to be poison! You take", Damage, "Damage."
+            Health from Game is Health from Game - Damage
+            if Health from Game less than 1 do:
+                output "The poison killed you. Thanks for playing!"
+                Game_status from Game is 0
+        else do:
+            create Healing is between 5 and 20
+            output "You found a healing potion on the", Type from Enemy, "which heals you for", Healing, "HP!"
+            Health from Game is Health from Game + Healing
     else if Loot less than 80 do:
         output "The slain", Type from Enemy, "was coated in magical energies, which your", Weapon from Game, "absorbs, increasing its damage slightly!"
         Weapon_damage from Game is Weapon_damage from Game + 1

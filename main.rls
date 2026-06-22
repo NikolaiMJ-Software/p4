@@ -23,6 +23,7 @@ define Play:
                 call Game_play
                 stop
         else if Answer equal "new game" do:
+            Game_status from Game is 0
             call Class_picker
             output "\nYour class is:", Class from Game
             output "Your Weapon is:", Weapon from Game, ", with weapon damage:", Weapon_damage from Game, "\n"
